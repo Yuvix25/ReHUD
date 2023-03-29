@@ -75,7 +75,7 @@ public class Startup
             {
                 Electron.IpcMain.Send(window, "data", data);
 
-                return;
+                // return;
                 if (data.GameInMenus == 1 || data.GameInReplay == 1 || data.GamePaused == 1) {
                     window.Hide();
                 } else {

@@ -1,3 +1,10 @@
+:root {
+  --revs-color-normal: white;
+  --revs-color-upshift: rgb(0, 255, 0);
+  --revs-color-redline: rgb(255, 0, 0);
+  --revs-color: var(--revs-color-normal);
+}
+
 * {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -10,20 +17,26 @@
 body,
 html {
   background-color: transparent;
+  margin: 0;
+}
+
+table {
+  border-spacing: 0;
+  border-collapse: collapse;
 }
 
 #main-container {
-  width: calc(100vw - 20px);
-  height: calc(100vh - 20px);
-  margin: 10px;
+  width: calc(100vw - 14px);
+  height: calc(100vh - 14px);
+  margin: 7px;
   position: relative;
 }
 
 he {
   background-color: rgba(0, 0, 0, 0.6);
   border-radius: 5px;
-  width: max-content;
   align-items: center;
+  margin: 2px;
 }
 
 .row {
@@ -36,12 +49,12 @@ he {
   flex-direction: column;
 }
 
-td {
-  border: 1px solid white;
+.sb {
+  justify-content: space-between;
 }
 
 span {
-  width: max-content;
+  width: max-content !important;
   text-align: center;
   margin: 5px !important;
   font-weight: 500;
@@ -51,10 +64,19 @@ span {
   line-height: 1;
 }
 
-span.center {
-  width: 100% !important;
+progress {
+  background-color: transparent; /* For some reason if this is not set the webkit values
+                                    will not work (any color works here) */
+  height: 6px;
 }
-
+progress::-webkit-progress-value {
+  background-color: white;
+  border-radius: 2px;
+}
+progress::-webkit-progress-bar {
+  background-color: #424242;
+  border-radius: 2px;
+}
 
 he#basic {
   position: absolute;
@@ -62,14 +84,44 @@ he#basic {
   bottom: 0;
 }
 
+he#basic td {
+  border: 1px solid white;
+}
+
+#fuel-and-tires {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+}
+#fuel-and-tires he {
+  padding: 2px;
+}
+#fuel-and-tires span {
+  font-size: 23px;
+}
+#fuel-and-tires span.label {
+  font-size: 17px;
+}
+#fuel-left {
+  font-size: 35px !important;
+}
 
 span#gear {
   font-size: 130px;
   margin-top: -3px !important;
+  color: var(--revs-color);
 }
 
 span#speed {
   font-size: 37px;
   margin-top: -2px !important;
-  margin-bottom: 10px !important;
+  margin-bottom: 8px !important;
+}
+
+progress#revs {
+  width: calc(100% - 12px) !important;
+  margin-bottom: 6px;
+}
+progress#revs::-webkit-progress-value {
+  background-color: var(--revs-color);
 }

@@ -14,8 +14,47 @@
                 <td><span id="brake-bias"></span></td>
             </tr>
         </table>
-        <span id="gear" class="center"></span>
-        <span id="speed" class="center"></span>
+        <span id="gear"></span>
+        <span id="speed"></span>
+        <progress id="revs" max="100" value="0"></progress>
     </he>
+
+    <div class="row" id="fuel-and-tires">
+        <he class="col sb">
+            <span></span>
+            <span id="fuel-left">50</span>
+            <span class="label">Fuel Left</span>
+        </he>
+        <table>
+            <tr>
+                <td>
+                    <he class="col">
+                        <span class="label">Time Estimate</span>
+                        <span id="fuel-time"></span>
+                    </he>
+                </td>
+                <td>
+                    <he class="col">
+                        <span class="label">Last Lap</span>
+                        <span id="fuel-last-lap"></span>
+                    </he>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <he class="col">
+                        <span id="fuel-laps">N/A</span>
+                        <span class="label">Laps Estimate</span>
+                    </he>
+                </td>
+                <td>
+                    <he class="col">
+                        <span id="fuel-per-lap"></span>
+                        <span class="label">Fuel / Lap</span>
+                    </he>
+                </td>
+            </tr>
+        </table>
+    </div>
 </div>
 

@@ -1,5 +1,7 @@
 using ElectronNET.API;
 using ElectronNET.API.Entities;
+using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace R3E_Electron_Overlay;
 
@@ -21,7 +23,7 @@ public class Startup
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        Electron.App.CommandLine.AppendSwitch("disable-gpu");
+        // Electron.App.CommandLine.AppendSwitch("disable-gpu");
 
         if (env.IsDevelopment())
         {
@@ -47,12 +49,18 @@ public class Startup
 
         if (HybridSupport.IsElectronActive)
         {
-            Electron.App.Ready += () => CreateWindow();
-            // CreateWindow();
+            Electron.App.Ready += () => CreateWindow(env);
         }
     }
 
-    private async void CreateWindow() {
+
+    private const string dataFile = "userData.json";
+    private static string dirPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ElectronOverlay");
+    private static string path = Path.Combine(dirPath, dataFile);
+    private R3E.UserData? userData;
+
+    private async void CreateWindow(IWebHostEnvironment env)
+    {
         Electron.App.CommandLine.AppendSwitch("enable-transparent-visuals");
         Electron.App.CommandLine.AppendSwitch("disable-gpu-compositing");
 
@@ -66,25 +74,119 @@ public class Startup
             Transparent = true,
             BackgroundColor = "#00000000",
         });
+
+        if (IsHudRunning())
+        {
+            MessageBoxOptions options = new MessageBoxOptions("Another instance of Electron Overlay is already running.");
+            options.Type = MessageBoxType.error;
+            options.Title = "Error";
+
+            await Electron.Dialog.ShowMessageBoxAsync(window, options);
+            Electron.App.Quit();
+            return;
+        }
+
+
+        try {
+            if (!Directory.Exists(dirPath)) {
+                Directory.CreateDirectory(dirPath);
+            }
+            Dictionary<string, Dictionary<int, Dictionary<int, R3E.Combination>>>? obj = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<int, Dictionary<int, R3E.Combination>>>>(File.ReadAllText(path));
+            if (obj == null) {
+                userData = new R3E.UserData();
+            } else {
+                Dictionary<int, Dictionary<int, R3E.Combination>>? dict = obj.GetValueOrDefault("combinations");
+                if (dict == null) {
+                    userData = new R3E.UserData();
+                } else {
+                    userData = new R3E.UserData(dict);
+                }
+            }
+        } catch (Exception e) {
+            Console.WriteLine(e);
+            userData = new R3E.UserData();
+        }
+
+
         window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
-        window.SetIgnoreMouseEvents(true);
+        
+        if (!env.IsDevelopment())
+            window.SetIgnoreMouseEvents(true);
 
         using (var memory = new R3E.SharedMemory())
         {
+            bool isShown = false;
             Thread thread = new Thread(() => memory.Run((data) =>
             {
-                Electron.IpcMain.Send(window, "data", data);
+                ExtraData extraData;
+                extraData.RawData = data;
+                extraData.FuelPerLap = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId).GetAverageFuelUsage();
+                extraData.AverageLapTime = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId).GetAverageLapTime();
+                extraData.BestLapTime = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId).GetBestLapTime();
+                Electron.IpcMain.Send(window, "data", extraData);
 
-                // return;
-                if (data.GameInMenus == 1 || data.GameInReplay == 1 || data.GamePaused == 1) {
-                    window.Hide();
-                } else {
+                try {
+                    SaveData(data);
+                } catch (Exception e) {
+                    Console.WriteLine(e);
+                }
+
+                lastLap = data.CompletedLaps;
+                
+                if (data.GameInMenus == 1 || data.GameInReplay == 1 || data.GamePaused == 1)
+                {
+                    if (!env.IsDevelopment() && window != null && isShown)
+                        window.Hide();
+                    
+                    recordingData = false;
+                }
+                else if (window != null && !isShown)
+                {
                     window.Show();
+                    isShown = true;
                 }
             }));
             thread.Start();
         }
 
         window.OnClosed += () => Electron.App.Quit();
+    }
+
+
+    private bool IsHudRunning()
+    {
+        return Process.GetProcessesByName("R3E-Electron-Overlay").Length > 1;
+    }
+
+
+    private bool recordingData = false;
+    private double lastFuel = -1;
+    private int lastLap = -1;
+    private void SaveData(R3E.Data.Shared data)
+    {
+        if (lastLap == -1 || lastLap == data.CompletedLaps || userData == null)
+            return;
+        
+        if (!recordingData)
+        {
+            recordingData = true;
+            lastFuel = data.FuelLeft;
+            return;
+        }
+
+        int modelId = data.VehicleInfo.ModelId;
+        int layoutId = data.LayoutId;
+        R3E.Combination combo = userData.GetCombination(layoutId, modelId);
+
+        if (data.LapTimePreviousSelf > 0)
+            combo.AddLapTime(data.LapTimePreviousSelf);
+        
+        if (data.FuelUseActive == 1 && lastFuel != -1)
+        {
+            combo.AddFuelUsage(lastFuel - data.FuelLeft);
+        }
+
+        File.WriteAllText(path, JsonConvert.SerializeObject(userData));
+        lastFuel = data.FuelLeft;
     }
 }

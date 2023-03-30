@@ -18,9 +18,9 @@ namespace R3E
         }
 
         private Shared _data;
-        private MemoryMappedFile _file;
-        private byte[] _buffer;
-        private readonly TimeSpan _timeInterval = TimeSpan.FromMilliseconds(100);
+        private MemoryMappedFile? _file;
+        private byte[]? _buffer;
+        private readonly TimeSpan _timeInterval = TimeSpan.FromMilliseconds(17); // ~60fps
 
         public void Dispose()
         {
@@ -82,13 +82,21 @@ namespace R3E
 
         private bool Read()
         {
+            if (_file == null)
+                return false;
+            
             try
             {
                 var _view = _file.CreateViewStream();
                 BinaryReader _stream = new BinaryReader(_view);
                 _buffer = _stream.ReadBytes(Marshal.SizeOf(typeof(Shared)));
                 GCHandle _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
-                _data = (Shared)Marshal.PtrToStructure(_handle.AddrOfPinnedObject(), typeof(Shared));
+                
+                var res = Marshal.PtrToStructure(_handle.AddrOfPinnedObject(), typeof(Shared));
+                if (res == null)
+                    return false;
+
+                _data = (Shared) res;
                 _handle.Free();
 
                 return true;

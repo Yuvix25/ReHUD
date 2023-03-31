@@ -91,16 +91,9 @@ public class Startup
             if (!Directory.Exists(dirPath)) {
                 Directory.CreateDirectory(dirPath);
             }
-            Dictionary<string, Dictionary<int, Dictionary<int, R3E.Combination>>>? obj = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<int, Dictionary<int, R3E.Combination>>>>(File.ReadAllText(path));
-            if (obj == null) {
+            userData = JsonConvert.DeserializeObject<R3E.UserData>(File.ReadAllText(path));
+            if (userData == null) {
                 userData = new R3E.UserData();
-            } else {
-                Dictionary<int, Dictionary<int, R3E.Combination>>? dict = obj.GetValueOrDefault("combinations");
-                if (dict == null) {
-                    userData = new R3E.UserData();
-                } else {
-                    userData = new R3E.UserData(dict);
-                }
             }
         } catch (Exception e) {
             Console.WriteLine(e);
@@ -115,15 +108,17 @@ public class Startup
 
         using (var memory = new R3E.SharedMemory())
         {
-            bool isShown = false;
+            bool? isShown = null;
             Thread thread = new Thread(() => memory.Run((data) =>
             {
+                R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
                 ExtraData extraData;
                 extraData.RawData = data;
-                extraData.FuelPerLap = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId).GetAverageFuelUsage();
-                extraData.AverageLapTime = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId).GetAverageLapTime();
-                extraData.BestLapTime = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId).GetBestLapTime();
-                Electron.IpcMain.Send(window, "data", extraData);
+                extraData.FuelPerLap = combination.GetAverageFuelUsage();
+                extraData.FuelLastLap = combination.GetLastLapFuelUsage();
+                extraData.AverageLapTime = combination.GetAverageLapTime();
+                extraData.BestLapTime = combination.GetBestLapTime();
+                extraData.LapsUntilFinish = GetLapsUntilFinish(data, combination);
 
                 try {
                     SaveData(data);
@@ -132,15 +127,25 @@ public class Startup
                 }
 
                 lastLap = data.CompletedLaps;
+                bool notDriving = data.GameInMenus == 1 || data.GameInReplay == 1 || data.GamePaused == 1 || data.SessionType == -1;
+                if (!notDriving || env.IsDevelopment())
+                    Electron.IpcMain.Send(window, "data", extraData);
                 
-                if (data.GameInMenus == 1 || data.GameInReplay == 1 || data.GamePaused == 1)
+                if (notDriving)
                 {
-                    if (!env.IsDevelopment() && window != null && isShown)
+                    if (!env.IsDevelopment() && window != null && (isShown ?? true)) {
                         window.Hide();
+                        isShown = false;
+                    }
                     
                     recordingData = false;
+
+                    if (data.SessionType == -1) {
+                        lastLap = -1;
+                        lastFuel = -1;
+                    }
                 }
-                else if (window != null && !isShown)
+                else if (window != null && !(isShown ?? false))
                 {
                     window.Show();
                     isShown = true;
@@ -156,6 +161,55 @@ public class Startup
     private bool IsHudRunning()
     {
         return Process.GetProcessesByName("R3E-Electron-Overlay").Length > 1;
+    }
+
+    private double GetLapsUntilFinish(R3E.Data.Shared data, R3E.Combination combination)
+    {
+        double fraction = data.LapDistanceFraction == -1 ? 0 : data.LapDistanceFraction;
+        if (data.SessionTimeRemaining != -1) {
+            double referenceLap;
+            R3E.Data.DriverData? leader_ = GetLeader(data);
+            if (leader_ == null) {
+                return -1;
+            }
+            R3E.Data.DriverData leader = leader_.Value;
+            if (data.LapTimeBestLeader > 0 && leader.CompletedLaps > 1) {
+                referenceLap = data.LapTimeBestLeader;
+            } else if (data.LapTimeBestSelf > 0) {
+                referenceLap = data.LapTimeBestSelf;
+            } else {
+                referenceLap = combination.GetBestLapTime();
+                if (referenceLap == -1) {
+                    return -1;
+                }
+            }
+            double leaderFraction = leader.LapDistance / data.LayoutLength;
+            return Math.Ceiling(data.SessionTimeRemaining / referenceLap + leaderFraction) - fraction +
+                    (leaderFraction < fraction ? 1 : 0) +
+                    (data.SessionLengthFormat == 2 ? 1 : 0);
+        } else {
+            int sessionLaps = data.NumberOfLaps;
+            if (sessionLaps == -1) {
+                return -1;
+            }
+
+            int completedLaps = GetLeader(data)?.CompletedLaps ?? -1;
+            if (completedLaps == -1) {
+                return -1;
+            }
+            return sessionLaps - completedLaps - fraction;
+        }
+    }
+
+    private R3E.Data.DriverData? GetLeader(R3E.Data.Shared data) {
+        foreach (R3E.Data.DriverData leader in data.DriverData)
+        {
+            if (leader.Place == 1)
+            {
+                return leader;
+            }
+        }
+        return null;
     }
 
 

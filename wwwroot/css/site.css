@@ -3,6 +3,11 @@
   --revs-color-upshift: rgb(0, 255, 0);
   --revs-color-redline: rgb(255, 0, 0);
   --revs-color: var(--revs-color-normal);
+  
+  --fuel-middle-color: rgb(127.5, 127.5, 0);
+  --fuel-left-color: rgb(0, 255, 0);
+  --fuel-last-lap-color: var(--fuel-middle-color);
+  --fuel-to-add-color: var(--fuel-middle-color);
 }
 
 * {
@@ -56,12 +61,16 @@ he {
 span {
   width: max-content !important;
   text-align: center;
-  margin: 5px !important;
+  margin: 2px 5px 2px 5px !important;
   font-weight: 500;
   font-size: 20px;
   color: white;
   font-family: 'Oswald', sans-serif;
   line-height: 1;
+  text-shadow: -1px -1px 4px #000,
+                1px -1px 4px #000,
+               -1px  1px 4px #000,
+                1px  1px 4px #000;
 }
 
 progress {
@@ -97,14 +106,39 @@ he#basic td {
   padding: 2px;
 }
 #fuel-and-tires span {
-  font-size: 23px;
+  font-size: 26px;
 }
 #fuel-and-tires span.label {
   font-size: 17px;
 }
+
 #fuel-left {
-  font-size: 35px !important;
+  color: var(--fuel-left-color);
 }
+#fuel-to-add,
+#fuel-to-end {
+  color: var(--fuel-to-add-color);
+}
+#fuel-left,
+#fuel-to-add,
+#fuel-to-end {
+  font-size: 40px !important;
+}
+
+
+#fuel-time {
+  color: var(--fuel-left-color);
+}
+#fuel-laps {
+  color: var(--fuel-left-color);
+}
+#fuel-last-lap {
+  color: var(--fuel-last-lap-color);
+}
+#fuel-per-lap {
+  color: var(--fuel-middle-color);
+}
+
 
 span#gear {
   font-size: 130px;

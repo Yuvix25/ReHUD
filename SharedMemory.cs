@@ -106,27 +106,5 @@ namespace R3E
                 return false;
             }
         }
-
-        private void Print()
-        {
-            if (Read())
-            {
-                Console.WriteLine("Name: {0}", System.Text.Encoding.UTF8.GetString(_data.PlayerName).TrimEnd('\0'));
-
-                if (_data.Gear >= -1)
-                {
-                    Console.WriteLine("Gear: {0}", _data.Gear);
-                }
-
-                if (_data.EngineRps > -1.0f)
-                {
-                    Console.WriteLine("RPM: {0}", Utilities.RpsToRpm(_data.EngineRps));
-                    Console.WriteLine("Speed: {0}", Utilities.MpsToKph(_data.CarSpeed));
-                }
-
-
-                Console.WriteLine("");
-            }
-        }
     }
 }

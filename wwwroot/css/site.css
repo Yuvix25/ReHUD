@@ -3,12 +3,112 @@
   --revs-color-upshift: rgb(0, 255, 0);
   --revs-color-redline: rgb(255, 0, 0);
   --revs-color: var(--revs-color-normal);
-  
+
   --fuel-middle-color: rgb(127.5, 127.5, 0);
   --fuel-left-color: rgb(0, 255, 0);
   --fuel-last-lap-color: var(--fuel-middle-color);
   --fuel-to-add-color: var(--fuel-middle-color);
+
+
+  --tire-temp-color-normal: rgb(0, 0, 255);
+
+  --front-left-1-color: var(--tire-temp-color-normal);
+  --front-left-2-color: var(--tire-temp-color-normal);
+  --front-left-3-color: var(--tire-temp-color-normal);
+
+  --front-right-1-color: var(--tire-temp-color-normal);
+  --front-right-2-color: var(--tire-temp-color-normal);
+  --front-right-3-color: var(--tire-temp-color-normal);
+
+  --rear-left-1-color: var(--tire-temp-color-normal);
+  --rear-left-2-color: var(--tire-temp-color-normal);
+  --rear-left-3-color: var(--tire-temp-color-normal);
+
+  --rear-right-1-color: var(--tire-temp-color-normal);
+  --rear-right-2-color: var(--tire-temp-color-normal);
+  --rear-right-3-color: var(--tire-temp-color-normal);
 }
+
+#tires {
+  text-align: right;
+}
+
+.wheel {
+  margin: 4px;
+}
+.wheel table {
+  table-layout: fixed;
+  width: 25px;
+}
+.wheel td {
+  height: 70px;
+  width: 25px;
+  padding: 0;
+}
+.wheel td span {
+  font-size: 14px !important;
+  margin: 0px !important;
+}
+.wheel td:not(.tire-visual) {
+  height: max-content;
+  padding-bottom: 2px;
+}
+
+#tires progress {
+  transform: rotate(-90deg);
+  width: 70px;
+  height: 25px;
+  margin-left: -23px;
+}
+#tires progress::-webkit-progress-bar {
+  background-color: transparent;
+}
+
+#front-left-1 progress::-webkit-progress-value {
+  background-color: var(--front-left-1-color);
+}
+#front-left-2 progress::-webkit-progress-value {
+  background-color: var(--front-left-2-color);
+}
+#front-left-3 progress::-webkit-progress-value {
+  background-color: var(--front-left-3-color);
+}
+
+#front-right-1 progress::-webkit-progress-value {
+  background-color: var(--front-right-1-color);
+}
+#front-right-2 progress::-webkit-progress-value {
+  background-color: var(--front-right-2-color);
+}
+#front-right-3 progress::-webkit-progress-value {
+  background-color: var(--front-right-3-color);
+}
+
+#rear-left-1 progress::-webkit-progress-value {
+  background-color: var(--rear-left-1-color);
+}
+#rear-left-2 progress::-webkit-progress-value {
+  background-color: var(--rear-left-2-color);
+}
+#rear-left-3 progress::-webkit-progress-value {
+  background-color: var(--rear-left-3-color);
+}
+
+#rear-right-1 progress::-webkit-progress-value {
+  background-color: var(--rear-right-1-color);
+}
+#rear-right-2 progress::-webkit-progress-value {
+  background-color: var(--rear-right-2-color);
+}
+#rear-right-3 progress::-webkit-progress-value {
+  background-color: var(--rear-right-3-color);
+}
+
+
+#fuel-data {
+  height: max-content;
+}
+
 
 * {
   -webkit-touch-callout: none;
@@ -68,20 +168,23 @@ span {
   font-family: 'Oswald', sans-serif;
   line-height: 1;
   text-shadow: -1px -1px 4px #000,
-                1px -1px 4px #000,
-               -1px  1px 4px #000,
-                1px  1px 4px #000;
+    1px -1px 4px #000,
+    -1px 1px 4px #000,
+    1px 1px 4px #000;
 }
 
 progress {
-  background-color: transparent; /* For some reason if this is not set the webkit values
+  background-color: transparent;
+  /* For some reason if this is not set the webkit values
                                     will not work (any color works here) */
   height: 6px;
 }
+
 progress::-webkit-progress-value {
   background-color: white;
   border-radius: 2px;
 }
+
 progress::-webkit-progress-bar {
   background-color: #424242;
   border-radius: 2px;
@@ -98,16 +201,21 @@ he#basic td {
 }
 
 #fuel-and-tires {
+  align-items: flex-end;
+  gap: 15px;
   position: absolute;
   left: 0;
   bottom: 0;
 }
+
 #fuel-and-tires he {
   padding: 2px;
 }
+
 #fuel-and-tires span {
   font-size: 26px;
 }
+
 #fuel-and-tires span.label {
   font-size: 17px;
 }
@@ -115,10 +223,12 @@ he#basic td {
 #fuel-left {
   color: var(--fuel-left-color);
 }
+
 #fuel-to-add,
 #fuel-to-end {
   color: var(--fuel-to-add-color);
 }
+
 #fuel-left,
 #fuel-to-add,
 #fuel-to-end {
@@ -129,12 +239,15 @@ he#basic td {
 #fuel-time {
   color: var(--fuel-left-color);
 }
+
 #fuel-laps {
   color: var(--fuel-left-color);
 }
+
 #fuel-last-lap {
   color: var(--fuel-last-lap-color);
 }
+
 #fuel-per-lap {
   color: var(--fuel-middle-color);
 }
@@ -156,6 +269,7 @@ progress#revs {
   width: calc(100% - 12px) !important;
   margin-bottom: 6px;
 }
+
 progress#revs::-webkit-progress-value {
   background-color: var(--revs-color);
 }

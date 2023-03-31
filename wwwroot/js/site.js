@@ -116,17 +116,54 @@ const VALUES = [
         root.style.setProperty('--fuel-to-add-color', lerpRGB([0, 255, 0], [255, 0, 0], (fuelToAdd + 0.7) * 1.43));
         return `${fuelToAdd.toFixed(1)}`;
     }),
+
+    new Value('tires', ['tireTemp'], (x) => {
+        const nameMap = {
+            'frontLeft': 'front-left',
+            'frontRight': 'front-right',
+            'rearLeft': 'rear-left',
+            'rearRight': 'rear-right',
+        }
+        for (const tire in nameMap) {
+            const name = nameMap[tire];
+
+            const optimal = x?.[tire]?.optimalTemp;
+            const cold = x?.[tire]?.coldTemp;
+            const hot = x?.[tire]?.hotTemp;
+
+            for (let i = 1; i <= 3; i++) {
+                const side = ['left', 'center', 'right'][i - 1];
+                const text = document.getElementById(`${name}-temp-${i}`);
+                const progress = document.querySelector(`#${name}-${i} progress`);
+                progress.value = 1;
+
+                const temp = x?.[tire]?.currentTemp?.[side];
+
+                if (temp == undefined) {
+                    text.innerText = 'N/A';
+                    root.style.setProperty(`--${name}-${i}-color`, 'var(--tire-temp-color-normal)');
+                    continue;
+                }
+                
+                text.innerText = `${Math.round(temp)}°`;
+                
+                if (optimal == undefined || cold == undefined || hot == undefined) {
+                    root.style.setProperty(`--${name}-${i}-color`, 'var(--tire-temp-color-normal)');
+                    continue;
+                }
+
+                root.style.setProperty(`--${name}-${i}-color`, lerpRGB([0, 0, 255], [0, 255, 0], (temp - cold) / (hot - cold)));
+            }
+        }
+    }),
 ];
 
 ipcRenderer.on('data', (event, data) => {
     data = data[0];
     for (const value of VALUES) {
         const element = document.getElementById(value.elementId);
-        if (element === null) {
-            continue;
-        }
         const newValue = value.getValueFromData(data);
-        if (newValue !== undefined) {
+        if (newValue !== undefined && element != null) {
             element.innerText = newValue;
         }
     }

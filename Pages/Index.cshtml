@@ -19,52 +19,131 @@
         <progress id="revs" max="100" value="0"></progress>
     </he>
 
-    <div class="row" id="fuel-and-tires" style="margin-left: 1200px">
-        <he class="col sb">
-            <span></span>
-            <span id="fuel-left"></span>
-            <span class="label">Fuel Remain</span>
-        </he>
-        <table>
+    <div class="row" id="fuel-and-tires">
+
+        <table id="tires">
             <tr>
-                <td>
-                    <he class="col">
-                        <span class="label">Time Estimate</span>
-                        <span id="fuel-time"></span>
-                    </he>
+                <td id="front-left">
+                    <div class="row wheel">
+                        <table>
+                            <tr>
+                                <td><span id="front-left-temp-1"></span></td>
+                                <td><span id="front-left-temp-2"></span></td>
+                                <td><span id="front-left-temp-3"></span></td>
+                            </tr>
+                            <tr>
+                                <td id="front-left-1" class="tire-visual"><progress max="1"></progress></td>
+                                <td id="front-left-2" class="tire-visual"><progress max="1"></progress></td>
+                                <td id="front-left-3" class="tire-visual"><progress max="1"></progress></td>
+                            </tr>
+                        </table>
+                        <div id="front-left-brake"></div>
+                    </div>
                 </td>
-                <td>
-                    <he class="col">
-                        <span class="label">Last Lap</span>
-                        <span id="fuel-last-lap"></span>
-                    </he>
+                <td id="front-right">
+                    <div class="row wheel">
+                        <table>
+                            <tr>
+                                <td><span id="front-right-temp-1"></span></td>
+                                <td><span id="front-right-temp-2"></span></td>
+                                <td><span id="front-right-temp-3"></span></td>
+                            </tr>
+                            <tr>
+                                <td id="front-right-1" class="tire-visual"><progress max="1"></progress></td>
+                                <td id="front-right-2" class="tire-visual"><progress max="1"></progress></td>
+                                <td id="front-right-3" class="tire-visual"><progress max="1"></progress></td>
+                            </tr>
+                        </table>
+                        <div id="front-right-brake"></div>
+                    </div>
                 </td>
             </tr>
             <tr>
-                <td>
-                    <he class="col">
-                        <span id="fuel-laps"></span>
-                        <span class="label">Laps Estimate</span>
-                    </he>
+                <td id="rear-left">
+                    <div class="row wheel">
+                        <table>
+                            <tr>
+                                <td><span id="rear-left-temp-1"></span></td>
+                                <td><span id="rear-left-temp-2"></span></td>
+                                <td><span id="rear-left-temp-3"></span></td>
+                            </tr>
+                            <tr>
+                                <td id="rear-left-1" class="tire-visual"><progress max="1"></progress></td>
+                                <td id="rear-left-2" class="tire-visual"><progress max="1"></progress></td>
+                                <td id="rear-left-3" class="tire-visual"><progress max="1"></progress></td>
+                            </tr>
+                        </table>
+                        <div id="rear-left-brake"></div>
+                    </div>
                 </td>
-                <td>
-                    <he class="col">
-                        <span id="fuel-per-lap"></span>
-                        <span class="label">Fuel / Lap</span>
-                    </he>
+                <td id="rear-right">
+                    <div class="row wheel">
+                        <table>
+                            <tr>
+                                <td><span id="rear-right-temp-1"></span></td>
+                                <td><span id="rear-right-temp-2"></span></td>
+                                <td><span id="rear-right-temp-3"></span></td>
+                            </tr>
+                            <tr>
+                                <td id="rear-right-1" class="tire-visual"><progress max="1"></progress></td>
+                                <td id="rear-right-2" class="tire-visual"><progress max="1"></progress></td>
+                                <td id="rear-right-3" class="tire-visual"><progress max="1"></progress></td>
+                            </tr>
+                        </table>
+                        <div id="rear-right-brake"></div>
+                    </div>
                 </td>
             </tr>
         </table>
-        <he class="col sb">
-            <span></span>
-            <span id="fuel-to-end"></span>
-            <span class="label">Fuel To End</span>
-        </he>
-        <he class="col sb">
-            <span></span>
-            <span id="fuel-to-add"></span>
-            <span class="label">Fuel To Add</span>
-        </he>
+
+        <div class="row" id="fuel-data">
+            <he class="col sb">
+                <span></span>
+                <span id="fuel-left"></span>
+                <span class="label">Fuel Remain</span>
+            </he>
+            <table>
+                <tr>
+                    <td>
+                        <he class="col">
+                            <span class="label">Time Estimate</span>
+                            <span id="fuel-time"></span>
+                        </he>
+                    </td>
+                    <td>
+                        <he class="col">
+                            <span class="label">Last Lap</span>
+                            <span id="fuel-last-lap"></span>
+                        </he>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <he class="col">
+                            <span id="fuel-laps"></span>
+                            <span class="label">Laps Estimate</span>
+                        </he>
+                    </td>
+                    <td>
+                        <he class="col">
+                            <span id="fuel-per-lap"></span>
+                            <span class="label">Fuel / Lap</span>
+                        </he>
+                    </td>
+                </tr>
+            </table>
+            <he class="col sb">
+                <span></span>
+                <span id="fuel-to-end"></span>
+                <span class="label">Fuel To End</span>
+            </he>
+            <he class="col sb">
+                <span></span>
+                <span id="fuel-to-add"></span>
+                <span class="label">Fuel To Add</span>
+            </he>
+        </div>
+
     </div>
 </div>
 

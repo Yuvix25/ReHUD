@@ -36,11 +36,11 @@ function lerpRGB(color1, color2, t) {
     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`
 }
 
-function lerpRGB3(color1, color2, color3, t) {
-    if (t < 0.5) {
-        return lerpRGB(color1, color2, t * 2);
+function lerpRGB3(color1, color2, color3, middle, t) {
+    if (t < middle) {
+        return lerpRGB(color1, color2, t / middle);
     }
-    return lerpRGB(color2, color3, (t - 0.5) * 2);
+    return lerpRGB(color2, color3, (t - middle) / (1 - middle));
 }
 
 const root = document.querySelector(':root');
@@ -117,7 +117,7 @@ const VALUES = [
         return `${fuelToAdd.toFixed(1)}`;
     }),
 
-    new Value('tires', ['tireTemp'], (x) => {
+    new Value('tires', ['tireTemp', 'tireWear'], (x, y) => {
         const nameMap = {
             'frontLeft': 'front-left',
             'frontRight': 'front-right',
@@ -130,12 +130,14 @@ const VALUES = [
             const optimal = x?.[tire]?.optimalTemp;
             const cold = x?.[tire]?.coldTemp;
             const hot = x?.[tire]?.hotTemp;
+            
+            const wear = y?.[tire];
 
             for (let i = 1; i <= 3; i++) {
                 const side = ['left', 'center', 'right'][i - 1];
                 const text = document.getElementById(`${name}-temp-${i}`);
                 const progress = document.querySelector(`#${name}-${i} progress`);
-                progress.value = 1;
+                progress.value = wear == -1 || wear == undefined ? 1 : wear;
 
                 const temp = x?.[tire]?.currentTemp?.[side];
 
@@ -152,7 +154,7 @@ const VALUES = [
                     continue;
                 }
 
-                root.style.setProperty(`--${name}-${i}-color`, lerpRGB([0, 0, 255], [0, 255, 0], (temp - cold) / (hot - cold)));
+                root.style.setProperty(`--${name}-${i}-color`, lerpRGB3([0, 0, 255], [0, 255, 0], [255, 0, 0], (optimal - cold) / (hot - cold), (temp - cold) / (hot - cold)));
             }
         }
     }),

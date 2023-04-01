@@ -1,16 +1,16 @@
 {
-  "executable": "R3E-Electron-Overlay",
+  "executable": "R3E_Electron_Overlay",
   "splashscreen": {
     "imageFile": ""
   },
-  "name": "R3E-Electron-Overlay",
-  "author": "",
+  "name": "r3e_electron_overlay",
+  "author": "Yuval Rosen",
   "singleInstance": false,
   "environment": "Production",
   "build": {
-    "appId": "com.R3E-Electron-Overlay.app",
-    "productName": "R3E-Electron-Overlay",
-    "copyright": "Copyright © 2020",
+    "appId": "com.yuvix.r3e-overlay",
+    "productName": "R3E Electron Overlay",
+    "copyright": "Copyright © 2023",
     "buildVersion": "1.0.0",
     "compression": "maximum",
     "directories": {

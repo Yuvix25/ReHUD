@@ -1,26 +1,11 @@
 ﻿@page
 @model IndexModel
 
-<div id="main-container">
-    @* he = hud-element *@
-    <he class="col" id="basic">
-        <table>
-            <tr>
-                <td><span id="engine-map"></span></td>
-                <td><span id="traction-control"></span></td>
-            </tr>
-            <tr>
-                <td><span id="engine-brake"></span></td>
-                <td><span id="brake-bias"></span></td>
-            </tr>
-        </table>
-        <span id="gear"></span>
-        <span id="speed"></span>
-        <progress id="revs" max="100" value="0"></progress>
-    </he>
 
+@* he = hud-element *@
+
+<div id="main-container" class="row">
     <div class="row" id="fuel-and-tires">
-
         <table id="tires">
             <tr>
                 <td id="front-left">
@@ -160,6 +145,45 @@
             </he>
         </div>
 
+    </div>
+
+
+    <div class="row" id="basic-and-inputs">
+        <he id="driver-inputs" class="col">
+            <table>
+                <tr id="input-numbers">
+                    <td><span id="clutch-input"></span></td>
+                    <td><span id="brake-input"></span></td>
+                    <td><span id="throttle-input"></span></td>
+                </tr>
+                <tr id="input-progress">
+                    <td><progress id="clutch-progress" max="1"></progress></td>
+                    <td><progress id="brake-progress" max="1"></progress></td>
+                    <td><progress id="throttle-progress" max="1"></progress></td>
+                </tr>
+            </table>
+
+            <div id="steering-wheel-container">
+                <img src="~/steering-wheel.png" id="steering-wheel">
+            </div>
+        </he>
+
+
+        <he class="col" id="basic">
+            <table>
+                <tr>
+                    <td><span id="engine-map"></span></td>
+                    <td><span id="traction-control"></span></td>
+                </tr>
+                <tr>
+                    <td><span id="engine-brake"></span></td>
+                    <td><span id="brake-bias"></span></td>
+                </tr>
+            </table>
+            <span id="gear"></span>
+            <span id="speed"></span>
+            <progress id="revs" max="100" value="0"></progress>
+        </he>
     </div>
 </div>
 

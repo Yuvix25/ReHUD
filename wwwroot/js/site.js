@@ -117,7 +117,7 @@ const VALUES = [
         return `${fuelToAdd.toFixed(1)}`;
     }),
 
-    new Value('tires', ['tireTemp', 'tireWear', 'brakeTemp'], (x, y, z) => {
+    new Value('tires', ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt'], (x, y, z, w) => {
         const nameMap = {
             'frontLeft': 'front-left',
             'frontRight': 'front-right',
@@ -138,6 +138,9 @@ const VALUES = [
             
             let wear = y?.[tire];
             wear = wear == undefined ? 0 : wear == -1 ? 1 : wear; // undefined == puncture
+
+            let dirt = w?.[tire];
+            dirt = dirt == undefined || dirt == -1 ? 0 : dirt;
 
             for (let i = 1; i <= 3; i++) {
                 const side = ['left', 'center', 'right'][i - 1];
@@ -161,15 +164,47 @@ const VALUES = [
                     root.style.setProperty(`--${name}-${i}-color`, 'var(--temp-color-normal)');
                     continue;
                 }
-                root.style.setProperty(`--${name}-${i}-color`, lerpRGB3([0, 0, 255], [0, 255, 0], [255, 0, 0], (optimal - cold) / (hot - cold), (temp - cold) / (hot - cold)));
+                root.style.setProperty(`--${name}-${i}-color`, lerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (optimal - cold) / (hot - cold), (temp - cold) / (hot - cold)));
 
                 if (!valueIsValid(optimalBrake) || !valueIsValid(coldBrake) || !valueIsValid(hotBrake) || !valueIsValid(currentBrake)) {
                     root.style.setProperty(`--${name}-brake-color`, 'var(--temp-color-normal)');
                     continue;
                 }
-                root.style.setProperty(`--${name}-brake-color`, lerpRGB3([0, 0, 255], [0, 255, 0], [255, 0, 0], (optimalBrake - coldBrake) / (hotBrake - coldBrake), (currentBrake - coldBrake) / (hotBrake - coldBrake)));
+                root.style.setProperty(`--${name}-brake-color`, lerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (optimalBrake - coldBrake) / (hotBrake - coldBrake), (currentBrake - coldBrake) / (hotBrake - coldBrake)));
+            
+                
+                const blackLevel = 0.05;
+                // 3 to 5
+                root.style.setProperty(`--dirty-${name}-size`, dirt == 0 ? '1px' : `${dirt * 2 + 3}px`);
+                root.style.setProperty(`--dirty-${name}-color`, dirt < blackLevel ? `black` : lerpRGB3([0, 0, 0], [130, 50, 50], [255, 50, 50], 0.15, (dirt - blackLevel) / 0.9));
             }
         }
+    }),
+    new Value('inputs', ['throttleRaw', 'brakeRaw', 'clutchRaw', 'steerInputRaw', 'steerWheelRangeDegrees'], (tRaw, bRaw, cRaw, sRaw, sRange) => {
+        const throttle = document.getElementById('throttle-input');
+        const brake = document.getElementById('brake-input');
+        const clutch = document.getElementById('clutch-input');
+        const throttleProgress = document.getElementById('throttle-progress');
+        const brakeProgress = document.getElementById('brake-progress');
+        const clutchProgress = document.getElementById('clutch-progress');
+
+        const steer = document.getElementById('steering-wheel');
+
+        tRaw = valueIsValid(tRaw) ? tRaw : 0;
+        bRaw = valueIsValid(bRaw) ? bRaw : 0;
+        cRaw = valueIsValid(cRaw) ? cRaw : 0;
+        sRaw = valueIsValid(sRaw) ? sRaw : 0;
+
+        throttle.innerText = `${Math.round(tRaw * 100)}`;
+        brake.innerText = `${Math.round(bRaw * 100)}`;
+        clutch.innerText = `${Math.round(cRaw * 100)}`;
+
+        throttleProgress.value = tRaw;
+        brakeProgress.value = bRaw;
+        clutchProgress.value = cRaw;
+
+        const steerAngle = sRaw * sRange / 2;
+        steer.style.transform = `rotate(${steerAngle}deg)`;
     }),
 ];
 
@@ -186,4 +221,11 @@ ipcRenderer.on('data', (event, data) => {
             element.innerText = newValue;
         }
     }
+});
+
+ipcRenderer.on('hide', (event, data) => {
+    document.body.style.display = 'none';
+});
+ipcRenderer.on('show', (event, data) => {
+    document.body.style.display = 'block';
 });

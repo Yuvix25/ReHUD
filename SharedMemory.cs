@@ -12,6 +12,7 @@ namespace R3E
 
     class SharedMemory : IDisposable
     {
+        private bool found = false;
         private bool Mapped
         {
             get { return (_file != null); }
@@ -47,9 +48,13 @@ namespace R3E
 
                 timeLast = timeNow;
 
+
                 if (Utilities.IsRrreRunning() && !Mapped)
                 {
-                    Console.WriteLine("Found RRRE.exe, mapping shared memory...");
+                    if (!found)
+                        Console.WriteLine("Found RRRE.exe, mapping shared memory...");
+                    
+                    found = true;
 
                     if (Map())
                     {

@@ -75,7 +75,8 @@ public class Startup
             BackgroundColor = "#00000000",
         });
 
-        if (IsHudRunning())
+        bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => {});
+        if (!gotLock)
         {
             MessageBoxOptions options = new MessageBoxOptions("Another instance of Electron Overlay is already running.");
             options.Type = MessageBoxType.error;
@@ -109,6 +110,7 @@ public class Startup
         using (var memory = new R3E.SharedMemory())
         {
             bool? isShown = null;
+            Thread.Sleep(1000);
             Thread thread = new Thread(() => memory.Run((data) =>
             {
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
@@ -134,7 +136,7 @@ public class Startup
                 if (notDriving)
                 {
                     if (!env.IsDevelopment() && window != null && (isShown ?? true)) {
-                        window.Hide();
+                        Electron.IpcMain.Send(window, "hide");
                         isShown = false;
                     }
                     
@@ -147,7 +149,7 @@ public class Startup
                 }
                 else if (window != null && !(isShown ?? false))
                 {
-                    window.Show();
+                    Electron.IpcMain.Send(window, "show");
                     isShown = true;
                 }
             }));
@@ -155,12 +157,6 @@ public class Startup
         }
 
         window.OnClosed += () => Electron.App.Quit();
-    }
-
-
-    private bool IsHudRunning()
-    {
-        return Process.GetProcessesByName("R3E-Electron-Overlay").Length > 1;
     }
 
     private double GetLapsUntilFinish(R3E.Data.Shared data, R3E.Combination combination)

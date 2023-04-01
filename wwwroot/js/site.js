@@ -117,7 +117,7 @@ const VALUES = [
         return `${fuelToAdd.toFixed(1)}`;
     }),
 
-    new Value('tires', ['tireTemp', 'tireWear'], (x, y) => {
+    new Value('tires', ['tireTemp', 'tireWear', 'brakeTemp'], (x, y, z) => {
         const nameMap = {
             'frontLeft': 'front-left',
             'frontRight': 'front-right',
@@ -130,35 +130,52 @@ const VALUES = [
             const optimal = x?.[tire]?.optimalTemp;
             const cold = x?.[tire]?.coldTemp;
             const hot = x?.[tire]?.hotTemp;
+
+            const optimalBrake = z?.[tire]?.optimalTemp;
+            const coldBrake = z?.[tire]?.coldTemp;
+            const hotBrake = z?.[tire]?.hotTemp;
+            const currentBrake = z?.[tire]?.currentTemp;
             
-            const wear = y?.[tire];
+            let wear = y?.[tire];
+            wear = wear == undefined ? 0 : wear == -1 ? 1 : wear; // undefined == puncture
 
             for (let i = 1; i <= 3; i++) {
                 const side = ['left', 'center', 'right'][i - 1];
                 const text = document.getElementById(`${name}-temp-${i}`);
                 const progress = document.querySelector(`#${name}-${i} progress`);
-                progress.value = wear == -1 || wear == undefined ? 1 : wear;
+                progress.value = wear;
+
+                document.getElementById(`${name}-wear`).innerText = `${Math.round(wear * 100)}%`;
 
                 const temp = x?.[tire]?.currentTemp?.[side];
 
                 if (temp == undefined) {
                     text.innerText = 'N/A';
-                    root.style.setProperty(`--${name}-${i}-color`, 'var(--tire-temp-color-normal)');
+                    root.style.setProperty(`--${name}-${i}-color`, 'var(--temp-color-normal)');
                     continue;
                 }
                 
                 text.innerText = `${Math.round(temp)}°`;
                 
-                if (optimal == undefined || cold == undefined || hot == undefined) {
-                    root.style.setProperty(`--${name}-${i}-color`, 'var(--tire-temp-color-normal)');
+                if (!valueIsValid(optimal) || !valueIsValid(cold) || !valueIsValid(hot) || !valueIsValid(temp)) {
+                    root.style.setProperty(`--${name}-${i}-color`, 'var(--temp-color-normal)');
                     continue;
                 }
-
                 root.style.setProperty(`--${name}-${i}-color`, lerpRGB3([0, 0, 255], [0, 255, 0], [255, 0, 0], (optimal - cold) / (hot - cold), (temp - cold) / (hot - cold)));
+
+                if (!valueIsValid(optimalBrake) || !valueIsValid(coldBrake) || !valueIsValid(hotBrake) || !valueIsValid(currentBrake)) {
+                    root.style.setProperty(`--${name}-brake-color`, 'var(--temp-color-normal)');
+                    continue;
+                }
+                root.style.setProperty(`--${name}-brake-color`, lerpRGB3([0, 0, 255], [0, 255, 0], [255, 0, 0], (optimalBrake - coldBrake) / (hotBrake - coldBrake), (currentBrake - coldBrake) / (hotBrake - coldBrake)));
             }
         }
     }),
 ];
+
+function valueIsValid(val) {
+    return val != undefined && val != -1;
+}
 
 ipcRenderer.on('data', (event, data) => {
     data = data[0];

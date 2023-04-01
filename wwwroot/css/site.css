@@ -10,23 +10,28 @@
   --fuel-to-add-color: var(--fuel-middle-color);
 
 
-  --tire-temp-color-normal: rgb(0, 0, 255);
+  --temp-color-normal: rgb(0, 0, 255);
 
-  --front-left-1-color: var(--tire-temp-color-normal);
-  --front-left-2-color: var(--tire-temp-color-normal);
-  --front-left-3-color: var(--tire-temp-color-normal);
+  --front-left-1-color: var(--temp-color-normal);
+  --front-left-2-color: var(--temp-color-normal);
+  --front-left-3-color: var(--temp-color-normal);
 
-  --front-right-1-color: var(--tire-temp-color-normal);
-  --front-right-2-color: var(--tire-temp-color-normal);
-  --front-right-3-color: var(--tire-temp-color-normal);
+  --front-right-1-color: var(--temp-color-normal);
+  --front-right-2-color: var(--temp-color-normal);
+  --front-right-3-color: var(--temp-color-normal);
 
-  --rear-left-1-color: var(--tire-temp-color-normal);
-  --rear-left-2-color: var(--tire-temp-color-normal);
-  --rear-left-3-color: var(--tire-temp-color-normal);
+  --rear-left-1-color: var(--temp-color-normal);
+  --rear-left-2-color: var(--temp-color-normal);
+  --rear-left-3-color: var(--temp-color-normal);
 
-  --rear-right-1-color: var(--tire-temp-color-normal);
-  --rear-right-2-color: var(--tire-temp-color-normal);
-  --rear-right-3-color: var(--tire-temp-color-normal);
+  --rear-right-1-color: var(--temp-color-normal);
+  --rear-right-2-color: var(--temp-color-normal);
+  --rear-right-3-color: var(--temp-color-normal);
+
+  --front-left-brake-color: var(--temp-color-normal);
+  --front-right-brake-color: var(--temp-color-normal);
+  --rear-left-brake-color: var(--temp-color-normal);
+  --rear-right-brake-color: var(--temp-color-normal);
 }
 
 
@@ -179,16 +184,75 @@ he#basic td {
   text-align: center;
 }
 
+
 .wheel {
   margin: 4px;
+  position: relative;
 }
+
+
+.wheel > span {
+  z-index: 1;
+  position: absolute;
+  width: calc(100% - 12px) !important;
+  margin: 0 !important;
+  font-size: 25px !important;
+}
+
+.wheel #front-left-wear,
+.wheel #rear-left-wear {
+  left: 12px !important;
+}
+.wheel #front-right-wear,
+.wheel #rear-right-wear {
+  right: 12px !important;
+}
+
+.wheel #front-left-wear,
+.wheel #front-right-wear {
+  bottom: 25px !important;
+}
+.wheel #rear-left-wear,
+.wheel #rear-right-wear {
+  top: 22px !important;
+}
+
+
+.wheel .brake-temp div {
+  width: 10px;
+  height: 40px;
+  margin-left: -2px;
+  border: 1px solid black;
+  border-radius: 5px;
+}
+.wheel .brake-temp,
+.wheel .brake-placeholder {
+  width: 10px !important;
+}
+
+.wheel #front-left-brake div {
+  background-color: var(--front-left-brake-color);
+  margin-left: -3px;
+}
+.wheel #front-right-brake div {
+  background-color: var(--front-right-brake-color);
+}
+.wheel #rear-left-brake div {
+  background-color: var(--rear-left-brake-color);
+
+  margin-left: -2px; /* no idea why this isn't -2px like the rest */
+}
+.wheel #rear-right-brake div {
+  background-color: var(--rear-right-brake-color);
+}
+
 
 .wheel table {
   table-layout: fixed;
   width: 27px;
 }
 
-.wheel td {
+.wheel td:not(.brake-temp) {
   height: 70px;
   width: 27px;
   padding: 0;
@@ -199,7 +263,7 @@ he#basic td {
   margin: 0px !important;
 }
 
-.wheel td:not(.tire-visual) {
+.wheel td:not(.tire-visual):not(.brake-temp) {
   height: max-content;
 }
 
@@ -207,7 +271,7 @@ he#basic td {
   transform: rotate(-90deg);
   width: 70px;
   height: 27px;
-  margin-left: -17px;
+  margin-left: -22px;
 }
 
 #tires progress::-webkit-progress-bar {
@@ -215,16 +279,16 @@ he#basic td {
   border: 0.5px solid black;
 }
 
-.wheel table tr td:nth-child(1) progress::-webkit-progress-value,
-.wheel table tr td:nth-child(1) progress::-webkit-progress-bar {
+.wheel table tr td.t1 progress::-webkit-progress-value,
+.wheel table tr td.t1 progress::-webkit-progress-bar {
   border-radius: 6px 6px 0px 0px !important;
 }
-.wheel table tr td:nth-child(2) progress::-webkit-progress-value,
-.wheel table tr td:nth-child(2) progress::-webkit-progress-bar {
+.wheel table tr td.t2 progress::-webkit-progress-value,
+.wheel table tr td.t2 progress::-webkit-progress-bar {
   border-radius: 0px 0px 0px 0px !important;
 }
-.wheel table tr td:nth-child(3) progress::-webkit-progress-value,
-.wheel table tr td:nth-child(3) progress::-webkit-progress-bar {
+.wheel table tr td.t3 progress::-webkit-progress-value,
+.wheel table tr td.t3 progress::-webkit-progress-bar {
   border-radius: 0px 0px 6px 6px !important;
 }
 

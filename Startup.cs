@@ -237,7 +237,7 @@ public class Startup
         
         if (data.FuelUseActive == 1 && lastFuel != -1)
         {
-            combo.AddFuelUsage(lastFuel - data.FuelLeft);
+            combo.AddFuelUsage(lastFuel - data.FuelLeft, data.LapTimePreviousSelf > 0);
         }
 
         File.WriteAllText(path, JsonConvert.SerializeObject(userData));

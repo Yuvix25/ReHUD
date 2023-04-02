@@ -11,7 +11,7 @@
     "appId": "com.yuvix.r3e-overlay",
     "productName": "R3E Electron Overlay",
     "copyright": "Copyright © 2023",
-    "buildVersion": "1.0.0",
+    "buildVersion": "0.0.1",
     "compression": "maximum",
     "directories": {
       "output": "../../../bin/Desktop"

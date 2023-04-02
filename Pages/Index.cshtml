@@ -5,7 +5,7 @@
 @* he = hud-element *@
 
 <div id="main-container" class="row">
-    <div class="row" id="fuel-and-tires">
+    <div class="row" id="fuel-damage-tires">
         <table id="tires">
             <tr>
                 <td id="front-left">
@@ -97,6 +97,25 @@
             </tr>
         </table>
 
+        <table id="damage">
+            <tr>
+                <td><span>Engine</span></td>
+                <td id="engine-damage"><progress max="1"></progress></td>
+            </tr>
+            <tr>
+                <td><span>Transmission</span></td>
+                <td id="transmission-damage"><progress max="1"></progress></td>
+            </tr>
+            <tr>
+                <td><span>Aerodynamics</span></td>
+                <td id="aerodynamics-damage"><progress max="1"></progress></td>
+            </tr>
+            <tr>
+                <td><span>Suspension</span></td>
+                <td id="suspension-damage"><progress max="1"></progress></td>
+            </tr>
+        </table>
+
         <div class="row" id="fuel-data">
             <he class="col sb">
                 <span></span>
@@ -144,7 +163,6 @@
                 <span class="label">Fuel To Add</span>
             </he>
         </div>
-
     </div>
 
 
@@ -180,7 +198,11 @@
                     <td><span id="brake-bias"></span></td>
                 </tr>
             </table>
-            <span id="gear"></span>
+            <div class="row sb" id="gear-and-assists">
+                <img src="~/tc.png" id="tc-icon" class="assist-icon">
+                <span id="gear"></span>
+                <img src="~/abs.png" id="abs-icon" class="assist-icon">
+            </div>
             <span id="speed"></span>
             <progress id="revs" max="100" value="0"></progress>
         </he>

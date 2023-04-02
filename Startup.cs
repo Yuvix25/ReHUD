@@ -64,6 +64,7 @@ public class Startup
         Electron.App.CommandLine.AppendSwitch("enable-transparent-visuals");
         Electron.App.CommandLine.AppendSwitch("disable-gpu-compositing");
 
+        // double factor = (await Electron.Screen.GetPrimaryDisplayAsync()).WorkAreaSize.Width / 1920.0;
         var window = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
         {
             Resizable = false,

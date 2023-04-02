@@ -43,6 +43,21 @@
   --front-right-brake-color: var(--temp-color-normal);
   --rear-left-brake-color: var(--temp-color-normal);
   --rear-right-brake-color: var(--temp-color-normal);
+
+  --abs-grayscale: 1;
+  --abs-brightness: 1;
+  --tc-grayscale: 1;
+  --tc-brightness: 1;
+
+
+  --damage-color-ok: white;
+  --damage-color-partial: rgb(235, 121, 14);
+  --damage-color-full: rgb(255, 0, 0);
+
+  --engine-damage-color: white;
+  --aerodynamics-damage-color: white;
+  --transmission-damage-color: white;
+  --suspension-damage-color: white;
 }
 
 
@@ -53,6 +68,11 @@
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -ms-user-drag: none;
 }
 
 body,
@@ -139,20 +159,20 @@ he#basic td {
   border: 1px solid white;
 }
 
-#fuel-and-tires {
+#fuel-damage-tires {
   align-items: flex-end;
   gap: 15px;
 }
 
-#fuel-and-tires he {
+#fuel-damage-tires he {
   padding: 2px;
 }
 
-#fuel-and-tires span {
+#fuel-data span {
   font-size: 26px;
 }
 
-#fuel-and-tires span.label {
+#fuel-damage-tires span.label {
   font-size: 17px;
 }
 
@@ -193,11 +213,13 @@ he#basic td {
 
 #tires {
   text-align: center;
+  border-spacing: 7px;
+  border-collapse: separate;
+  margin: -7px;
 }
 
 
 .wheel {
-  margin: 4px;
   position: relative;
 }
 
@@ -232,18 +254,19 @@ he#basic td {
 .wheel .brake-temp div {
   width: 10px;
   height: 40px;
-  margin-left: -2px;
+  margin-left: -1px;
   border: 1px solid black;
   border-radius: 5px;
 }
 .wheel .brake-temp,
 .wheel .brake-placeholder {
-  width: 10px !important;
+  width: 12px !important;
+  padding: 0;
 }
 
 .wheel #front-left-brake div {
   background-color: var(--front-left-brake-color);
-  margin-left: -3px;
+  margin-left: 0px;
 }
 .wheel #front-right-brake div {
   background-color: var(--front-right-brake-color);
@@ -251,7 +274,7 @@ he#basic td {
 .wheel #rear-left-brake div {
   background-color: var(--rear-left-brake-color);
 
-  margin-left: -2px; /* no idea why this isn't -2px like the rest */
+  margin-left: 0px;
 }
 .wheel #rear-right-brake div {
   background-color: var(--rear-right-brake-color);
@@ -306,7 +329,9 @@ he#basic td {
 
 
 
-.wheel table tr td.t1 progress::-webkit-progress-value,
+.wheel table tr td.t1 progress::-webkit-progress-value {
+  border-radius: 5px 5px 0px 0px !important;
+}
 .wheel table tr td.t1 progress::-webkit-progress-bar {
   border-radius: 6px 6px 0px 0px !important;
   border-bottom: 1px solid black !important;
@@ -317,7 +342,9 @@ he#basic td {
   border-bottom: 1px solid black !important;
   border-top: 1px solid black !important;
 }
-.wheel table tr td.t3 progress::-webkit-progress-value,
+.wheel table tr td.t3 progress::-webkit-progress-value {
+  border-radius: 0px 0px 5px 5px !important;
+}
 .wheel table tr td.t3 progress::-webkit-progress-bar {
   border-radius: 0px 0px 6px 6px !important;
   border-top: 1px solid black !important;
@@ -369,13 +396,40 @@ he#basic td {
 }
 
 
+#basic table {
+  width: 100%;
+}
 
+#basic table td {
+  width: 50%;
+}
+
+#gear-and-assists {
+  align-items: center;
+}
+
+.assist-icon {
+  width: 50px;
+}
+
+#abs-icon {
+  margin-right: 16px;
+  margin-left: 8px;
+  filter: grayscale(var(--abs-grayscale)) brightness(var(--abs-brightness));
+}
+#tc-icon {
+  margin-left: 13px;
+  margin-right: 11px;
+  filter: grayscale(var(--tc-grayscale)) brightness(var(--tc-brightness));
+}
 
 span#gear {
   font-size: 130px;
+  margin: 0 !important;
   margin-top: -3px !important;
   color: var(--revs-color);
 }
+
 
 span#speed {
   font-size: 37px;
@@ -453,5 +507,41 @@ progress#revs::-webkit-progress-value {
   width: 90px;
   height: 90px;
   overflow: hidden;
+}
+
+
+
+#damage {
+  margin-bottom: 7px;
+}
+
+#damage td * {
+  vertical-align: middle;
+}
+
+#damage tr {
+  line-height: 25px;
+}
+
+#damage span {
+  margin: 0 !important;
+  margin-right: 15px !important;
+}
+
+#damage progress {
+  height: 13px;
+}
+
+#engine-damage progress::-webkit-progress-value {
+  background-color: var(--engine-damage-color);
+}
+#transmission-damage progress::-webkit-progress-value {
+  background-color: var(--transmission-damage-color);
+}
+#suspension-damage progress::-webkit-progress-value {
+  background-color: var(--suspension-damage-color);
+}
+#aerodynamics-damage progress::-webkit-progress-value {
+  background-color: var(--aerodynamics-damage-color);
 }
 

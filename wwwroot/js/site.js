@@ -175,7 +175,7 @@ const VALUES = [
                 
                 const blackLevel = 0.05;
                 // 3 to 5
-                root.style.setProperty(`--dirty-${name}-size`, dirt == 0 ? '1px' : `${dirt * 2 + 3}px`);
+                root.style.setProperty(`--dirty-${name}-size`, dirt < blackLevel ? '1px' : `${dirt * 2 + 3}px`);
                 root.style.setProperty(`--dirty-${name}-color`, dirt < blackLevel ? `black` : lerpRGB3([0, 0, 0], [130, 50, 50], [255, 50, 50], 0.15, (dirt - blackLevel) / 0.9));
             }
         }
@@ -205,6 +205,33 @@ const VALUES = [
 
         const steerAngle = sRaw * sRange / 2;
         steer.style.transform = `rotate(${steerAngle}deg)`;
+    }),
+
+    new Value('damage', ['carDamage'], (x) => {
+        for (const part of ['engine', 'transmission', 'suspension', 'aerodynamics']) {
+            const element = document.querySelector(`#${part}-damage progress`);
+            let value = x[part];
+            if (value == null)
+                value = 0;
+            if (value == -1)
+                value = 1;
+
+            element.value = value === 0 ? 1 : value;
+            root.style.setProperty(`--${part}-damage-color`, value == 0 ? 'var(--damage-color-full)' : value == 1 ? 'var(--damage-color-ok)' : 'var(--damage-color-partial)');
+        }
+    }),
+
+    new Value('assist', ['aidSettings'], (x) => {
+        let tc = x?.tc;
+        let abs = x?.abs;
+
+        tc = valueIsValid(tc) ? tc : 0;
+        abs = valueIsValid(abs) ? abs : 0;
+
+        root.style.setProperty('--tc-grayscale', tc == 5 ? 0 : 1);
+        root.style.setProperty('--abs-grayscale', abs == 5 ? 0 : 1);
+        root.style.setProperty('--tc-brightness', tc == 0 ? 1 : 10);
+        root.style.setProperty('--abs-brightness', abs == 0 ? 1 : 10);
     }),
 ];
 

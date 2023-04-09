@@ -23,8 +23,6 @@ public class Startup
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        // Electron.App.CommandLine.AppendSwitch("disable-gpu");
-
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
@@ -104,7 +102,7 @@ public class Startup
 
 
         window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
-        
+
         if (!env.IsDevelopment())
             window.SetIgnoreMouseEvents(true);
 
@@ -112,6 +110,15 @@ public class Startup
         {
             bool? isShown = null;
             Thread.Sleep(1000);
+            if (env.IsDevelopment())
+                Electron.IpcMain.Send(window, "show");
+
+            // try {
+            //     Console.WriteLine(R3E.Utilities.GetDataFilePath());
+            // } catch (Exception e) {
+            //     Console.WriteLine(e);
+            // }
+
             Thread thread = new Thread(() => memory.Run((data) =>
             {
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
@@ -130,7 +137,7 @@ public class Startup
                 }
 
                 lastLap = data.CompletedLaps;
-                bool notDriving = data.GameInMenus == 1 || data.GameInReplay == 1 || data.GamePaused == 1 || data.SessionType == -1;
+                bool notDriving = data.GameInMenus == 1 || (data.GamePaused == 1 && data.GameInReplay == 0) || data.SessionType == -1;
                 if (!notDriving || env.IsDevelopment())
                     Electron.IpcMain.Send(window, "data", extraData);
                 

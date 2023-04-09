@@ -159,12 +159,12 @@ he#basic td {
   border: 1px solid white;
 }
 
-#fuel-damage-tires {
+#bottom-left-group {
   align-items: flex-end;
   gap: 15px;
 }
 
-#fuel-damage-tires he {
+#bottom-left-group he {
   padding: 2px;
 }
 
@@ -172,7 +172,7 @@ he#basic td {
   font-size: 26px;
 }
 
-#fuel-damage-tires span.label {
+#bottom-left-group span.label {
   font-size: 17px;
 }
 
@@ -447,7 +447,7 @@ progress#revs::-webkit-progress-value {
 }
 
 
-#basic-and-inputs {
+#bottom-right-group {
   gap: 5px;
   align-items: flex-end;
   --progress-width: 25px;
@@ -466,9 +466,14 @@ progress#revs::-webkit-progress-value {
 
 #driver-inputs progress {
   transform: rotate(-90deg);
-  width: 121px;
+  width: 119px;
   height: var(--progress-width);
-  margin-left: -48px;
+  margin-left: -47px;
+}
+
+#driver-inputs progress::-webkit-progress-bar {
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2)
 }
 
 #throttle-progress::-webkit-progress-value {
@@ -496,7 +501,7 @@ progress#revs::-webkit-progress-value {
 
 #input-progress td {
   width: var(--progress-width);
-  height: 121px;
+  height: 119px;
   padding: 0px;
 }
 
@@ -545,3 +550,55 @@ progress#revs::-webkit-progress-value {
   background-color: var(--aerodynamics-damage-color);
 }
 
+
+
+#relative-viewer table {
+  border-spacing: 3px;
+  border-collapse: separate;
+  table-layout: fixed;
+  height: 236px;
+}
+
+#relative-viewer td span {
+  font-size: 17px;
+  white-space: nowrap;
+  display: block;
+}
+
+#relative-viewer td.name span {
+  margin-left: 0px !important;
+  text-align: left;
+  max-width: 130px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#relative-viewer td.place-class span {
+  margin-left: 7px !important;
+  margin-right: 7px !important;
+}
+
+#relative-viewer td.car-name span {
+  color: gray;
+  font-weight: 300;
+}
+
+#relative-viewer td.time-delta span {
+  width: 50px !important;
+  text-align: right;
+}
+
+#relative-viewer td.class-color {
+  padding: 0;
+  padding-right: 5px;
+}
+
+#relative-viewer td.class-img {
+  padding: 0;
+  display: block;
+  width: 29px;
+  height: 26px;
+}
+#relative-viewer td.class-img img {
+  width: 26px;
+}

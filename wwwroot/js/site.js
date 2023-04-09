@@ -43,6 +43,60 @@ function lerpRGB3(color1, color2, color3, middle, t) {
     return lerpRGB(color2, color3, (t - middle) / (1 - middle));
 }
 
+function lerpRGBn(colors, t) {
+    const middle = 1 / (colors.length - 1);
+    const index = Math.floor(t / middle);
+    return lerpRGB(colors[index], index < colors.length - 1 ? colors[index + 1] : [0, 0, 0], t % middle / middle);
+}
+
+/**
+ * @param {Uint8Array} array
+ * @return {string}
+ */
+function uint8ArrayToString(array) {
+    return String.fromCharCode.apply(null, array);
+}
+
+
+function insertCell(row, value, className) {
+    let cell;
+    if (row.getElementsByClassName(className).length > 0) {
+        cell = row.getElementsByClassName(className)[0];
+    } else {
+        cell = row.insertCell();
+        if (value != null)
+            cell.innerHTML = '<span></span>';
+    }
+
+    if (value != null)
+        cell.firstChild.innerText = value;
+
+    if (className != null)
+        cell.className = className;
+    return cell;
+}
+
+
+
+const RELATIVE_LENGTH = 8;
+const CLASS_COLORS = [
+    [255, 51, 51],
+    [255, 157, 51],
+    [246, 255, 51],
+    [140, 255, 51],
+    [51, 255, 68],
+    [51, 255, 174],
+    [51, 230, 255],
+    [51, 123, 255],
+    [85, 51, 255],
+];
+
+
+let r3eData = null;
+(async () => {
+    r3eData = await (await fetch('https://raw.githubusercontent.com/sector3studios/r3e-spectator-overlay/master/r3e-data.json')).json();
+})();
+
 const root = document.querySelector(':root');
 const VALUES = [
     new Value('speed', 'carSpeed', (x) => Math.round(x * 3.6)),
@@ -61,7 +115,7 @@ const VALUES = [
         document.getElementById(id).value = current;
         document.getElementById(id).max = max;
 
-        if (current < upshift - (max - upshift) * 2) {
+        if (current < upshift - (max - upshift) * 2.5) {
             root.style.setProperty('--revs-color', 'var(--revs-color-normal)');
         } else if (current < upshift) {
             root.style.setProperty('--revs-color', 'var(--revs-color-upshift)');
@@ -233,7 +287,131 @@ const VALUES = [
         root.style.setProperty('--tc-brightness', tc == 0 ? 1 : 10);
         root.style.setProperty('--abs-brightness', abs == 0 ? 1 : 10);
     }),
+
+    new Value('relative', ['driverData', 'position'], (all, place) => {
+        const relative = document.getElementById('relative-viewer');
+        if (all == null || place == null) {
+            relative.style.display = 'none';
+            return;
+        }
+        relative.style.display = 'block';
+        const relativeTable = relative.getElementsByTagName('tbody')[0];
+
+        place--;
+
+
+        let driverCount = 0;
+        const classes = [];
+        for (let i = 0; i < all.length; i++) {
+            const driver = all[i];
+            if (driver.place == -1)
+                break;
+            
+            driverCount++;
+            const classIndex = driver.driverInfo.classPerformanceIndex;
+            if (!classes.includes(classIndex))
+                classes.push(classIndex);
+        }
+        classes.sort((a, b) => a - b);
+        const classMap = {};
+        for (let i = 0; i < classes.length; i++) {
+            classMap[classes[i]] = i;
+        }
+
+        const deltasFront = []; // includes self
+        const deltasBehind = [];
+        for (let i = place; i >= 0; i--) {
+            const driver = all[i];
+            if (driver.place == -1)
+                break;
+
+            if (i == place) {
+                deltasFront.push(0);
+                continue
+            }
+            if (deltasFront.length < RELATIVE_LENGTH) {
+                deltasFront.push(driver.timeDeltaBehind + (deltasFront.length > 0 ? deltasFront[deltasFront.length - 1] : 0));
+            } else {
+                break;
+            }
+        }
+        for (let i = place + 1; i < all.length; i++) {
+            const driver = all[i];
+            if (driver.place == -1)
+                break;
+
+            if (deltasBehind.length < RELATIVE_LENGTH) {
+                deltasBehind.push(driver.timeDeltaFront + (deltasBehind.length > 0 ? deltasBehind[deltasBehind.length - 1] : 0));
+            } else {
+                break;
+            }
+        }
+
+        // const halfLength = Math.ceil((RELATIVE_LENGTH - 1) / 2);
+        const halfLengthTop = Math.ceil((RELATIVE_LENGTH - 1) / 2);
+        const halfLengthBottom = Math.floor((RELATIVE_LENGTH - 1) / 2);
+        let start = 0, end = driverCount;
+        if (deltasFront.length > halfLengthTop && deltasBehind.length >= halfLengthBottom) {
+            start = place - halfLengthTop;
+            end = place + halfLengthBottom + 1;
+        } else if (deltasFront.length <= halfLengthTop) {
+            start = 0;
+            end = Math.min(driverCount, RELATIVE_LENGTH);
+        } else if (deltasBehind.length < halfLengthBottom) {
+            start = Math.max(0, driverCount - RELATIVE_LENGTH);
+            end = driverCount;
+        }
+
+        for (let i = start; i < end; i++) {
+            const driver = all[i];
+            if (driver.place == -1)
+                break;
+
+            const row = relativeTable.children.length > i - start ? relativeTable.children[i - start] : relativeTable.insertRow(i - start);
+            row.dataset.classIndex = driver.driverInfo.classPerformanceIndex;
+
+
+
+            const classId = driver.driverInfo.classId;
+            const classImgCell = insertCell(row, undefined, 'class-img');
+            let classImg = classImgCell.children[0];
+            if (classImg == null) {
+                classImg = document.createElement('img');
+                classImgCell.appendChild(classImg);
+            }
+            classImg.src = `https://game.raceroom.com/store/image_redirect?id=${classId}&size=thumb`;
+            
+            const classColor = lerpRGBn(CLASS_COLORS, classMap[driver.driverInfo.classPerformanceIndex] / (classes.length - 1));
+            const colorCell = insertCell(row, undefined, 'class-color');
+            colorCell.style.backgroundColor = classColor;
+
+            insertCell(row, driver.placeClass, 'place-class');
+
+            const nameSplitted = uint8ArrayToString(driver.driverInfo.name).split(' ');
+            let name = '';
+            if (nameSplitted.length != 0) {
+                for (let i = 0; i < nameSplitted.length - 1; i++) {
+                    name += nameSplitted[i][0] + '. ';
+                }
+                name += nameSplitted[nameSplitted.length - 1];
+            }
+            insertCell(row, name, 'name');
+
+            let carName = '';
+            if (r3eData != null) {
+                const car = r3eData.cars[driver.driverInfo.modelId];
+                if (car != null) {
+                    carName = car.Name;
+                }
+            }
+            insertCell(row, carName, 'car-name');
+    
+            const delta = (i <= place ? -deltasFront[place - i] : deltasBehind[i - place - 1]).toFixed(1);
+            insertCell(row, delta, 'time-delta');
+        }
+    }),
 ];
+
 
 function valueIsValid(val) {
     return val != undefined && val != -1;
@@ -250,9 +428,9 @@ ipcRenderer.on('data', (event, data) => {
     }
 });
 
-ipcRenderer.on('hide', (event, data) => {
+ipcRenderer.on('hide', () => {
     document.body.style.display = 'none';
 });
-ipcRenderer.on('show', (event, data) => {
+ipcRenderer.on('show', () => {
     document.body.style.display = 'block';
 });

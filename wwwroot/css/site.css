@@ -92,7 +92,7 @@ table {
 
 #main-container {
   width: calc(100vw - 14px);
-  height: calc(100vh - 14px);
+  height: calc(100vh - 14px) !important;
   margin: 7px;
   position: absolute;
   bottom: 0;
@@ -119,14 +119,14 @@ he {
 }
 
 .sb {
-  justify-content: space-between;
+  justify-content: space-between !important;
 }
 
 span {
   width: max-content !important;
   text-align: center;
   margin: 2px 5px 2px 5px !important;
-  font-weight: 500;
+  font-weight: 400;
   font-size: 20px;
   color: white;
   font-family: 'Oswald', sans-serif;
@@ -154,7 +154,9 @@ progress::-webkit-progress-bar {
   border-radius: 6px; /* 2px */
 }
 
-
+he#basic {
+  width: 217px !important;
+}
 he#basic td {
   border: 1px solid white;
 }
@@ -428,6 +430,7 @@ span#gear {
   margin: 0 !important;
   margin-top: -3px !important;
   color: var(--revs-color);
+  width: 69px !important;
 }
 
 
@@ -553,14 +556,19 @@ progress#revs::-webkit-progress-value {
 
 
 #relative-viewer table {
-  border-spacing: 3px;
-  border-collapse: separate;
   table-layout: fixed;
   height: 236px;
+  border-spacing: 0 2px;
+  border-collapse: separate;
+}
+
+#relative-viewwer td {
+  padding: 1px;
 }
 
 #relative-viewer td span {
   font-size: 17px;
+  line-height: 1.2;
   white-space: nowrap;
   display: block;
 }
@@ -574,7 +582,7 @@ progress#revs::-webkit-progress-value {
 }
 
 #relative-viewer td.place-class span {
-  margin-left: 7px !important;
+  margin-left: 4px !important;
   margin-right: 7px !important;
 }
 
@@ -596,9 +604,39 @@ progress#revs::-webkit-progress-value {
 #relative-viewer td.class-img {
   padding: 0;
   display: block;
-  width: 29px;
-  height: 26px;
+  width: 30px;
+  height: 24px; /* padding 1px */
 }
 #relative-viewer td.class-img img {
   width: 26px;
 }
+
+
+#time-left-container {
+  align-items: center;
+  margin: 10px;
+}
+
+#time-left span {
+  margin: 0 !important;
+  margin-right: 1px !important;
+}
+
+#time-left span, #laps-left {
+  font-size: 45px;
+}
+
+#time-left-hours::after {
+  content: "h";
+}
+#time-left-minutes::after {
+  content: "m";
+}
+#time-left-seconds::after {
+  content: "s";
+}
+#time-left span::after, #session-type {
+  color: #e5e5e5;
+  font-size: 23px;
+}
+

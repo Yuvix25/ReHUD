@@ -119,16 +119,22 @@ public class Startup
             //     Console.WriteLine(e);
             // }
 
+            int iter = 0;
+            ExtraData extraData = new ExtraData();
             Thread thread = new Thread(() => memory.Run((data) =>
             {
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
-                ExtraData extraData;
+                // ExtraData extraData;
                 extraData.RawData = data;
-                extraData.FuelPerLap = combination.GetAverageFuelUsage();
-                extraData.FuelLastLap = combination.GetLastLapFuelUsage();
-                extraData.AverageLapTime = combination.GetAverageLapTime();
-                extraData.BestLapTime = combination.GetBestLapTime();
-                extraData.LapsUntilFinish = GetLapsUntilFinish(data, combination);
+                if (iter % (1000 / R3E.SharedMemory.timeInterval.Milliseconds) * 10 == 0) {
+                    extraData.FuelPerLap = combination.GetAverageFuelUsage();
+                    extraData.FuelLastLap = combination.GetLastLapFuelUsage();
+                    extraData.AverageLapTime = combination.GetAverageLapTime();
+                    extraData.BestLapTime = combination.GetBestLapTime();
+                    extraData.LapsUntilFinish = GetLapsUntilFinish(data, combination);
+                    iter = 0;
+                }
+                iter++;
 
                 try {
                     SaveData(data);
@@ -170,13 +176,18 @@ public class Startup
     private double GetLapsUntilFinish(R3E.Data.Shared data, R3E.Combination combination)
     {
         double fraction = data.LapDistanceFraction == -1 ? 0 : data.LapDistanceFraction;
+        R3E.Data.DriverData? leader_ = GetLeader(data);
+        if (leader_ == null)
+        {
+            return -1;
+        }
+        R3E.Data.DriverData leader = leader_.Value;
+        if (leader.FinishStatus == 1) {
+            return fraction;
+        }
         if (data.SessionTimeRemaining != -1) {
             double referenceLap;
-            R3E.Data.DriverData? leader_ = GetLeader(data);
-            if (leader_ == null) {
-                return -1;
-            }
-            R3E.Data.DriverData leader = leader_.Value;
+            
             if (data.LapTimeBestLeader > 0 && leader.CompletedLaps > 1) {
                 referenceLap = data.LapTimeBestLeader;
             } else if (data.LapTimeBestSelf > 0) {

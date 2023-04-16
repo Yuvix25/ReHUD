@@ -21,7 +21,7 @@ namespace R3E
         private Shared _data;
         private MemoryMappedFile? _file;
         private byte[]? _buffer;
-        private readonly TimeSpan _timeInterval = TimeSpan.FromMilliseconds(17); // ~60fps
+        public static readonly TimeSpan timeInterval = TimeSpan.FromMilliseconds(17); // ~60fps
 
         public void Dispose()
         {
@@ -40,7 +40,7 @@ namespace R3E
             {
                 var timeNow = DateTime.UtcNow;
 
-                if (timeNow.Subtract(timeLast) < _timeInterval)
+                if (timeNow.Subtract(timeLast) < timeInterval)
                 {
                     Thread.Sleep(1);
                     continue;

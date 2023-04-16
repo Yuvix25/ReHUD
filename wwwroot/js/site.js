@@ -54,7 +54,8 @@ function lerpRGBn(colors, t) {
  * @return {string}
  */
 function uint8ArrayToString(array) {
-    return String.fromCharCode.apply(null, array);
+    const decoder = new TextDecoder("utf-8");
+    return decoder.decode(Buffer.from(array));
 }
 
 
@@ -97,9 +98,14 @@ let r3eData = null;
     r3eData = await (await fetch('https://raw.githubusercontent.com/sector3studios/r3e-spectator-overlay/master/r3e-data.json')).json();
 })();
 
+/**
+ * @type {Object.<string, Driver>}
+ */
+let drivers = {};
+
 const root = document.querySelector(':root');
 const VALUES = [
-    new Value('speed', 'carSpeed', (x) => Math.round(x * 3.6)),
+    new Value('speed', 'carSpeed', (x) => typeof x !== 'number' ? 0 : Math.round(x * 3.6)),
     new Value('gear', 'gear', (x) => x == undefined || x == 0 ? 'N' : x == -1 ? 'R' : x),
     new Value('engine-map', 'engineMapSetting', (x) => `EM: ${x == -1 ? 5 : x}`),
     new Value('traction-control', ['tractionControlSetting', 'tractionControlPercent'], (x, y) =>
@@ -288,7 +294,7 @@ const VALUES = [
         root.style.setProperty('--abs-brightness', abs == 0 ? 1 : 10);
     }),
 
-    new Value('relative', ['driverData', 'position'], (all, place) => {
+    new Value('relative', ['driverData', 'position', 'layoutLength', 'sessionPhase'], (all, place, trackLength, phase) => {
         const relative = document.getElementById('relative-viewer');
         if (all == null || place == null) {
             relative.style.display = 'none';
@@ -299,62 +305,75 @@ const VALUES = [
 
         place--;
 
+        // 1 - garage, 2 - gridwalk, 3 - formation, 4 - countdown, 5 - green flag, 6 - checkered flag
+        if (phase < 3) {
+            relativeTable.innerHTML = '';
+            drivers = {};
+            return;
+        }
 
         let driverCount = 0;
         const classes = [];
+        let myUid = null;
         for (let i = 0; i < all.length; i++) {
             const driver = all[i];
             if (driver.place == -1)
                 break;
-            
+
             driverCount++;
             const classIndex = driver.driverInfo.classPerformanceIndex;
             if (!classes.includes(classIndex))
                 classes.push(classIndex);
+
+
+            const uid = JSON.stringify(driver.driverInfo);
+            driver.driverInfo.uid = uid;
+            if (i == place)
+                myUid = uid;
+            
+            if (!(uid in drivers)) {
+                drivers[uid] = new Driver(uid, trackLength, driver.completedLaps);
+            }
+
+            if (drivers[uid].completedLaps != driver.completedLaps) {
+                const prevSectors = driver.sectorTimePreviousSelf;
+                drivers[uid].endLap(prevSectors.sector1 + prevSectors.sector2 + prevSectors.sector3);
+            }
+            drivers[uid].addDeltaPoint(driver.lapDistance, new Date().getTime() / 1000, driver.completedLaps);
         }
+        all = all.slice(0, driverCount);
+
+        const deltasFront = [];
+        const deltasBehind = [];
+        for (let i = 0; i < all.length; i++) {
+            const uid = all[i].driverInfo.uid;
+            const deltaAhead = drivers[myUid].getDeltaToDriverAhead(drivers[uid]);
+            const deltaBehind = drivers[myUid].getDeltaToDriverBehind(drivers[uid]);
+            if (deltaAhead == null)
+                deltasBehind.push([all[i], deltaBehind]);
+            else if (deltaBehind == null)
+                deltasFront.push([all[i], -deltaAhead]);
+            else if (deltaAhead < deltaBehind)
+                deltasFront.push([all[i], -deltaAhead]);
+            else
+                deltasBehind.push([all[i], deltaBehind]);
+        }
+        deltasFront.sort((a, b) => a[1] - b[1]);
+        deltasBehind.sort((a, b) => a[1] - b[1]);
+
         classes.sort((a, b) => a - b);
         const classMap = {};
         for (let i = 0; i < classes.length; i++) {
             classMap[classes[i]] = i;
         }
 
-        const deltasFront = []; // includes self
-        const deltasBehind = [];
-        for (let i = place; i >= 0; i--) {
-            const driver = all[i];
-            if (driver.place == -1)
-                break;
-
-            if (i == place) {
-                deltasFront.push(0);
-                continue
-            }
-            if (deltasFront.length < RELATIVE_LENGTH) {
-                deltasFront.push(driver.timeDeltaBehind + (deltasFront.length > 0 ? deltasFront[deltasFront.length - 1] : 0));
-            } else {
-                break;
-            }
-        }
-        for (let i = place + 1; i < all.length; i++) {
-            const driver = all[i];
-            if (driver.place == -1)
-                break;
-
-            if (deltasBehind.length < RELATIVE_LENGTH) {
-                deltasBehind.push(driver.timeDeltaFront + (deltasBehind.length > 0 ? deltasBehind[deltasBehind.length - 1] : 0));
-            } else {
-                break;
-            }
-        }
-
-        // const halfLength = Math.ceil((RELATIVE_LENGTH - 1) / 2);
         const halfLengthTop = Math.ceil((RELATIVE_LENGTH - 1) / 2);
         const halfLengthBottom = Math.floor((RELATIVE_LENGTH - 1) / 2);
         let start = 0, end = driverCount;
-        if (deltasFront.length > halfLengthTop && deltasBehind.length >= halfLengthBottom) {
-            start = place - halfLengthTop;
-            end = place + halfLengthBottom + 1;
-        } else if (deltasFront.length <= halfLengthTop) {
+        if (deltasFront.length >= halfLengthTop && deltasBehind.length >= halfLengthBottom) {
+            start = deltasFront.length - halfLengthTop;
+            end = deltasFront.length + halfLengthBottom + 1;
+        } else if (deltasFront.length < halfLengthTop) {
             start = 0;
             end = Math.min(driverCount, RELATIVE_LENGTH);
         } else if (deltasBehind.length < halfLengthBottom) {
@@ -362,13 +381,22 @@ const VALUES = [
             end = driverCount;
         }
 
+        const mergedDeltas = [...deltasFront, ...deltasBehind];
         for (let i = start; i < end; i++) {
-            const driver = all[i];
+            if (mergedDeltas[i] == null)
+                break;
+            const driver = mergedDeltas[i][0];
             if (driver.place == -1)
                 break;
 
             const row = relativeTable.children.length > i - start ? relativeTable.children[i - start] : relativeTable.insertRow(i - start);
             row.dataset.classIndex = driver.driverInfo.classPerformanceIndex;
+
+            if (driver.place == place + 1) {
+                row.style.backgroundColor = 'rgba(255, 255, 0, 0.4)';
+            } else {
+                row.style.backgroundColor = '';
+            }
 
 
 
@@ -381,7 +409,7 @@ const VALUES = [
             }
             classImg.src = `https://game.raceroom.com/store/image_redirect?id=${classId}&size=thumb`;
             
-            const classColor = lerpRGBn(CLASS_COLORS, classMap[driver.driverInfo.classPerformanceIndex] / (classes.length - 1));
+            const classColor = lerpRGBn(CLASS_COLORS, classMap[driver.driverInfo.classPerformanceIndex] / classes.length);
             const colorCell = insertCell(row, undefined, 'class-color');
             colorCell.style.backgroundColor = classColor;
 
@@ -406,8 +434,67 @@ const VALUES = [
             }
             insertCell(row, carName, 'car-name');
     
-            const delta = (i <= place ? -deltasFront[place - i] : deltasBehind[i - place - 1]).toFixed(1);
+            const delta = driver.place == place + 1 ? '' : mergedDeltas[i][1].toFixed(1);
             insertCell(row, delta, 'time-delta');
+        }
+
+        while (relativeTable.children.length > end - start) {
+            relativeTable.deleteRow(relativeTable.children.length - 1);
+        }
+    }),
+
+    new Value('time-left', ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps', 'lapDistance', 'driverData'], (timeLeft, lapsLeft, sessionType, myLaps, myDistance, driverData) => {
+        const timeLeftElement = document.getElementById('time-left');
+        const lapsLeftElement = document.getElementById('laps-left');
+        const sessionTypeElement = document.getElementById('session-type');
+
+        if (!valueIsValid(myLaps))
+            myLaps = 0;
+
+        if (timeLeft == -1 && lapsLeft >= 0) {
+            timeLeftElement.style.display = 'none';
+            lapsLeftElement.style.display = 'block';
+
+            sessionType = 4;
+
+            const leaderDistance = driverData[0].lapDistance;
+            let leaderLaps = driverData[0].completedLaps;
+            if (!valueIsValid(leaderLaps))
+                leaderLaps = 0;
+            lapsLeft -= leaderLaps - myLaps;
+            if (leaderDistance < myDistance && myLaps != leaderLaps) {
+                lapsLeft++;
+            }
+            lapsLeftElement.innerText = `${myLaps}/${lapsLeft}`;
+        } else if (timeLeft >= 0) {
+            timeLeftElement.style.display = 'block';
+            lapsLeftElement.style.display = 'none';
+            timeLeftElement.children[0].innerText = String(Math.floor(timeLeft / 3600)); // hours
+            timeLeftElement.children[1].innerText = String(Math.floor(timeLeft / 60) % 60).padStart(2, '0'); // minutes
+            timeLeftElement.children[2].innerText = String(Math.floor(timeLeft) % 60).padStart(2, '0'); // seconds
+        }
+
+        if (sessionType == -1) {
+            sessionTypeElement.style.display = 'none';
+        } else {
+            sessionTypeElement.style.display = 'block';
+        }
+        switch (sessionType) {
+            case 0:
+                sessionTypeElement.innerText = 'Practice';
+                break;
+            case 1:
+                sessionTypeElement.innerText = 'Qualifying';
+                break;
+            case 2:
+                sessionTypeElement.innerText = 'Race';
+                break;
+            case 3:
+                sessionTypeElement.innerText = 'Warmup';
+                break;
+            case 4:
+                sessionTypeElement.innerText = 'Lap';
+                break;
         }
     }),
 ];
@@ -417,7 +504,10 @@ function valueIsValid(val) {
     return val != undefined && val != -1;
 }
 
+let isShown = true;
 ipcRenderer.on('data', (event, data) => {
+    if (!isShown)
+        return;
     data = data[0];
     for (const value of VALUES) {
         const element = document.getElementById(value.elementId);
@@ -429,8 +519,10 @@ ipcRenderer.on('data', (event, data) => {
 });
 
 ipcRenderer.on('hide', () => {
+    isShown = false;
     document.body.style.display = 'none';
 });
 ipcRenderer.on('show', () => {
+    isShown = true;
     document.body.style.display = 'block';
 });

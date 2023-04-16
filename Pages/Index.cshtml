@@ -4,212 +4,231 @@
 
 @* he = hud-element *@
 
-<div id="main-container" class="row">
-    <div class="row" id="bottom-left-group">
-        <table id="tires">
-            <tr>
-                <td id="front-left">
-                    <div class="row wheel">
-                        <span id="front-left-wear"></span>
-                        <table>
-                            <tr>
-                                <td class="brake-placeholder"></td>
-                                <td><span id="front-left-temp-1"></span></td>
-                                <td><span id="front-left-temp-2"></span></td>
-                                <td><span id="front-left-temp-3"></span></td>
-                            </tr>
-                            <tr>
-                                <td class="brake-temp" id="front-left-brake">
-                                    <div></div>
-                                </td>
-                                <td id="front-left-1" class="tire-visual t1"><progress max="1"></progress></td>
-                                <td id="front-left-2" class="tire-visual t2"><progress max="1"></progress></td>
-                                <td id="front-left-3" class="tire-visual t3"><progress max="1"></progress></td>
-                            </tr>
-                        </table>
-                    </div>
-                </td>
-                <td id="front-right">
-                    <div class="row wheel">
-                        <span id="front-right-wear"></span>
-                        <table>
-                            <tr>
-                                <td><span id="front-right-temp-1"></span></td>
-                                <td><span id="front-right-temp-2"></span></td>
-                                <td><span id="front-right-temp-3"></span></td>
-                                <td class="brake-placeholder"></td>
-                            </tr>
-                            <tr>
-                                <td id="front-right-1" class="tire-visual t1"><progress max="1"></progress></td>
-                                <td id="front-right-2" class="tire-visual t2"><progress max="1"></progress></td>
-                                <td id="front-right-3" class="tire-visual t3"><progress max="1"></progress></td>
-                                <td class="brake-temp" id="front-right-brake">
-                                    <div></div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td id="rear-left">
-                    <div class="row wheel">
-                        <span id="rear-left-wear"></span>
-                        <table>
-                            <tr>
-                                <td class="brake-temp" id="rear-left-brake">
-                                    <div></div>
-                                </td>
-                                <td id="rear-left-1" class="tire-visual t1"><progress max="1"></progress></td>
-                                <td id="rear-left-2" class="tire-visual t2"><progress max="1"></progress></td>
-                                <td id="rear-left-3" class="tire-visual t3"><progress max="1"></progress></td>
-                            </tr>
-                            <tr>
-                                <td class="brake-placeholder"></td>
-                                <td><span id="rear-left-temp-1"></span></td>
-                                <td><span id="rear-left-temp-2"></span></td>
-                                <td><span id="rear-left-temp-3"></span></td>
-                            </tr>
-                        </table>
-                    </div>
-                </td>
-                <td id="rear-right">
-                    <div class="row wheel">
-                        <span id="rear-right-wear"></span>
-                        <table>
-                            <tr>
-                                <td id="rear-right-1" class="tire-visual t1"><progress max="1"></progress></td>
-                                <td id="rear-right-2" class="tire-visual t2"><progress max="1"></progress></td>
-                                <td id="rear-right-3" class="tire-visual t3"><progress max="1"></progress></td>
-                                <td class="brake-temp" id="rear-right-brake">
-                                    <div></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span id="rear-right-temp-1"></span></td>
-                                <td><span id="rear-right-temp-2"></span></td>
-                                <td><span id="rear-right-temp-3"></span></td>
-                                <td class="brake-placeholder"></td>
-                            </tr>
-                        </table>
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        <table id="damage">
-            <tr>
-                <td><span>Engine</span></td>
-                <td id="engine-damage"><progress max="1"></progress></td>
-            </tr>
-            <tr>
-                <td><span>Transmission</span></td>
-                <td id="transmission-damage"><progress max="1"></progress></td>
-            </tr>
-            <tr>
-                <td><span>Aerodynamics</span></td>
-                <td id="aerodynamics-damage"><progress max="1"></progress></td>
-            </tr>
-            <tr>
-                <td><span>Suspension</span></td>
-                <td id="suspension-damage"><progress max="1"></progress></td>
-            </tr>
-        </table>
-
-        <div class="row" id="fuel-data">
-            <he class="col sb">
-                <span></span>
-                <span id="fuel-left"></span>
-                <span class="label">Fuel Remain</span>
-            </he>
-            <table>
-                <tr>
-                    <td>
-                        <he class="col">
-                            <span class="label">Time Estimate</span>
-                            <span id="fuel-time"></span>
-                        </he>
-                    </td>
-                    <td>
-                        <he class="col">
-                            <span class="label">Last Lap</span>
-                            <span id="fuel-last-lap"></span>
-                        </he>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <he class="col">
-                            <span id="fuel-laps"></span>
-                            <span class="label">Laps Estimate</span>
-                        </he>
-                    </td>
-                    <td>
-                        <he class="col">
-                            <span id="fuel-per-lap"></span>
-                            <span class="label">Fuel / Lap</span>
-                        </he>
-                    </td>
-                </tr>
-            </table>
-            <he class="col sb">
-                <span></span>
-                <span id="fuel-to-end"></span>
-                <span class="label">Fuel To End</span>
-            </he>
-            <he class="col sb">
-                <span></span>
-                <span id="fuel-to-add"></span>
-                <span class="label">Fuel To Add</span>
-            </he>
+<div id="main-container" class="col sb">
+    <div class="row sb" id="top-group">
+        <div class="row" id="top-left-group"></div>
+        <div class="row" id="top-right-group">
+            <div class="col" id="time-left-container">
+                <div class="row" id="time-left">
+                    <span id="time-left-hours"></span>
+                    <span id="time-left-minutes"></span>
+                    <span id="time-left-seconds"></span>
+                </div>
+                <span id="laps-left"></span>
+                <span class="label" id="session-type"></span>
+            </div>
         </div>
     </div>
 
-
-    <div class="row" id="bottom-right-group">
-        <he id="relative-viewer">
-            <table><tbody></tbody></table>
-        </he>
-
-        <he id="driver-inputs" class="col">
-            <table>
-                <tr id="input-numbers">
-                    <td><span id="clutch-input"></span></td>
-                    <td><span id="brake-input"></span></td>
-                    <td><span id="throttle-input"></span></td>
+    <div class="row sb" id="bottom-group">
+        <div class="row" id="bottom-left-group">
+            <table id="tires">
+                <tr>
+                    <td id="front-left">
+                        <div class="row wheel">
+                            <span id="front-left-wear"></span>
+                            <table>
+                                <tr>
+                                    <td class="brake-placeholder"></td>
+                                    <td><span id="front-left-temp-1"></span></td>
+                                    <td><span id="front-left-temp-2"></span></td>
+                                    <td><span id="front-left-temp-3"></span></td>
+                                </tr>
+                                <tr>
+                                    <td class="brake-temp" id="front-left-brake">
+                                        <div></div>
+                                    </td>
+                                    <td id="front-left-1" class="tire-visual t1"><progress max="1"></progress></td>
+                                    <td id="front-left-2" class="tire-visual t2"><progress max="1"></progress></td>
+                                    <td id="front-left-3" class="tire-visual t3"><progress max="1"></progress></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                    <td id="front-right">
+                        <div class="row wheel">
+                            <span id="front-right-wear"></span>
+                            <table>
+                                <tr>
+                                    <td><span id="front-right-temp-1"></span></td>
+                                    <td><span id="front-right-temp-2"></span></td>
+                                    <td><span id="front-right-temp-3"></span></td>
+                                    <td class="brake-placeholder"></td>
+                                </tr>
+                                <tr>
+                                    <td id="front-right-1" class="tire-visual t1"><progress max="1"></progress></td>
+                                    <td id="front-right-2" class="tire-visual t2"><progress max="1"></progress></td>
+                                    <td id="front-right-3" class="tire-visual t3"><progress max="1"></progress></td>
+                                    <td class="brake-temp" id="front-right-brake">
+                                        <div></div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
                 </tr>
-                <tr id="input-progress">
-                    <td><progress id="clutch-progress" max="1"></progress></td>
-                    <td><progress id="brake-progress" max="1"></progress></td>
-                    <td><progress id="throttle-progress" max="1"></progress></td>
+                <tr>
+                    <td id="rear-left">
+                        <div class="row wheel">
+                            <span id="rear-left-wear"></span>
+                            <table>
+                                <tr>
+                                    <td class="brake-temp" id="rear-left-brake">
+                                        <div></div>
+                                    </td>
+                                    <td id="rear-left-1" class="tire-visual t1"><progress max="1"></progress></td>
+                                    <td id="rear-left-2" class="tire-visual t2"><progress max="1"></progress></td>
+                                    <td id="rear-left-3" class="tire-visual t3"><progress max="1"></progress></td>
+                                </tr>
+                                <tr>
+                                    <td class="brake-placeholder"></td>
+                                    <td><span id="rear-left-temp-1"></span></td>
+                                    <td><span id="rear-left-temp-2"></span></td>
+                                    <td><span id="rear-left-temp-3"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                    <td id="rear-right">
+                        <div class="row wheel">
+                            <span id="rear-right-wear"></span>
+                            <table>
+                                <tr>
+                                    <td id="rear-right-1" class="tire-visual t1"><progress max="1"></progress></td>
+                                    <td id="rear-right-2" class="tire-visual t2"><progress max="1"></progress></td>
+                                    <td id="rear-right-3" class="tire-visual t3"><progress max="1"></progress></td>
+                                    <td class="brake-temp" id="rear-right-brake">
+                                        <div></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span id="rear-right-temp-1"></span></td>
+                                    <td><span id="rear-right-temp-2"></span></td>
+                                    <td><span id="rear-right-temp-3"></span></td>
+                                    <td class="brake-placeholder"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
                 </tr>
             </table>
 
-            <div id="steering-wheel-container">
-                <img src="~/steering-wheel.png" id="steering-wheel">
-            </div>
-        </he>
-
-
-        <he class="col" id="basic">
-            <table>
+            <table id="damage">
                 <tr>
-                    <td><span id="engine-map"></span></td>
-                    <td><span id="traction-control"></span></td>
+                    <td><span>Engine</span></td>
+                    <td id="engine-damage"><progress max="1"></progress></td>
                 </tr>
                 <tr>
-                    <td><span id="engine-brake"></span></td>
-                    <td><span id="brake-bias"></span></td>
+                    <td><span>Transmission</span></td>
+                    <td id="transmission-damage"><progress max="1"></progress></td>
+                </tr>
+                <tr>
+                    <td><span>Aerodynamics</span></td>
+                    <td id="aerodynamics-damage"><progress max="1"></progress></td>
+                </tr>
+                <tr>
+                    <td><span>Suspension</span></td>
+                    <td id="suspension-damage"><progress max="1"></progress></td>
                 </tr>
             </table>
-            <div class="row sb" id="gear-and-assists">
-                <img src="~/tc.png" id="tc-icon" class="assist-icon">
-                <span id="gear"></span>
-                <img src="~/abs.png" id="abs-icon" class="assist-icon">
+
+            <div class="row" id="fuel-data">
+                <he class="col sb">
+                    <span></span>
+                    <span id="fuel-left"></span>
+                    <span class="label">Fuel Remain</span>
+                </he>
+                <table>
+                    <tr>
+                        <td>
+                            <he class="col">
+                                <span class="label">Time Estimate</span>
+                                <span id="fuel-time"></span>
+                            </he>
+                        </td>
+                        <td>
+                            <he class="col">
+                                <span class="label">Last Lap</span>
+                                <span id="fuel-last-lap"></span>
+                            </he>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <he class="col">
+                                <span id="fuel-laps"></span>
+                                <span class="label">Laps Estimate</span>
+                            </he>
+                        </td>
+                        <td>
+                            <he class="col">
+                                <span id="fuel-per-lap"></span>
+                                <span class="label">Fuel / Lap</span>
+                            </he>
+                        </td>
+                    </tr>
+                </table>
+                <he class="col sb">
+                    <span></span>
+                    <span id="fuel-to-end"></span>
+                    <span class="label">Fuel To End</span>
+                </he>
+                <he class="col sb">
+                    <span></span>
+                    <span id="fuel-to-add"></span>
+                    <span class="label">Fuel To Add</span>
+                </he>
             </div>
-            <span id="speed"></span>
-            <progress id="revs" max="100" value="0"></progress>
-        </he>
+        </div>
+
+
+        <div class="row" id="bottom-right-group">
+            <he id="relative-viewer">
+                <table>
+                    <tbody></tbody>
+                </table>
+            </he>
+
+            <he id="driver-inputs" class="col">
+                <table>
+                    <tr id="input-numbers">
+                        <td><span id="clutch-input"></span></td>
+                        <td><span id="brake-input"></span></td>
+                        <td><span id="throttle-input"></span></td>
+                    </tr>
+                    <tr id="input-progress">
+                        <td><progress id="clutch-progress" max="1"></progress></td>
+                        <td><progress id="brake-progress" max="1"></progress></td>
+                        <td><progress id="throttle-progress" max="1"></progress></td>
+                    </tr>
+                </table>
+
+                <div id="steering-wheel-container">
+                    <img src="~/steering-wheel.png" id="steering-wheel">
+                </div>
+            </he>
+
+
+            <he class="col" id="basic">
+                <table>
+                    <tr>
+                        <td><span id="engine-map"></span></td>
+                        <td><span id="traction-control"></span></td>
+                    </tr>
+                    <tr>
+                        <td><span id="engine-brake"></span></td>
+                        <td><span id="brake-bias"></span></td>
+                    </tr>
+                </table>
+                <div class="row sb" id="gear-and-assists">
+                    <img src="~/tc.png" id="tc-icon" class="assist-icon">
+                    <span id="gear"></span>
+                    <img src="~/abs.png" id="abs-icon" class="assist-icon">
+                </div>
+                <span id="speed"></span>
+                <progress id="revs" max="100" value="0"></progress>
+            </he>
+        </div>
     </div>
 </div>
 

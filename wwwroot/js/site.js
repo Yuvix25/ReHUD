@@ -572,10 +572,10 @@ const VALUES = [
             document.getElementById('time-left-container'),
             document.getElementById('relative-viewer'),
         ]
-        if (f === -1) {
+        if (f === -1) { // only parameter I could find that is related to leaderboard challenge mode
             elements.forEach(e => e.style.display = 'none');
         } else {
-            elements.forEach(e => e.style.display = 'block');
+            elements.forEach(e => e.style.display = null);
         }
     }),
 ];

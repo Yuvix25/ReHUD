@@ -656,3 +656,7 @@ progress#revs::-webkit-progress-value {
   font-size: 23px;
 }
 
+#position-container {
+  margin: 10px;
+}
+

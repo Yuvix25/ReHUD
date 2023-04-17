@@ -570,6 +570,7 @@ const VALUES = [
         const elements = [
             document.getElementById('position-container'),
             document.getElementById('time-left-container'),
+            document.getElementById('relative-viewer'),
         ]
         if (f === -1) {
             elements.forEach(e => e.style.display = 'none');

@@ -593,9 +593,13 @@ ipcRenderer.on('data', (event, data) => {
     for (const value of VALUES) {
         const element = document.getElementById(value.elementId);
         const newValue = value.getValueFromData(data);
-        if (newValue === false)
+
+        if (newValue === false && element != null)
             element.style.display = 'none';
-        else if (newValue !== undefined && element != null)
+        else if (element != null)
+            element.style.display = null;
+
+        if (newValue !== false && newValue !== undefined && element != null)
             element.innerText = newValue;
     }
 });

@@ -45,7 +45,7 @@ class Driver {
    * @param {number} completedLaps
    */
   addDeltaPoint(distance, time, completedLaps) {
-    if (this.previousDistance != -1 && this.previousDistance - distance > this.trackLength / 2) { // TODO: get rid of this when RR decides to fix its CompletedLaps value...
+    if (this.previousDistance != -1 && this.previousDistance - distance > this.trackLength / 2 && this.completedLaps == null) { // TODO: get rid of this when RR decides to fix its CompletedLaps value...
       this.points = [];
       this.crossedFinishLine = true;
     }
@@ -97,7 +97,7 @@ class Driver {
     const otherLapDistance = driver.points[driver.points.length - 1]?.[0];
 
     if (thisLapDistance == null || otherLapDistance == null)
-      return 0;
+      return null;
 
     if (otherLapDistance < thisLapDistance) {
       const estimatedLapTime = this.getEstimatedLapTime();
@@ -105,7 +105,9 @@ class Driver {
         return null;
       }
 
-      return estimatedLapTime - driver.getDeltaToDriverAhead(this, includeLapDifference);
+      const delta = estimatedLapTime - driver.getDeltaToDriverAhead(this, includeLapDifference);
+      if (delta < 0)
+        return null;
     } else {
       if (this.bestLapTrustworthiness > Driver.MIN_TRUSTWORTHINESS_FOR_BEST_LAP) {
         return this.deltaBetweenPoints(thisLapDistance, otherLapDistance);

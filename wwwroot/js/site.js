@@ -80,6 +80,17 @@ function insertCell(row, value, className) {
 
 
 const RELATIVE_LENGTH = 8;
+const halfLengthTop = Math.ceil((RELATIVE_LENGTH - 1) / 2);
+const halfLengthBottom = Math.floor((RELATIVE_LENGTH - 1) / 2);
+const deltaSortFunc = (a, b) => {
+    const d1 = a[1];
+    const d2 = b[1];
+    if (d1 == null || d2 == null)
+        return a[0].place - b[0].place;
+    
+    return d1 - d2;
+}
+
 const CLASS_COLORS = [
     [255, 51, 51],
     [255, 157, 51],
@@ -346,10 +357,17 @@ const VALUES = [
         const deltasFront = [];
         const deltasBehind = [];
         for (let i = 0; i < all.length; i++) {
+            if (all[i].place == place + 1)
+                continue;
             const uid = all[i].driverInfo.uid;
             const deltaAhead = drivers[myUid].getDeltaToDriverAhead(drivers[uid]);
             const deltaBehind = drivers[myUid].getDeltaToDriverBehind(drivers[uid]);
-            if (deltaAhead == null)
+            if (deltaAhead == null && deltaBehind == null) {
+                if (all[i].place < place + 1)
+                    deltasFront.push([all[i], null]);
+                else
+                    deltasBehind.push([all[i], null]);
+            } else if (deltaAhead == null)
                 deltasBehind.push([all[i], deltaBehind]);
             else if (deltaBehind == null)
                 deltasFront.push([all[i], -deltaAhead]);
@@ -358,8 +376,10 @@ const VALUES = [
             else
                 deltasBehind.push([all[i], deltaBehind]);
         }
-        deltasFront.sort((a, b) => a[1] - b[1]);
-        deltasBehind.sort((a, b) => a[1] - b[1]);
+        deltasFront.sort(deltaSortFunc);
+        deltasBehind.sort(deltaSortFunc);
+
+        deltasFront.push([all[place], 0]);
 
         classes.sort((a, b) => a - b);
         const classMap = {};
@@ -367,8 +387,6 @@ const VALUES = [
             classMap[classes[i]] = i;
         }
 
-        const halfLengthTop = Math.ceil((RELATIVE_LENGTH - 1) / 2);
-        const halfLengthBottom = Math.floor((RELATIVE_LENGTH - 1) / 2);
         let start = 0, end = driverCount;
         if (deltasFront.length >= halfLengthTop && deltasBehind.length >= halfLengthBottom) {
             start = deltasFront.length - halfLengthTop;
@@ -383,7 +401,7 @@ const VALUES = [
 
         const mergedDeltas = [...deltasFront, ...deltasBehind];
         for (let i = start; i < end; i++) {
-            if (mergedDeltas[i] == null)
+            if (mergedDeltas[i] == undefined)
                 break;
             const driver = mergedDeltas[i][0];
             if (driver.place == -1)
@@ -434,7 +452,8 @@ const VALUES = [
             }
             insertCell(row, carName, 'car-name');
     
-            const delta = driver.place == place + 1 ? '' : mergedDeltas[i][1].toFixed(1);
+            const deltaRaw = mergedDeltas[i][1];
+            const delta = driver.place == place + 1 ? '' : (deltaRaw == null ? 'N/A' : deltaRaw.toFixed(1));
             insertCell(row, delta, 'time-delta');
         }
 
@@ -465,7 +484,7 @@ const VALUES = [
             if (leaderDistance < myDistance && myLaps != leaderLaps) {
                 lapsLeft++;
             }
-            lapsLeftElement.innerText = `${myLaps}/${lapsLeft}`;
+            lapsLeftElement.innerText = `${myLaps+1}/${lapsLeft}`;
         } else if (timeLeft >= 0) {
             timeLeftElement.style.display = 'block';
             lapsLeftElement.style.display = 'none';

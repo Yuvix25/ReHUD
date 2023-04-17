@@ -21,6 +21,7 @@ I started this project following the recent increase in the number of bugs which
     - General settings
  - Position bar
  - Radar
+ - Live delta
  - Manual rolling start
 
 _\* work in progress_

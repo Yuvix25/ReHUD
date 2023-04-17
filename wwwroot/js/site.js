@@ -13,6 +13,13 @@ class Value {
         this.valueMap = valueMap ?? ((x) => x);
     }
 
+    /**
+     * If the return value is a string, it will be set as the innerHTML of the element.
+     * If the return value is undefined, no change will be made.
+     * If the return value is false, the element will be hidden.
+     * @param {object} data - Shared memory data
+     * @return {string|undefined|false}
+     */
     getValueFromData(data) {
         const values = [];
         for (const valueName of this.valueNames) {
@@ -114,6 +121,18 @@ let r3eData = null;
  */
 let drivers = {};
 
+
+const laptimeFormat = (time) => {
+    if (!valueIsValid(time))
+        return '-:--.---';
+    
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    const milliseconds = Math.floor((time - Math.floor(time)) * 1000);
+
+    return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+}
+
 const root = document.querySelector(':root');
 const VALUES = [
     new Value('speed', 'carSpeed', (x) => typeof x !== 'number' ? 0 : Math.round(x * 3.6)),
@@ -187,6 +206,7 @@ const VALUES = [
         root.style.setProperty('--fuel-to-add-color', lerpRGB([0, 255, 0], [255, 0, 0], (fuelToAdd + 0.7) * 1.43));
         return `${fuelToAdd.toFixed(1)}`;
     }),
+    new Value('fuel-data', 'fuelUseActive', (x) => x ? undefined : false),
 
     new Value('tires', ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt'], (x, y, z, w) => {
         const nameMap = {
@@ -285,7 +305,8 @@ const VALUES = [
             if (value == null)
                 value = 0;
             if (value == -1)
-                value = 1;
+                return false;
+                // value = 1;
 
             element.value = value === 0 ? 1 : value;
             root.style.setProperty(`--${part}-damage-color`, value == 0 ? 'var(--damage-color-full)' : value == 1 ? 'var(--damage-color-ok)' : 'var(--damage-color-partial)');
@@ -305,12 +326,11 @@ const VALUES = [
         root.style.setProperty('--abs-brightness', abs == 0 ? 1 : 10);
     }),
 
-    new Value('relative', ['driverData', 'position', 'layoutLength', 'sessionPhase'], (all, place, trackLength, phase) => {
+    new Value('relative-viewer', ['driverData', 'position', 'layoutLength', 'sessionPhase'], (all, place, trackLength, phase) => {
         const relative = document.getElementById('relative-viewer');
-        if (all == null || place == null) {
-            relative.style.display = 'none';
-            return;
-        }
+        if (all == null || place == null)
+            return false;
+
         relative.style.display = 'block';
         const relativeTable = relative.getElementsByTagName('tbody')[0];
 
@@ -320,7 +340,7 @@ const VALUES = [
         if (phase < 3) {
             relativeTable.innerHTML = '';
             drivers = {};
-            return;
+            return false;
         }
 
         let driverCount = 0;
@@ -352,6 +372,10 @@ const VALUES = [
             }
             drivers[uid].addDeltaPoint(driver.lapDistance, new Date().getTime() / 1000, driver.completedLaps);
         }
+
+        if (driverCount == 0)
+            return false;
+
         all = all.slice(0, driverCount);
 
         const deltasFront = [];
@@ -420,10 +444,12 @@ const VALUES = [
 
             const classId = driver.driverInfo.classId;
             const classImgCell = insertCell(row, undefined, 'class-img');
-            let classImg = classImgCell.children[0];
+            let classImg = classImgCell.children?.[0]?.children?.[0];
             if (classImg == null) {
-                classImg = document.createElement('img');
+                classImg = document.createElement('div');
                 classImgCell.appendChild(classImg);
+                classImg = document.createElement('img');
+                classImgCell.children[0].appendChild(classImg);
             }
             classImg.src = `https://game.raceroom.com/store/image_redirect?id=${classId}&size=thumb`;
             
@@ -488,9 +514,9 @@ const VALUES = [
         } else if (timeLeft >= 0) {
             timeLeftElement.style.display = 'block';
             lapsLeftElement.style.display = 'none';
-            timeLeftElement.children[0].innerText = String(Math.floor(timeLeft / 3600)); // hours
-            timeLeftElement.children[1].innerText = String(Math.floor(timeLeft / 60) % 60).padStart(2, '0'); // minutes
-            timeLeftElement.children[2].innerText = String(Math.floor(timeLeft) % 60).padStart(2, '0'); // seconds
+            timeLeftElement.children[0].innerText = Math.floor(timeLeft / 3600).toString(); // hours
+            timeLeftElement.children[1].innerText = (Math.floor(timeLeft / 60) % 60).toString().padStart(2, '0'); // minutes
+            timeLeftElement.children[2].innerText = (Math.floor(timeLeft) % 60).toString().padStart(2, '0'); // seconds
         }
 
         if (sessionType == -1) {
@@ -516,6 +542,41 @@ const VALUES = [
                 break;
         }
     }),
+    new Value('last-lap-session', 'lapTimePreviousSelf', laptimeFormat),
+    new Value('best-lap-session', 'lapTimeBestSelf', laptimeFormat),
+    new Value('position', ['position', 'positionClass', 'driverData'], (position, positionClass, drivers) => {
+        if (!valueIsValid(position))
+            return false;
+
+        let myIndex = -1;
+        for (let i = 0; i < drivers.length; i++) {
+            if (drivers[i].place == position) {
+                myIndex = i;
+                break;
+            }
+        }
+        
+        let classCount = 0;
+        for (const driver of drivers) {
+            if (driver.place == -1)
+                break;
+            if (driver.classPerformanceIndex == drivers[myIndex].classPerformanceIndex)
+                classCount++;
+        }
+        return `${position}/${classCount}`;
+    }),
+
+    new Value('leaderboard-challenge', 'sessionLengthFormat', (f) => {
+        const elements = [
+            document.getElementById('position-container'),
+            document.getElementById('time-left-container'),
+        ]
+        if (f === -1) {
+            elements.forEach(e => e.style.display = 'none');
+        } else {
+            elements.forEach(e => e.style.display = 'block');
+        }
+    }),
 ];
 
 
@@ -531,9 +592,10 @@ ipcRenderer.on('data', (event, data) => {
     for (const value of VALUES) {
         const element = document.getElementById(value.elementId);
         const newValue = value.getValueFromData(data);
-        if (newValue !== undefined && element != null) {
+        if (newValue === false)
+            element.style.display = 'none';
+        else if (newValue !== undefined && element != null)
             element.innerText = newValue;
-        }
     }
 });
 

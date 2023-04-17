@@ -554,6 +554,11 @@ progress#revs::-webkit-progress-value {
 }
 
 
+#relative-viewer {
+  margin-bottom: auto;
+  padding-left: 2px;
+  padding-right: 2px;
+}
 
 #relative-viewer table {
   table-layout: fixed;
@@ -562,7 +567,7 @@ progress#revs::-webkit-progress-value {
   border-collapse: separate;
 }
 
-#relative-viewwer td {
+#relative-viewer td {
   padding: 1px;
 }
 
@@ -601,16 +606,31 @@ progress#revs::-webkit-progress-value {
   padding-right: 5px;
 }
 
+
 #relative-viewer td.class-img {
   padding: 0;
+}
+#relative-viewer td.class-img div {
   display: block;
-  width: 30px;
-  height: 24px; /* padding 1px */
+  height: 26px;
 }
 #relative-viewer td.class-img img {
   width: 26px;
+  margin-right: 4px;
 }
 
+
+#top-group .value {
+  font-size: 45px;
+}
+
+#top-group .container {
+  align-items: center;
+}
+
+#top-right-group {
+  gap: 70px;
+}
 
 #time-left-container {
   align-items: center;
@@ -622,10 +642,6 @@ progress#revs::-webkit-progress-value {
   margin-right: 1px !important;
 }
 
-#time-left span, #laps-left {
-  font-size: 45px;
-}
-
 #time-left-hours::after {
   content: "h";
 }
@@ -635,7 +651,7 @@ progress#revs::-webkit-progress-value {
 #time-left-seconds::after {
   content: "s";
 }
-#time-left span::after, #session-type {
+#time-left span::after, #top-group .label {
   color: #e5e5e5;
   font-size: 23px;
 }

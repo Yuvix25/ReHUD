@@ -488,7 +488,7 @@ const VALUES = [
         }
     }),
 
-    new Value('time-left', ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps', 'lapDistance', 'driverData'], (timeLeft, lapsLeft, sessionType, myLaps, myDistance, driverData) => {
+    new Value('time-laps-left', ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps', 'lapDistance', 'driverData'], (timeLeft, lapsLeft, sessionType, myLaps, myDistance, driverData) => {
         const timeLeftElement = document.getElementById('time-left');
         const lapsLeftElement = document.getElementById('laps-left');
         const sessionTypeElement = document.getElementById('session-type');

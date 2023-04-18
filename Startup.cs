@@ -96,7 +96,7 @@ public class Startup
             if (userData == null) {
                 userData = new R3E.UserData();
             }
-        } catch (Exception e) {
+        } catch {
             userData = new R3E.UserData();
         }
 

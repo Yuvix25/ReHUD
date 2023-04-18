@@ -4,7 +4,7 @@ using System.Threading;
 using ElectronNET.API;
 
 
-namespace R3E_Electron_Overlay.Pages;
+namespace ReHUD.Pages;
 
 public class IndexModel : PageModel
 {

@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/R3E_Electron_Overlay.csproj",
+                "${workspaceFolder}/ReHUD.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/R3E_Electron_Overlay.csproj",
+                "${workspaceFolder}/ReHUD.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -33,7 +33,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/R3E_Electron_Overlay.csproj"
+                "${workspaceFolder}/ReHUD.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

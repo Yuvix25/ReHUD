@@ -3,7 +3,7 @@ using ElectronNET.API.Entities;
 using Newtonsoft.Json;
 using System.Diagnostics;
 
-namespace R3E_Electron_Overlay;
+namespace ReHUD;
 
 public class Startup
 {
@@ -53,7 +53,7 @@ public class Startup
 
 
     private const string dataFile = "userData.json";
-    private static string dirPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ElectronOverlay");
+    private static string dirPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD");
     private static string path = Path.Combine(dirPath, dataFile);
     private R3E.UserData? userData;
 
@@ -72,13 +72,13 @@ public class Startup
             Frame = false,
             Transparent = true,
             BackgroundColor = "#00000000",
-            Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.ico"),
+            Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
         });
 
         bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => {});
         if (!gotLock)
         {
-            MessageBoxOptions options = new MessageBoxOptions("Another instance of Electron Overlay is already running.");
+            MessageBoxOptions options = new MessageBoxOptions("Another instance of ReHUD is already running.");
             options.Type = MessageBoxType.error;
             options.Title = "Error";
 

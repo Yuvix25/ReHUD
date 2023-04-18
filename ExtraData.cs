@@ -1,4 +1,4 @@
-namespace R3E_Electron_Overlay;
+namespace ReHUD;
 
 internal struct ExtraData {
     public R3E.Data.Shared RawData;

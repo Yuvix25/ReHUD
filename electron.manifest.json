@@ -1,17 +1,20 @@
 {
-  "executable": "R3E_Electron_Overlay",
+  "executable": "ReHUD",
   "splashscreen": {
     "imageFile": ""
   },
-  "name": "r3e_electron_overlay",
+  "name": "rehud",
   "author": "Yuval Rosen",
   "singleInstance": false,
   "environment": "Production",
   "build": {
-    "appId": "com.yuvix.r3e-overlay",
-    "productName": "R3E Electron Overlay",
+    "appId": "com.yuvix.rehud",
+    "productName": "ReHUD",
     "copyright": "Copyright © 2023",
-    "buildVersion": "0.0.3",
+    "buildVersion": "0.1.0",
+    "win": {
+      "icon": "../../../wwwroot/ReHUD.png"
+    },
     "compression": "maximum",
     "directories": {
       "output": "../../../bin/Desktop"

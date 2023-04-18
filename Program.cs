@@ -1,6 +1,6 @@
 using ElectronNET.API;
 
-namespace R3E_Electron_Overlay;
+namespace ReHUD;
 
 public class Program
 {

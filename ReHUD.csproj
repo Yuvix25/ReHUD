@@ -3,7 +3,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>R3E_Electron_Overlay</RootNamespace>
+    <RootNamespace>ReHUD</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

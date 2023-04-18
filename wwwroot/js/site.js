@@ -3,14 +3,16 @@
 
 const {ipcRenderer} = require('electron');
 
-
+const defaultRenderCycle = 30;
 
 class Value {
     // if valueName starts with '+', it will be taken from the extra data (and not from rawData)
-    constructor(elementId, valuesNames, valueMap=null) {
+    constructor(elementId, valuesNames, renderEvery = defaultRenderCycle, valueMap=null) {
         this.elementId = elementId;
         this.valueNames = typeof valuesNames === 'string' ? [valuesNames] : valuesNames;
-        this.valueMap = valueMap ?? ((x) => x);
+        // this.valueMap = valueMap ?? ((x) => x);
+        this.valueMap = typeof renderEvery === 'function' ? renderEvery : valueMap ?? ((x) => x);
+        this.refreshRate = typeof renderEvery === 'number' ? renderEvery : defaultRenderCycle;
     }
 
     /**
@@ -135,14 +137,14 @@ const laptimeFormat = (time) => {
 
 const root = document.querySelector(':root');
 const VALUES = [
-    new Value('speed', 'carSpeed', (x) => typeof x !== 'number' ? 0 : Math.round(x * 3.6)),
-    new Value('gear', 'gear', (x) => x == undefined || x == 0 ? 'N' : x == -1 ? 'R' : x),
+    new Value('speed', 'carSpeed', 5, (x) => typeof x !== 'number' ? 0 : Math.round(x * 3.6)),
+    new Value('gear', 'gear', 3, (x) => x == undefined || x == 0 ? 'N' : x == -1 ? 'R' : x),
     new Value('engine-map', 'engineMapSetting', (x) => `EM: ${x == -1 ? 5 : x}`),
     new Value('traction-control', ['tractionControlSetting', 'tractionControlPercent'], (x, y) =>
                 `TC${x}` + (y == undefined ? `` : `: ${Math.round(y)}%`)),
     new Value('engine-brake', 'engineBrakeSetting', (x) => `EB: ${x}`),
     new Value('brake-bias', 'brakeBias', (x) => `BB: ${(100 - x * 100).toFixed(1)}%`),
-    new Value('revs', ['engineRps', 'maxEngineRps', 'upshiftRps'], (current, max, upshift, id) => {
+    new Value('revs', ['engineRps', 'maxEngineRps', 'upshiftRps'], 1, (current, max, upshift, id) => {
         if (current == undefined || max == undefined)
             return;
         if (upshift == undefined)
@@ -271,7 +273,7 @@ const VALUES = [
             }
         }
     }),
-    new Value('inputs', ['throttleRaw', 'brakeRaw', 'clutchRaw', 'steerInputRaw', 'steerWheelRangeDegrees'], (tRaw, bRaw, cRaw, sRaw, sRange) => {
+    new Value('inputs', ['throttleRaw', 'brakeRaw', 'clutchRaw', 'steerInputRaw', 'steerWheelRangeDegrees'], 3, (tRaw, bRaw, cRaw, sRaw, sRange) => {
         const throttle = document.getElementById('throttle-input');
         const brake = document.getElementById('brake-input');
         const clutch = document.getElementById('clutch-input');
@@ -313,7 +315,7 @@ const VALUES = [
         }
     }),
 
-    new Value('assist', ['aidSettings'], (x) => {
+    new Value('assist', ['aidSettings'], 3, (x) => {
         let tc = x?.tc;
         let abs = x?.abs;
 
@@ -326,7 +328,7 @@ const VALUES = [
         root.style.setProperty('--abs-brightness', abs == 0 ? 1 : 10);
     }),
 
-    new Value('relative-viewer', ['driverData', 'position', 'layoutLength', 'sessionPhase'], (all, place, trackLength, phase) => {
+    new Value('relative-viewer', ['driverData', 'position', 'layoutLength', 'sessionPhase'], 5, (all, place, trackLength, phase) => {
         const relative = document.getElementById('relative-viewer');
         if (all == null || place == null)
             return false;
@@ -566,7 +568,7 @@ const VALUES = [
         return `${position}/${classCount}`;
     }),
 
-    new Value('leaderboard-challenge', 'sessionLengthFormat', (f) => {
+    new Value('leaderboard-challenge', 'sessionLengthFormat', 120, (f) => {
         const elements = [
             document.getElementById('position-container'),
             document.getElementById('time-left-container'),
@@ -585,12 +587,19 @@ function valueIsValid(val) {
     return val != undefined && val != -1;
 }
 
+
+const iterationCycle = 100;
+
 let isShown = true;
+let iteration = 0;
 ipcRenderer.on('data', (event, data) => {
     if (!isShown)
         return;
     data = data[0];
     for (const value of VALUES) {
+        if (iteration % value.refreshRate != 0)
+            continue;
+
         const element = document.getElementById(value.elementId);
         const newValue = value.getValueFromData(data);
 
@@ -601,6 +610,10 @@ ipcRenderer.on('data', (event, data) => {
 
         if (newValue !== false && newValue !== undefined && element != null)
             element.innerText = newValue;
+    }
+    iteration++;
+    if (iteration >= iterationCycle) {
+        iteration = 0;
     }
 });
 

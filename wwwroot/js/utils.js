@@ -158,6 +158,10 @@ class Driver {
     return point2Time - point1Time;
   }
 
+
+  static average = 0;
+  static count = 0;
+
   /**
    * The index of the closest point to the given point which is also smaller than it.
    * @param {number} point
@@ -165,12 +169,31 @@ class Driver {
    * @return {number}
    */
   static findClosestPointIndex(point, points) {
-    for (let i = 0; i < points.length; i++) {
-      if (points[i][0] > point) {
-        return Math.max(i - 1, 0);
+    let min = 0;
+    let max = points.length - 1;
+    let res;
+    while (min <= max) {
+      const mid = Math.floor((min + max) / 2);
+      if (mid == 0 && points[mid][0] > point) {
+        res = mid;
+        break;
+      }
+
+      if (points[mid][0] < point) {
+        min = mid + 1;
+      } else if (points[mid][0] > point) {
+        if (points[mid - 1][0] <= point) {
+          res = mid - 1;
+          break;
+        }
+        max = mid - 1;
+      } else {
+        res = mid;
+        break;
       }
     }
-    return points.length == 0 ? null : points.length - 1;
+
+    return res;
   }
 
   getEstimatedLapTime() {

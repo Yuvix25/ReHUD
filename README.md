@@ -1,4 +1,3 @@
-![ReHUD]((https://github.com/Yuvix25/R3E-Electron-Overlay/blob/main/wwwroot/ReHUD.png?raw=true))
 # ReHUD
 With the sole purpose of creating a custom, configurable, easy-to-use and easy-to-extend HUD for RaceRoom Racing Experience, I began with the development of ReHUD - an Electron.NET based overlay.
 

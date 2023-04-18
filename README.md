@@ -1,5 +1,6 @@
-# RaceRoom Electron Overlay
-With the sole purpose of creating a custom, configurable, easy-to-use and easy-to-extend HUD for RaceRoom Racing Experience, I began with the development of REO - RaceRoom Electron Overlay.
+![ReHUD]((https://github.com/Yuvix25/R3E-Electron-Overlay/blob/main/wwwroot/ReHUD.png?raw=true))
+# ReHUD
+With the sole purpose of creating a custom, configurable, easy-to-use and easy-to-extend HUD for RaceRoom Racing Experience, I began with the development of ReHUD - an Electron.NET based overlay.
 
 I started this project following the recent increase in the number of bugs which are currently live in RaceRoom's WebHud framework, resulting in the deprecation of many loved huds, including [OtterHud](https://forum.kw-studios.com/index.php?threads/otterhud-a-custom-webhud-with-additional-features.13152/) - which is the hud I was using up until now.
 

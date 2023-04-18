@@ -72,6 +72,7 @@ public class Startup
             Frame = false,
             Transparent = true,
             BackgroundColor = "#00000000",
+            Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.ico"),
         });
 
         bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => {});
@@ -96,7 +97,6 @@ public class Startup
                 userData = new R3E.UserData();
             }
         } catch (Exception e) {
-            Console.WriteLine(e);
             userData = new R3E.UserData();
         }
 
@@ -124,7 +124,6 @@ public class Startup
             Thread thread = new Thread(() => memory.Run((data) =>
             {
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
-                // ExtraData extraData;
                 extraData.RawData = data;
                 if (iter % (1000 / R3E.SharedMemory.timeInterval.Milliseconds) * 10 == 0) {
                     extraData.FuelPerLap = combination.GetAverageFuelUsage();

@@ -1,10 +1,17 @@
-<p align="center"><img src="https://raw.githubusercontent.com/Yuvix25/ReHUD/main/wwwroot/ReHUD.png" alt="ReHUD" height="170"></p>
-<h1 align="center" style="font-weight: bold">ReHUD</h1>
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/Yuvix25/ReHUD/main/wwwroot/ReHUD.png" alt="ReHUD" height="170">
+<h1 style="font-weight: bold">ReHUD</h1>
+
+![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Yuvix25/ReHUD?include_prereleases&label=Release)
+![GitHub all releases](https://img.shields.io/github/downloads/Yuvix25/ReHUD/total?color=#1ced1c&label=Downloads)
+
+</div>
 
 
 ReHUD is a custom, configurable, easy-to-use and easy-to-extend HUD for RaceRoom Racing Experience.
 
-I started this project following the recent increase in the number of bugs which are currently live in RaceRoom's WebHud framework, resulting in the deprecation of many loved huds, including [OtterHud](https://forum.kw-studios.com/index.php?threads/otterhud-a-custom-webhud-with-additional-features.13152/) - which is the hud I was using up until now.
+I started this project following the recent increase in the number of bugs in RaceRoom's WebHud framework, resulting in the deprecation of many loved huds, including [OtterHud](https://forum.kw-studios.com/index.php?threads/otterhud-a-custom-webhud-with-additional-features.13152/) - which is the hud I was using up until now.
 
 ---
 
@@ -16,18 +23,18 @@ I started this project following the recent increase in the number of bugs which
  - Damage viewer
  - Live on-track relative display*
  - Session status*
+ - Settings window:
+    - Element scale and rearrangement*
+    - General settings*
+    - Advanced insights*
+
+_\* work in progress_
 
 ## Planned Features
- - Settings window - including the following:
-    - Element scale and rearrangement
-    - Advanced insights
-    - General settings
  - Position bar
  - Radar
  - Live delta
  - Manual rolling start
-
-_\* work in progress_
 
 ---
 
@@ -38,7 +45,8 @@ _\* work in progress_
 
 ## Usage
 Once you've installed the app, you will find a desktop shortcut to it, or you can manually find it by searching for "ReHUD" in the windows search menu. Run it with either of the above options, and you're good to go. The overlay is now running and will show up whenever you enter a session in RaceRoom.  
-Since the app has no close button, you need to right click on its icon in the taskbar, and choose "Close window" in order to close it.
+
+To change the position and scale of hud elements, first click on the "Edit" button near "HUD Layout" in the settings window. Now you will be able to move elements by dragging them with your mouse, and scale them by scrolling over them. Once you're done with your changes, choose "Save" to apply them or "Cancel" to undo them.
 
 ## Screenshots
 <img src="https://user-images.githubusercontent.com/58216719/232799762-dbd964cc-e461-4545-9b21-749b71d136d4.png" height="500">

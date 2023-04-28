@@ -1,8 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Threading;
-using ElectronNET.API;
-
+using Microsoft.AspNetCore.Mvc;
 
 namespace ReHUD.Pages;
 
@@ -17,5 +14,6 @@ public class IndexModel : PageModel
 
     public void OnGet()
     {
+        // return RedirectToPage("/Settings");
     }
 }

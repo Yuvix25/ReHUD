@@ -1,0 +1,21 @@
+@page
+@model SettingsModel
+
+<head>
+    <title>ReHUD | Settings</title>
+
+    <link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
+    <script src="~/js/settings.js" asp-append-version="true"></script>
+</head>
+
+<div class="setting">
+    <label>HUD Layout</label>
+    <button id="edit-layout" onclick="lockOverlay(true)">Edit</button>
+    <button id="cancel-layout" onclick="lockOverlay(false)" style="display: none;">Cancel</button>
+</div>
+
+<div class="setting">
+    <label>Speed Units</label>
+    <button id="speed-units-kmh" onclick="speedUnits('kmh')">km/h</button>
+    <button id="speed-units-mph" onclick="speedUnits('mph')">mp/h</button>
+</div>

@@ -10,7 +10,6 @@ class Value {
     constructor(elementId, valuesNames, renderEvery = defaultRenderCycle, valueMap=null) {
         this.elementId = elementId;
         this.valueNames = typeof valuesNames === 'string' ? [valuesNames] : valuesNames;
-        // this.valueMap = valueMap ?? ((x) => x);
         this.valueMap = typeof renderEvery === 'function' ? renderEvery : valueMap ?? ((x) => x);
         this.refreshRate = typeof renderEvery === 'number' ? renderEvery : defaultRenderCycle;
     }
@@ -135,9 +134,14 @@ const laptimeFormat = (time) => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 }
 
+/**
+ * @type {'kmh'|'mph'}
+ */
+let SPEED_UNITS = 'kmh';
+
 const root = document.querySelector(':root');
 const VALUES = [
-    new Value('speed', 'carSpeed', 5, (x) => typeof x !== 'number' ? 0 : Math.round(x * 3.6)),
+    new Value('speed', 'carSpeed', 5, (x) => Math.round((typeof x !== 'number' ? 0 : x * 3.6) * (SPEED_UNITS === 'mph' ? 0.621371 : 1))),
     new Value('gear', 'gear', 3, (x) => x == undefined || x == 0 ? 'N' : x == -1 ? 'R' : x),
     new Value('engine-map', 'engineMapSetting', (x) => `EM: ${x == -1 ? 5 : x}`),
     new Value('traction-control', ['tractionControlSetting', 'tractionControlPercent'], (x, y) =>
@@ -380,6 +384,12 @@ const VALUES = [
 
         all = all.slice(0, driverCount);
 
+
+        if (driverCount <= RELATIVE_LENGTH / 2)
+            relativeTable.parentElement.style.height = 'auto';
+        else
+            relativeTable.parentElement.style.height = 'var(--relative-view-height)';
+
         const deltasFront = [];
         const deltasBehind = [];
         for (let i = 0; i < all.length; i++) {
@@ -617,11 +627,127 @@ ipcRenderer.on('data', (event, data) => {
     }
 });
 
-ipcRenderer.on('hide', () => {
-    isShown = false;
-    document.body.style.display = 'none';
-});
-ipcRenderer.on('show', () => {
+
+function show() {
     isShown = true;
-    document.body.style.display = 'block';
+    document.getElementById('main-container').style.display = 'flex';
+}
+
+function hide() {
+    isShown = false;
+    document.getElementById('main-container').style.display = 'none';
+}
+
+ipcRenderer.on('hide', hide);
+ipcRenderer.on('show', show);
+
+ipcRenderer.on('settings', (e, arg) => {
+    const dataBase64 = Buffer.from(arg[0]).toString('base64');
+    location.href = '/Settings#' + dataBase64;
+})
+
+
+
+ipcRenderer.on('set-setting', (e, arg) => {
+    const [key, value] = JSON.parse(arg);
+
+    switch (key) {
+        case 'speedUnits':
+            SPEED_UNITS = value;
+            break;
+    }
+});
+
+const GRID_SIZE = 10;
+
+
+let LAYOUT = {};
+function elementAdjusted(element) {
+    if (LAYOUT[element.id] == undefined)
+        LAYOUT[element.id] = [0, 0, 1];
+
+    LAYOUT[element.id][0] = element.style.left;
+    LAYOUT[element.id][1] = element.style.top;
+    LAYOUT[element.id][2] = element.dataset.scale || 1;
+}
+
+function saveLayout() {
+    ipcRenderer.send('set-hud-layout', JSON.stringify(LAYOUT));
+}
+ipcRenderer.on('save-hud-layout', saveLayout);
+
+
+function loadLayout(layout) {
+    LAYOUT = layout;
+    for (const id of TRASNFORMABLES) {
+        const element = document.getElementById(id);
+        let left, top, scale;
+        if (LAYOUT[id] != undefined) {
+            [left, top, scale] = LAYOUT[id];
+        } else {
+            left = null;
+            top = null;
+            scale = null;
+        }
+
+        element.style.position = 'relative';
+        element.style.left = left;
+        element.style.top = top;
+        element.style.transform = `scale(${scale})`;
+        element.dataset.scale = scale;
+    }
+}
+
+function requestLayout() {
+    ipcRenderer.send('get-hud-layout');
+}
+
+ipcRenderer.on('hud-layout', (e, arg) => {
+    loadLayout(JSON.parse(arg[0]));
+});
+
+function addTransformable(id) {
+    const element = document.getElementById(id);
+
+    // draggable
+    const draggable = new agnosticDraggable.Draggable(element, {
+        grid: [GRID_SIZE, GRID_SIZE],
+    }, {
+        'drag:stop': (event) => elementAdjusted(event.source),
+    });
+
+    // resizable (scroll to scale)
+    element.addEventListener('wheel', (e) => {
+        const scale = -e.deltaY / 1000 + (parseFloat(element.dataset.scale) || 1);
+        element.style.transform = `scale(${scale})`;
+        element.dataset.scale = scale;
+        elementAdjusted(element);
+    });
+
+    return draggable;
+}
+
+
+const TRASNFORMABLES = [
+    'position-container',
+    
+    'last-lap-session-container',
+    'best-lap-session-container',
+    'time-left-container',
+
+    'tires',
+    'damage',
+    'fuel-data',
+
+    'relative-viewer',
+    'driver-inputs',
+    'basic',
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+    for (const id of TRASNFORMABLES) {
+        addTransformable(id);
+    }
+
+    requestLayout();
 });

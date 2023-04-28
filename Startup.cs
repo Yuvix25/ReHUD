@@ -45,23 +45,27 @@ public class Startup
             endpoints.MapRazorPages();
         });
 
+        Electron.App.CommandLine.AppendSwitch("enable-transparent-visuals");
+        Electron.App.CommandLine.AppendSwitch("disable-gpu-compositing");
+
         if (HybridSupport.IsElectronActive)
         {
-            Electron.App.Ready += () => CreateWindow(env);
+            Electron.App.Ready += async () =>
+            {
+                await CreateMainWindow(env);
+                await CreateSettingsWindow(env);
+            };
         }
     }
 
 
-    private const string dataFile = "userData.json";
-    private static string dirPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD");
-    private static string path = Path.Combine(dirPath, dataFile);
+    private const string userDataFile = "userData.json";
+    private const string settingsFile = "settings.json";
+    private static string dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD");
     private R3E.UserData? userData;
 
-    private async void CreateWindow(IWebHostEnvironment env)
+    private async Task CreateMainWindow(IWebHostEnvironment env)
     {
-        Electron.App.CommandLine.AppendSwitch("enable-transparent-visuals");
-        Electron.App.CommandLine.AppendSwitch("disable-gpu-compositing");
-
         // double factor = (await Electron.Screen.GetPrimaryDisplayAsync()).WorkAreaSize.Width / 1920.0;
         var window = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
         {
@@ -75,7 +79,7 @@ public class Startup
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
         });
 
-        bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => {});
+        bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => { });
         if (!gotLock)
         {
             MessageBoxOptions options = new MessageBoxOptions("Another instance of ReHUD is already running.");
@@ -88,23 +92,128 @@ public class Startup
         }
 
 
-        try {
-            if (!Directory.Exists(dirPath)) {
-                Directory.CreateDirectory(dirPath);
-            }
-            userData = JsonConvert.DeserializeObject<R3E.UserData>(File.ReadAllText(path));
-            if (userData == null) {
-                userData = new R3E.UserData();
-            }
-        } catch {
-            userData = new R3E.UserData();
-        }
-
-
         window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
 
         if (!env.IsDevelopment())
             window.SetIgnoreMouseEvents(true);
+
+
+        await Electron.IpcMain.On("get-hud-layout", (args) => {
+            sendHudLayout(window);
+        });
+
+        await Electron.IpcMain.On("set-hud-layout", (args) => {
+            SetHudLayout(JsonConvert.DeserializeObject<Object>(args.ToString() ?? "{}") ?? new Dictionary<String, Object>());
+        });
+
+        RunLoop(window, env);
+
+        window.OnClosed += () => Electron.App.Quit();
+    }
+    
+    private void sendHudLayout(ElectronNET.API.BrowserWindow window)
+    {
+        Electron.IpcMain.Send(window, "hud-layout", JsonConvert.SerializeObject(GetHudLayout()));
+    }
+
+
+    private async Task CreateSettingsWindow(IWebHostEnvironment env)
+    {
+        var window = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
+        {
+            Width = 800,
+            Height = 600,
+            Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
+        });
+
+        if (!env.IsDevelopment() && false)
+            window.RemoveMenu();
+
+        window.OnReadyToShow += async () =>
+        {
+            var url = (await window.WebContents.GetUrl()).Split('#')[0];
+            if (url.EndsWith("Settings"))
+                return;
+            Electron.IpcMain.Send(window, "settings", JsonConvert.SerializeObject(GetSettings()));
+        };
+
+        var mainWindow = Electron.WindowManager.BrowserWindows.First();
+
+        await Electron.IpcMain.On("lock-overlay", (data) =>
+        {
+            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)data;
+            bool locked = (bool)array[0];
+            bool save = (bool)array[1];
+            mainWindow.SetIgnoreMouseEvents(locked);
+            mainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
+            window.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
+
+            if (locked && save) {
+                Electron.IpcMain.Send(mainWindow, "save-hud-layout");
+            } else if (locked) {
+                sendHudLayout(mainWindow);
+            }
+        });
+
+        await Electron.IpcMain.On("set-setting", (arg) =>
+        {
+            Electron.IpcMain.Send(mainWindow, "set-setting", arg.ToString());
+            SaveSetting((Newtonsoft.Json.Linq.JArray)arg);
+        });
+
+        window.OnClosed += () => Electron.App.Quit();
+    }
+
+    Dictionary<String, Object> settings = GetSettings();
+
+    private void SaveSetting(Newtonsoft.Json.Linq.JArray setting)
+    {
+        
+        settings[setting[0].ToString()] = setting[1];
+        WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
+    }
+
+    private static Dictionary<String, Object> GetSettings()
+    {
+        return JsonConvert.DeserializeObject<Dictionary<String, Object>>(ReadDataFile(settingsFile)) ?? new Dictionary<String, Object>();
+    }
+
+    private Object GetHudLayout() {
+        return settings.ContainsKey("hudLayout") ? settings["hudLayout"] : new Dictionary<String, Object>();
+    }
+
+    private void SetHudLayout(Object layout)
+    {
+        settings["hudLayout"] = layout;
+        WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
+    }
+
+
+    private static String ReadDataFile(String name)
+    {
+        try
+        {
+            if (!Directory.Exists(dataPath))
+            {
+                Directory.CreateDirectory(dataPath);
+            }
+            return File.ReadAllText(Path.Combine(dataPath, name));
+        }
+        catch
+        {
+            return "{}";
+        }
+    }
+
+    private void WriteDataFile(String name, String data)
+    {
+        File.WriteAllText(Path.Combine(dataPath, name), data);
+    }
+
+
+    private void RunLoop(BrowserWindow window, IWebHostEnvironment env)
+    {
+        userData = JsonConvert.DeserializeObject<R3E.UserData>(ReadDataFile(userDataFile)) ?? new R3E.UserData();
 
         using (var memory = new R3E.SharedMemory())
         {
@@ -125,19 +234,23 @@ public class Startup
             {
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
                 extraData.RawData = data;
-                if (iter % (1000 / R3E.SharedMemory.timeInterval.Milliseconds) * 10 == 0) {
+                if (iter % (1000 / R3E.SharedMemory.timeInterval.Milliseconds) * 10 == 0)
+                {
                     extraData.FuelPerLap = combination.GetAverageFuelUsage();
                     extraData.FuelLastLap = combination.GetLastLapFuelUsage();
                     extraData.AverageLapTime = combination.GetAverageLapTime();
                     extraData.BestLapTime = combination.GetBestLapTime();
-                    extraData.LapsUntilFinish = GetLapsUntilFinish(data, combination);
+                    extraData.LapsUntilFinish = R3E.Utilities.GetLapsUntilFinish(data, combination);
                     iter = 0;
                 }
                 iter++;
 
-                try {
+                try
+                {
                     SaveData(data);
-                } catch (Exception e) {
+                }
+                catch (Exception e)
+                {
                     Console.WriteLine(e);
                 }
 
@@ -145,17 +258,19 @@ public class Startup
                 bool notDriving = data.GameInMenus == 1 || (data.GamePaused == 1 && data.GameInReplay == 0) || data.SessionType == -1;
                 if (!notDriving || env.IsDevelopment())
                     Electron.IpcMain.Send(window, "data", extraData);
-                
+
                 if (notDriving)
                 {
-                    if (!env.IsDevelopment() && window != null && (isShown ?? true)) {
+                    if (!env.IsDevelopment() && window != null && (isShown ?? true))
+                    {
                         Electron.IpcMain.Send(window, "hide");
                         isShown = false;
                     }
-                    
+
                     recordingData = false;
 
-                    if (data.SessionType == -1) {
+                    if (data.SessionType == -1)
+                    {
                         lastLap = -1;
                         lastFuel = -1;
                     }
@@ -168,62 +283,6 @@ public class Startup
             }));
             thread.Start();
         }
-
-        window.OnClosed += () => Electron.App.Quit();
-    }
-
-    private double GetLapsUntilFinish(R3E.Data.Shared data, R3E.Combination combination)
-    {
-        double fraction = data.LapDistanceFraction == -1 ? 0 : data.LapDistanceFraction;
-        R3E.Data.DriverData? leader_ = GetLeader(data);
-        if (leader_ == null)
-        {
-            return -1;
-        }
-        R3E.Data.DriverData leader = leader_.Value;
-        if (leader.FinishStatus == 1) {
-            return fraction;
-        }
-        if (data.SessionTimeRemaining != -1) {
-            double referenceLap;
-            
-            if (data.LapTimeBestLeader > 0 && leader.CompletedLaps > 1) {
-                referenceLap = data.LapTimeBestLeader;
-            } else if (data.LapTimeBestSelf > 0) {
-                referenceLap = data.LapTimeBestSelf;
-            } else {
-                referenceLap = combination.GetBestLapTime();
-                if (referenceLap == -1) {
-                    return -1;
-                }
-            }
-            double leaderFraction = leader.LapDistance / data.LayoutLength;
-            return Math.Ceiling(data.SessionTimeRemaining / referenceLap + leaderFraction) - fraction +
-                    (leaderFraction < fraction ? 1 : 0) +
-                    (data.SessionLengthFormat == 2 ? 1 : 0);
-        } else {
-            int sessionLaps = data.NumberOfLaps;
-            if (sessionLaps == -1) {
-                return -1;
-            }
-
-            int completedLaps = GetLeader(data)?.CompletedLaps ?? -1;
-            if (completedLaps == -1) {
-                return -1;
-            }
-            return sessionLaps - completedLaps - fraction;
-        }
-    }
-
-    private R3E.Data.DriverData? GetLeader(R3E.Data.Shared data) {
-        foreach (R3E.Data.DriverData leader in data.DriverData)
-        {
-            if (leader.Place == 1)
-            {
-                return leader;
-            }
-        }
-        return null;
     }
 
 
@@ -234,7 +293,7 @@ public class Startup
     {
         if (lastLap == -1 || lastLap == data.CompletedLaps || userData == null)
             return;
-        
+
         if (!recordingData)
         {
             recordingData = true;
@@ -248,13 +307,13 @@ public class Startup
 
         if (data.LapTimePreviousSelf > 0)
             combo.AddLapTime(data.LapTimePreviousSelf);
-        
+
         if (data.FuelUseActive == 1 && lastFuel != -1)
         {
             combo.AddFuelUsage(lastFuel - data.FuelLeft, data.LapTimePreviousSelf > 0);
         }
 
-        File.WriteAllText(path, JsonConvert.SerializeObject(userData));
+        WriteDataFile(userDataFile, JsonConvert.SerializeObject(userData));
         lastFuel = data.FuelLeft;
     }
 }

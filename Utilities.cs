@@ -21,42 +21,71 @@ namespace R3E
             return Process.GetProcessesByName("RRRE").Length > 0 || Process.GetProcessesByName("RRRE64").Length > 0;
         }
 
-        // public static string? GetDataFilePath()
-        // {
-        //     Process[] processes = Process.GetProcessesByName("RRRE");
-        //     if (processes.Length == 0)
-        //         processes = Process.GetProcessesByName("RRRE64");
-            
-        //     if (processes.Length > 0) {
-        //         string? path_ = GetMainModuleFilepath(processes[0].Id);
-        //         Console.WriteLine(path_ == null ? "null" : path_);
-        //         if (path_ != null) {
-        //             string[] path = path_.Split('\\');
-        //             path = path.Take(path.Length - 1).ToArray();
-        //             if (path[^1] == "x64")
-        //                 path = path.Take(path.Length - 1).ToArray();
-                    
-        //             return string.Join("\\", path) + "\\GameData\\General\\r3e-data.json";
-        //         }
-        //     }
-        //     return null;
-        // }
+        internal static double GetLapsUntilFinish(Data.Shared data, Combination combination)
+        {
+            double fraction = data.LapDistanceFraction == -1 ? 0 : data.LapDistanceFraction;
+            Data.DriverData? leader_ = GetLeader(data);
+            if (leader_ == null)
+            {
+                return -1;
+            }
+            Data.DriverData leader = leader_.Value;
+            if (leader.FinishStatus == 1)
+            {
+                return fraction;
+            }
+            if (data.SessionTimeRemaining != -1)
+            {
+                double referenceLap;
 
-        // private static string? GetMainModuleFilepath(int processId)
-        // {
-        //     string wmiQueryString = "SELECT ProcessId, ExecutablePath FROM Win32_Process WHERE ProcessId = " + processId;
-        //     using (var searcher = new ManagementObjectSearcher(wmiQueryString))
-        //     {
-        //         using (var results = searcher.Get())
-        //         {
-        //             ManagementObject? mo = results.Cast<ManagementObject>().FirstOrDefault();
-        //             if (mo != null)
-        //             {
-        //                 return (string)mo["ExecutablePath"];
-        //             }
-        //         }
-        //     }
-        //     return null;
-        // }
+                if (data.LapTimeBestLeader > 0 && leader.CompletedLaps > 1)
+                {
+                    referenceLap = data.LapTimeBestLeader;
+                }
+                else if (data.LapTimeBestSelf > 0)
+                {
+                    referenceLap = data.LapTimeBestSelf;
+                }
+                else
+                {
+                    referenceLap = combination.GetBestLapTime();
+                    if (referenceLap == -1)
+                    {
+                        return -1;
+                    }
+                }
+                double leaderFraction = leader.LapDistance / data.LayoutLength;
+                return Math.Ceiling(data.SessionTimeRemaining / referenceLap + leaderFraction) - fraction +
+                        (leaderFraction < fraction ? 1 : 0) +
+                        (data.SessionLengthFormat == 2 ? 1 : 0);
+            }
+            else
+            {
+                int sessionLaps = data.NumberOfLaps;
+                if (sessionLaps == -1)
+                {
+                    return -1;
+                }
+
+                int completedLaps = GetLeader(data)?.CompletedLaps ?? -1;
+                if (completedLaps == -1)
+                {
+                    return -1;
+                }
+                return sessionLaps - completedLaps - fraction;
+            }
+        }
+
+        internal static Data.DriverData? GetLeader(Data.Shared data)
+        {
+            foreach (Data.DriverData leader in data.DriverData)
+            {
+                if (leader.Place == 1)
+                {
+                    return leader;
+                }
+            }
+            return null;
+        }
     }
 }

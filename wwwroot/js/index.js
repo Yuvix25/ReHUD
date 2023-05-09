@@ -148,7 +148,7 @@ const VALUES = [
                 `TC${x}` + (y == undefined ? `` : `: ${Math.round(y)}%`)),
     new Value('engine-brake', 'engineBrakeSetting', (x) => `EB: ${x}`),
     new Value('brake-bias', 'brakeBias', (x) => `BB: ${(100 - x * 100).toFixed(1)}%`),
-    new Value('revs', ['engineRps', 'maxEngineRps', 'upshiftRps'], 1, (current, max, upshift, id) => {
+    new Value('revs', ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'], 1, (current, max, upshift, pitLimiter, id) => {
         if (current == undefined || max == undefined)
             return;
         if (upshift == undefined)
@@ -156,6 +156,11 @@ const VALUES = [
 
         document.getElementById(id).value = current;
         document.getElementById(id).max = max;
+
+        if (pitLimiter === 1) {
+            const time = new Date().getTime();
+            current = time % 250 < 125 ? upshift - 0.001 : max;
+        }
 
         if (current < upshift - (max - upshift) * 2.5) {
             root.style.setProperty('--revs-color', 'var(--revs-color-normal)');
@@ -351,6 +356,9 @@ const VALUES = [
 
         let driverCount = 0;
         const classes = [];
+        /**
+         * @type {String}
+         */
         let myUid = null;
         for (let i = 0; i < all.length; i++) {
             const driver = all[i];
@@ -668,7 +676,7 @@ function elementAdjusted(element) {
 
     LAYOUT[element.id][0] = element.style.left;
     LAYOUT[element.id][1] = element.style.top;
-    LAYOUT[element.id][2] = element.dataset.scale || 1;
+    LAYOUT[element.id][2] = element.dataset.scale ?? 1;
 }
 
 function saveLayout() {

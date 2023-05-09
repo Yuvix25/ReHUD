@@ -126,7 +126,7 @@ public class Startup
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
         });
 
-        if (!env.IsDevelopment() && false)
+        if (!env.IsDevelopment())
             window.RemoveMenu();
 
         window.OnReadyToShow += async () =>

@@ -48,6 +48,8 @@ Once you've installed the app, you will find a desktop shortcut to it, or you ca
 
 To change the position and scale of hud elements, first click on the "Edit" button near "HUD Layout" in the settings window. Now you will be able to move elements by dragging them with your mouse, and scale them by scrolling over them. Once you're done with your changes, choose "Save" to apply them or "Cancel" to undo them.
 
+**Please note that you must run RaceRoom in borderless-windowed or windowed mode, as the HUD cannot appear on top of fullscreen apps.**
+
 ## Screenshots
 <img src="https://user-images.githubusercontent.com/58216719/232799762-dbd964cc-e461-4545-9b21-749b71d136d4.png" height="500">
 

@@ -172,6 +172,10 @@ public class Startup
         settings[setting[0].ToString()] = setting[1];
         WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
     }
+    private void SaveSetting(String key, Object value)
+    {
+        SaveSetting(new Newtonsoft.Json.Linq.JArray(key, value));
+    }
 
     private static Dictionary<String, Object> GetSettings()
     {
@@ -184,10 +188,20 @@ public class Startup
 
     private void SetHudLayout(Object layout)
     {
-        settings["hudLayout"] = layout;
-        WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
+        // settings["hudLayout"] = layout;
+        // WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
+        SaveSetting("hudLayout", layout);
     }
 
+    private R3E.UserData GetUserData()
+    {
+        return JsonConvert.DeserializeObject<R3E.UserData>(ReadDataFile(userDataFile)) ?? new R3E.UserData();
+    }
+
+    private void SaveUserData(R3E.UserData data)
+    {
+        WriteDataFile(userDataFile, JsonConvert.SerializeObject(data));
+    }
 
     private static String ReadDataFile(String name)
     {
@@ -211,9 +225,11 @@ public class Startup
     }
 
 
+    bool userDataClearedForMultiplier = false;
+
     private void RunLoop(BrowserWindow window, IWebHostEnvironment env)
     {
-        userData = JsonConvert.DeserializeObject<R3E.UserData>(ReadDataFile(userDataFile)) ?? new R3E.UserData();
+        userData = GetUserData();
 
         using (var memory = new R3E.SharedMemory())
         {
@@ -222,16 +238,20 @@ public class Startup
             if (env.IsDevelopment())
                 Electron.IpcMain.Send(window, "show");
 
-            // try {
-            //     Console.WriteLine(R3E.Utilities.GetDataFilePath());
-            // } catch (Exception e) {
-            //     Console.WriteLine(e);
-            // }
-
             int iter = 0;
             ExtraData extraData = new ExtraData();
             Thread thread = new Thread(() => memory.Run((data) =>
             {
+                if (data.FuelUseActive != 1 && !userDataClearedForMultiplier) {
+                    userDataClearedForMultiplier = true;
+                    SaveUserData(userData);
+                    userData = new R3E.UserData();
+                } else if (data.FuelUseActive == 1 && userDataClearedForMultiplier) {
+                    userDataClearedForMultiplier = false;
+                    userData = GetUserData();
+                }
+
+
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
                 extraData.RawData = data;
                 if (iter % (1000 / R3E.SharedMemory.timeInterval.Milliseconds) * 10 == 0)
@@ -308,12 +328,14 @@ public class Startup
         if (data.LapTimePreviousSelf > 0)
             combo.AddLapTime(data.LapTimePreviousSelf);
 
-        if (data.FuelUseActive == 1 && lastFuel != -1)
+        if (data.FuelUseActive >= 1 && lastFuel != -1)
         {
             combo.AddFuelUsage(lastFuel - data.FuelLeft, data.LapTimePreviousSelf > 0);
         }
 
-        WriteDataFile(userDataFile, JsonConvert.SerializeObject(userData));
+        if (data.FuelUseActive <= 1)
+            SaveUserData(userData);
+
         lastFuel = data.FuelLeft;
     }
 }

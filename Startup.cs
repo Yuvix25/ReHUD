@@ -1,7 +1,6 @@
 using ElectronNET.API;
 using ElectronNET.API.Entities;
 using Newtonsoft.Json;
-using System.Diagnostics;
 
 namespace ReHUD;
 
@@ -66,7 +65,6 @@ public class Startup
 
     private async Task CreateMainWindow(IWebHostEnvironment env)
     {
-        // double factor = (await Electron.Screen.GetPrimaryDisplayAsync()).WorkAreaSize.Width / 1920.0;
         var window = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
         {
             Resizable = false,
@@ -91,7 +89,6 @@ public class Startup
             return;
         }
 
-
         window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
 
         if (!env.IsDevelopment())
@@ -99,11 +96,19 @@ public class Startup
 
 
         await Electron.IpcMain.On("get-hud-layout", (args) => {
-            sendHudLayout(window);
+            SendHudLayout(window);
         });
 
         await Electron.IpcMain.On("set-hud-layout", (args) => {
             SetHudLayout(JsonConvert.DeserializeObject<Object>(args.ToString() ?? "{}") ?? new Dictionary<String, Object>());
+        });
+
+        await Electron.IpcMain.On("reset-hud-layout", (args) => {
+            try {
+                SendHudLayout(window, new Dictionary<String, Object>());
+            } catch (Exception e) {
+                Console.WriteLine(e);
+            }
         });
 
         RunLoop(window, env);
@@ -111,9 +116,14 @@ public class Startup
         window.OnClosed += () => Electron.App.Quit();
     }
     
-    private void sendHudLayout(ElectronNET.API.BrowserWindow window)
+    private void SendHudLayout(ElectronNET.API.BrowserWindow window)
     {
-        Electron.IpcMain.Send(window, "hud-layout", JsonConvert.SerializeObject(GetHudLayout()));
+        SendHudLayout(window, GetHudLayout());
+    }
+
+    private void SendHudLayout(ElectronNET.API.BrowserWindow window, object layout)
+    {
+        Electron.IpcMain.Send(window, "hud-layout", JsonConvert.SerializeObject(layout));
     }
 
 
@@ -151,14 +161,18 @@ public class Startup
             if (locked && save) {
                 Electron.IpcMain.Send(mainWindow, "save-hud-layout");
             } else if (locked) {
-                sendHudLayout(mainWindow);
+                SendHudLayout(mainWindow);
             }
         });
 
         await Electron.IpcMain.On("set-setting", (arg) =>
         {
             Electron.IpcMain.Send(mainWindow, "set-setting", arg.ToString());
-            SaveSetting((Newtonsoft.Json.Linq.JArray)arg);
+            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)arg;
+            if (array.Count == 2 && array[0] != null && array[0].Type == Newtonsoft.Json.Linq.JTokenType.String)
+                SaveSetting(array[0].ToString(), array[1]);
+            else
+                Console.WriteLine("Invalid setting: " + arg);
         });
 
         window.OnClosed += () => Electron.App.Quit();
@@ -166,15 +180,12 @@ public class Startup
 
     Dictionary<String, Object> settings = GetSettings();
 
-    private void SaveSetting(Newtonsoft.Json.Linq.JArray setting)
-    {
-        
-        settings[setting[0].ToString()] = setting[1];
-        WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
-    }
     private void SaveSetting(String key, Object value)
     {
-        SaveSetting(new Newtonsoft.Json.Linq.JArray(key, value));
+        if (key == null)
+            return;
+        settings[key] = value;
+        WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
     }
 
     private static Dictionary<String, Object> GetSettings()
@@ -182,14 +193,12 @@ public class Startup
         return JsonConvert.DeserializeObject<Dictionary<String, Object>>(ReadDataFile(settingsFile)) ?? new Dictionary<String, Object>();
     }
 
-    private Object GetHudLayout() {
+    private object GetHudLayout() {
         return settings.ContainsKey("hudLayout") ? settings["hudLayout"] : new Dictionary<String, Object>();
     }
 
     private void SetHudLayout(Object layout)
     {
-        // settings["hudLayout"] = layout;
-        // WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
         SaveSetting("hudLayout", layout);
     }
 
@@ -254,6 +263,13 @@ public class Startup
 
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
                 extraData.RawData = data;
+                int driverDataSize = 0;
+                foreach (var d in extraData.RawData.DriverData) {
+                    if (d.DriverInfo.CarNumber == -1)
+                        break;
+                    driverDataSize++;
+                }
+                extraData.RawData.DriverData = extraData.RawData.DriverData.Take(driverDataSize).ToArray();
                 if (iter % (1000 / R3E.SharedMemory.timeInterval.Milliseconds) * 10 == 0)
                 {
                     extraData.FuelPerLap = combination.GetAverageFuelUsage();

@@ -86,18 +86,20 @@ function insertCell(row, value, className) {
 }
 
 
+const RADAR_RADIUS = 12; // meters
+const RADAR_BEEP_MIN_SPEED = 15; // km/h
+const DEFAULT_CAR_WIDTH = 1.9; // meters
+const DEFAULT_CAR_LENGTH = 4.5; // meters
+
+let RADAR_AUDIO_CONTROLLER = null;
+document.addEventListener('DOMContentLoaded', () => {
+    RADAR_AUDIO_CONTROLLER = new AudioController({volumeMultiplier: 1});
+});
 
 const RELATIVE_LENGTH = 8;
 const halfLengthTop = Math.ceil((RELATIVE_LENGTH - 1) / 2);
 const halfLengthBottom = Math.floor((RELATIVE_LENGTH - 1) / 2);
-const deltaSortFunc = (a, b) => {
-    const d1 = a[1];
-    const d2 = b[1];
-    if (d1 == null || d2 == null)
-        return a[0].place - b[0].place;
-    
-    return d1 - d2;
-}
+
 
 const CLASS_COLORS = [
     [255, 51, 51],
@@ -282,7 +284,7 @@ const VALUES = [
             }
         }
     }),
-    new Value('inputs', ['throttleRaw', 'brakeRaw', 'clutchRaw', 'steerInputRaw', 'steerWheelRangeDegrees'], 3, (tRaw, bRaw, cRaw, sRaw, sRange) => {
+    new Value('inputs', ['throttleRaw', 'brakeRaw', 'clutchRaw', 'steerInputRaw', 'steerWheelRangeDegrees'], 1, (tRaw, bRaw, cRaw, sRaw, sRange) => {
         const throttle = document.getElementById('throttle-input');
         const brake = document.getElementById('brake-input');
         const clutch = document.getElementById('clutch-input');
@@ -353,23 +355,21 @@ const VALUES = [
             drivers = {};
             return false;
         }
-
-        let driverCount = 0;
+        const driverCount = all.length;
+        if (driverCount <= 1)
+            return false;
+        
         const classes = [];
         /**
-         * @type {String}
+         * @type {string}
          */
         let myUid = null;
         for (let i = 0; i < all.length; i++) {
             const driver = all[i];
-            if (driver.place == -1)
-                break;
 
-            driverCount++;
             const classIndex = driver.driverInfo.classPerformanceIndex;
             if (!classes.includes(classIndex))
                 classes.push(classIndex);
-
 
             const uid = JSON.stringify(driver.driverInfo);
             driver.driverInfo.uid = uid;
@@ -386,9 +386,6 @@ const VALUES = [
             }
             drivers[uid].addDeltaPoint(driver.lapDistance, new Date().getTime() / 1000, driver.completedLaps);
         }
-
-        if (driverCount == 0)
-            return false;
 
         all = all.slice(0, driverCount);
 
@@ -408,20 +405,25 @@ const VALUES = [
             const deltaBehind = drivers[myUid].getDeltaToDriverBehind(drivers[uid]);
             if (deltaAhead == null && deltaBehind == null) {
                 if (all[i].place < place + 1)
-                    deltasFront.push([all[i], null]);
+                    deltasFront.push([all[i], null, drivers[uid]]);
                 else
-                    deltasBehind.push([all[i], null]);
+                    deltasBehind.push([all[i], null, drivers[uid]]);
             } else if (deltaAhead == null)
-                deltasBehind.push([all[i], deltaBehind]);
+                deltasBehind.push([all[i], deltaBehind, drivers[uid]]);
             else if (deltaBehind == null)
-                deltasFront.push([all[i], -deltaAhead]);
+                deltasFront.push([all[i], -deltaAhead, drivers[uid]]);
             else if (deltaAhead < deltaBehind)
-                deltasFront.push([all[i], -deltaAhead]);
+                deltasFront.push([all[i], -deltaAhead, drivers[uid]]);
             else
-                deltasBehind.push([all[i], deltaBehind]);
+                deltasBehind.push([all[i], deltaBehind, drivers[uid]]);
         }
-        deltasFront.sort(deltaSortFunc);
-        deltasBehind.sort(deltaSortFunc);
+
+        deltasFront.sort((a, b) => {
+            return drivers[myUid].getDistanceToDriverAhead(b[2]) - drivers[myUid].getDistanceToDriverAhead(a[2]);
+        });
+        deltasBehind.sort((a, b) => {
+            return drivers[myUid].getDistanceToDriverBehind(a[2]) - drivers[myUid].getDistanceToDriverBehind(b[2]);
+        });
 
         deltasFront.push([all[place], 0]);
 
@@ -431,17 +433,17 @@ const VALUES = [
             classMap[classes[i]] = i;
         }
 
-        let start = 0, end = driverCount;
-        if (deltasFront.length >= halfLengthTop && deltasBehind.length >= halfLengthBottom) {
-            start = deltasFront.length - halfLengthTop;
-            end = deltasFront.length + halfLengthBottom + 1;
-        } else if (deltasFront.length < halfLengthTop) {
+        let start = 0, end = RELATIVE_LENGTH;
+        if (deltasFront.length-1 >= halfLengthTop && deltasBehind.length >= halfLengthBottom) {
+            start = deltasFront.length - halfLengthTop - 1; // -1 because we added the current driver
+            end = deltasFront.length + halfLengthBottom;
+        } else if (deltasFront.length-1 < halfLengthTop) {
             start = 0;
             end = Math.min(driverCount, RELATIVE_LENGTH);
         } else if (deltasBehind.length < halfLengthBottom) {
             start = Math.max(0, driverCount - RELATIVE_LENGTH);
             end = driverCount;
-        }
+        }  
 
         const mergedDeltas = [...deltasFront, ...deltasBehind];
         for (let i = start; i < end; i++) {
@@ -459,8 +461,6 @@ const VALUES = [
             } else {
                 row.style.backgroundColor = '';
             }
-
-
 
             const classId = driver.driverInfo.classId;
             const classImgCell = insertCell(row, undefined, 'class-img');
@@ -577,12 +577,10 @@ const VALUES = [
         }
         
         let classCount = 0;
-        for (const driver of drivers) {
-            if (driver.place == -1)
-                break;
+        for (const driver of drivers)
             if (driver.classPerformanceIndex == drivers[myIndex].classPerformanceIndex)
                 classCount++;
-        }
+
         return `${position}/${classCount}`;
     }),
 
@@ -598,6 +596,92 @@ const VALUES = [
             elements.forEach(e => e.style.display = null);
         }
     }),
+
+
+    new Value('radar', ['driverData', 'player', 'position','carSpeed'], 1,
+        /**
+         * @param {Array} drivers
+         * @param {Object} driver
+         */
+        (drivers, driver, myPlace, speed, radar) => {
+            if (driver == undefined)
+                return false;
+
+            radar = document.getElementById(radar);
+
+            speed = mpsToKph(speed);
+
+            const radar_size = radar.offsetWidth;
+
+            const rotationMatrix = rotationMatrixFromEular(driver.orientation);
+
+            drivers.forEach(d => {
+                if (myPlace != d.place)
+                    d.relativePosition = rotateVector(rotationMatrix, vectorSubtract(driver.position, d.position)); // x - left/right, z - front/back
+                else {
+                    d.relativePosition = { x: 0, y: 0, z: 0 };
+                }
+            });
+            const close = drivers.filter(d => distanceFromZero(d.relativePosition) < RADAR_RADIUS);
+
+            let closeLeft = 0;
+            let closeRight = 0;
+            let closest = null;
+            for (let i = 0; i < radar.children.length + close.length; i++) {
+                if (i >= close.length) {
+                    if (i < radar.children.length)
+                        radar.children[i].style.display = 'none';
+                    continue;
+                } else if (i >= radar.children.length) {
+                    const newElement = document.createElement('div');
+                    newElement.className = 'radar-car';
+                    radar.appendChild(newElement);
+                }
+                radar.children[i].style.display = null;
+                const driver = close[i];
+                const leftRight = driver.relativePosition.x;
+                let frontBack = driver.relativePosition.z;
+
+                if (leftRight < 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= DEFAULT_CAR_LENGTH))
+                    closeLeft = 1;
+                else if (leftRight > 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= DEFAULT_CAR_LENGTH))
+                    closeRight = 1;
+
+                frontBack = -frontBack;
+                
+                const distance = distanceFromZero(driver.relativePosition);
+
+                const width = DEFAULT_CAR_WIDTH / RADAR_RADIUS * radar_size / 2;
+                const height = DEFAULT_CAR_LENGTH / RADAR_RADIUS * radar_size / 2;
+                
+                radar.children[i].style.left = `${(leftRight / RADAR_RADIUS) * radar_size / 2 + radar_size / 2 - width / 2}px`;
+                radar.children[i].style.top = `${(frontBack / RADAR_RADIUS) * radar_size / 2 + radar_size / 2 - height / 2}px`;
+                radar.children[i].style.width = `${width}px`;
+                radar.children[i].style.height = `${height}px`;
+
+                if (myPlace == driver.place) {
+                    radar.children[i].classList.add('radar-car-self');
+                } else {
+                    if (closest == null || distance < closest)
+                        closest = distance;
+                    radar.children[i].classList.remove('radar-car-self');
+                }
+            }
+
+            let backgroundImage = 'radial-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4) ),url("/icons/radar-grid.png")';
+            if (closeLeft === 1)
+                backgroundImage += ',url("/icons/radar-grid-warning-left.png")';
+            if (closeRight === 1)
+                backgroundImage += ',url("/icons/radar-grid-warning-right.png")';
+
+            radar.style.backgroundImage = backgroundImage;
+
+            if ((closeLeft === 1 || closeRight === 1) && speed >= RADAR_BEEP_MIN_SPEED && RADAR_AUDIO_CONTROLLER != null)
+                RADAR_AUDIO_CONTROLLER.play(1 - closest / RADAR_RADIUS, closeLeft * -1 + closeRight * 1);
+            
+            if (closest === null)
+                return false;
+    }),
 ];
 
 
@@ -610,10 +694,12 @@ const iterationCycle = 100;
 
 let isShown = true;
 let iteration = 0;
+let lastData = null;
 ipcRenderer.on('data', (event, data) => {
     if (!isShown)
         return;
     data = data[0];
+    lastData = data;
     for (const value of VALUES) {
         if (iteration % value.refreshRate != 0)
             continue;
@@ -720,6 +806,7 @@ function addTransformable(id) {
     // draggable
     const draggable = new agnosticDraggable.Draggable(element, {
         grid: [GRID_SIZE, GRID_SIZE],
+        containment: 'window',
     }, {
         'drag:stop': (event) => elementAdjusted(event.source),
     });
@@ -746,6 +833,8 @@ const TRASNFORMABLES = [
     'tires',
     'damage',
     'fuel-data',
+
+    'radar',
 
     'relative-viewer',
     'driver-inputs',

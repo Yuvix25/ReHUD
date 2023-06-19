@@ -85,6 +85,34 @@ class Driver {
     this.points = [];
   }
 
+
+  /**
+   * Get the track distance to a driver ahead.
+   * @param {Driver} driver
+   * @return {number}
+   */
+  getDistanceToDriverAhead(driver) {
+    const thisLapDistance = this.points[this.points.length - 1]?.[0];
+    const otherLapDistance = driver.points[driver.points.length - 1]?.[0];
+
+    if (thisLapDistance == null || otherLapDistance == null)
+      return null;
+
+    if (otherLapDistance < thisLapDistance) {
+      return this.trackLength - thisLapDistance + otherLapDistance;
+    }
+    return otherLapDistance - thisLapDistance;
+  }
+
+  /**
+   * Get the track distance to a driver behind.
+   * @param {Driver} driver
+   * @return {number}
+   */
+  getDistanceToDriverBehind(driver) {
+    return driver.getDistanceToDriverAhead(this);
+  }
+
   /**
    * Get a relative delta to another driver (positions are based on the last delta points).
    * @param {Driver} driver
@@ -108,6 +136,7 @@ class Driver {
       const delta = estimatedLapTime - driver.getDeltaToDriverAhead(this, includeLapDifference);
       if (delta < 0)
         return null;
+      return delta;
     } else {
       if (this.bestLapTrustworthiness > Driver.MIN_TRUSTWORTHINESS_FOR_BEST_LAP) {
         return this.deltaBetweenPoints(thisLapDistance, otherLapDistance);
@@ -249,3 +278,115 @@ function average(data) {
   return avg;
 }
 
+
+/**
+ * @typedef {{x: number, y: number, z: number}} Vector
+ */
+
+/**
+ * @param {Vector} a
+ * @param {Vector} b
+ * @return {Vector}
+ */
+function vectorSubtract(a, b) {
+  const res = {};
+  for (const key in a) {
+    res[key] = a[key] - b[key];
+  }
+  return res;
+}
+
+/**
+ * @param {Vector} a
+ * @return {Vector}
+ */
+function distanceFromZero(a) {
+  return Math.sqrt(a.x ** 2 + a.z ** 2);
+}
+
+/**
+ * Get a rotation matrix from the given eular angles - inverted.
+ * @param {Vector} eular
+ * @return {Array.<Array.<number>>}
+ */
+function rotationMatrixFromEular(eular) {
+  const x = -eular.x;
+  const y = -eular.y;
+  const z = -eular.z;
+
+  const c1 = Math.cos(x);
+  const s1 = Math.sin(x);
+  const c2 = Math.cos(y);
+  const s2 = Math.sin(y);
+  const c3 = Math.cos(z);
+  const s3 = Math.sin(z);
+
+  return [
+    [c2 * c3, -c2 * s3, s2],
+    [c1 * s3 + c3 * s1 * s2, c1 * c3 - s1 * s2 * s3, -c2 * s1],
+    [s1 * s3 - c1 * c3 * s2, c3 * s1 + c1 * s2 * s3, c1 * c2]
+  ];
+}
+
+/**
+ * Rotate the given vector by the given matrix.
+ * @param {Object} matrix 
+ * @param {Vector} vector
+ * @return {Vector}
+ */
+function rotateVector(matrix, vector) {
+  return {
+    x: matrix[0][0] * vector.x + matrix[0][1] * vector.y + matrix[0][2] * vector.z,
+    y: matrix[1][0] * vector.x + matrix[1][1] * vector.y + matrix[1][2] * vector.z,
+    z: matrix[2][0] * vector.x + matrix[2][1] * vector.y + matrix[2][2] * vector.z,
+  };
+}
+
+
+function mpsToKph(mps) {
+  return mps * 3.6;
+}
+
+
+
+class AudioController {
+  audio = new Audio();
+  audioIsPlaying = false;
+  audioContext = new AudioContext();
+  mediaSource = this.audioContext.createMediaElementSource(this.audio);
+  stereoPanner = this.audioContext.createStereoPanner();
+
+  constructor({minPlaybackRate=0.1, maxPlaybackRate=10, playbackRateMultiplier=2, volumeMultiplier=1} = {}) {
+    this.minPlaybackRate = minPlaybackRate;
+    this.maxPlaybackRate = maxPlaybackRate;
+    this.playbackRateMultiplier = playbackRateMultiplier;
+    this.volumeMultiplier = volumeMultiplier;
+
+    this.mediaSource.connect(this.stereoPanner);
+    this.stereoPanner.connect(this.audioContext.destination);
+
+    this.audio.src = '/sounds/beep.wav';
+    // this.audio.loop = true;
+
+    this.audio.onplaying = () => {
+      this.audioIsPlaying = true;
+    };
+    this.audio.onended = () => {
+      this.audioIsPlaying = false;
+    };
+  }
+
+  /**
+   * @param {number} amount - Controls the volume and playback rate of the audio (higher = louder and faster)
+   * @param {number} pan - Controls the panning of the audio (negative = left, positive = right), between -1 and 1
+   */
+  play(amount, pan) {
+    this.audio.volume = Math.max(0, Math.min(1, amount / 10 * this.volumeMultiplier));
+    this.audio.playbackRate = Math.min(Math.max(this.minPlaybackRate, amount * this.playbackRateMultiplier), this.maxPlaybackRate);
+    this.stereoPanner.pan.value = pan;
+
+    if (this.audio.paused && this.audioContext.state !== 'suspended' && !this.audioIsPlaying) {
+      this.audio.play().catch(() => {});
+    }
+  }
+}

@@ -1,4 +1,6 @@
 :root {
+  --hud-element-background: rgba(0, 0, 0, 0.6);
+
   --revs-color-normal: white;
   --revs-color-upshift: rgb(0, 255, 0);
   --revs-color-redline: rgb(255, 0, 0);
@@ -105,7 +107,7 @@ table {
 }
 
 he {
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--hud-element-background);
   border-radius: 5px;
   align-items: center;
   margin: 2px;
@@ -634,9 +636,21 @@ progress#revs::-webkit-progress-value {
   gap: 70px;
 }
 
+#laps-left {
+  width: 120px !important;
+  text-align: center;
+  direction: rtl;
+}
+
 #time-left-container {
   align-items: center;
   margin: 10px;
+}
+
+#time-left {
+  width: 180px;
+  text-align: center;
+  direction: rtl;
 }
 
 #time-left span {
@@ -662,3 +676,26 @@ progress#revs::-webkit-progress-value {
   margin: 10px;
 }
 
+
+#radar {
+  border-radius: 50%;
+  width: 300px;
+  height: 300px;
+  position: absolute;
+  top: calc(100vh - 300px - 15px);
+  left: 50%;
+  transform: translateX(-50%);
+  overflow: hidden;
+  background-size: contain;
+  opacity: 0.8;
+}
+
+#radar .radar-car {
+  position: absolute;
+  border-radius: 6px;
+  background-color: red;
+}
+
+#radar .radar-car-self {
+  background-color: white;
+}

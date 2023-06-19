@@ -23,20 +23,33 @@ document.addEventListener('DOMContentLoaded', () => {
   setSettings(JSON.parse(Buffer.from(settingsBase64, 'base64').toString('utf8')));
 });
 
+
+const EDIT_TEXT = 'Edit';
+const SAVE_TEXT = 'Save';
+const CANCEL_TEXT = 'Cancel';
+const RESET_TEXT = 'Reset';
 function lockOverlay(save) {
   const element = document.getElementById('edit-layout');
-  const val = element.innerText === 'Edit';
+  const didEdit = element.innerText === EDIT_TEXT;
+  const cancelResetButton = document.getElementById('cancel-reset-layout');
 
-  const cancelButton = document.getElementById('cancel-layout');
-  if (val) {
-    element.innerText = 'Save';
-    cancelButton.style.display = 'inline-block';
+  let doEdit;
+  if (!save && cancelResetButton.innerText === RESET_TEXT) {
+    doEdit = true;
+    ipcRenderer.send('reset-hud-layout');
   } else {
-    element.innerText = 'Edit';
-    cancelButton.style.display = 'none';
+    ipcRenderer.send('lock-overlay', [!didEdit, save]);
+
+    doEdit = didEdit;
   }
 
-  ipcRenderer.send('lock-overlay', [!val, save]);
+  if (doEdit) {
+    element.innerText = SAVE_TEXT;
+    cancelResetButton.innerText = CANCEL_TEXT;
+  } else {
+    element.innerText = EDIT_TEXT;
+    cancelResetButton.innerText = RESET_TEXT;
+  }
 }
 
 function speedUnits(val) {

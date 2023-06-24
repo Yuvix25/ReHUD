@@ -30,7 +30,7 @@ namespace R3E
             var timeReset = DateTime.UtcNow;
             var timeLast = timeReset;
 
-            Console.WriteLine("Looking for RRRE.exe...");
+            ReHUD.Startup.logger.Info("Looking for RRRE.exe...");
 
             while (true)
             {
@@ -48,13 +48,13 @@ namespace R3E
                 if (Utilities.IsRrreRunning() && !Mapped)
                 {
                     if (!found)
-                        Console.WriteLine("Found RRRE.exe, mapping shared memory...");
+                        ReHUD.Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
                     
                     found = true;
 
                     if (Map())
                     {
-                        Console.WriteLine("Memory mapped successfully");
+                        ReHUD.Startup.logger.Info("Memory mapped successfully");
                         timeReset = DateTime.UtcNow;
 
                         _buffer = new Byte[Marshal.SizeOf(typeof(Shared))];

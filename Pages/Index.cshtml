@@ -1,19 +1,18 @@
 ﻿@page
 @model IndexModel
 
-
-@* he = hud-element *@
+@{
+  Layout = "~/Pages/Shared/_Layout.cshtml";
+}
 
 <head>
     <title>ReHUD</title>
 
-
-    <script src="https://www.unpkg.com/agnostic-draggable@1.4.5/dist/agnostic-draggable.min.js"></script>
-
-    <script src="~/js/utils.js" asp-append-version="true"></script>
+    <script src="~/lib/agnostic-draggable/dist/agnostic-draggable.min.js"></script>
     <script src="~/js/index.js" asp-append-version="true"></script>
 </head>
 
+@* he = hud-element *@
 <div id="main-container" class="col sb">
     <div class="row sb" id="top-group">
         <div class="row" id="top-left-group">

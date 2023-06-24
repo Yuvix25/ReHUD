@@ -21,8 +21,8 @@ I started this project following the recent increase in the number of bugs in Ra
  - Fuel insights
  - Input meter
  - Damage viewer
+ - Radar
  - Live on-track relative display*
- - Radar* (waiting for some features to be implemented into the shared memory API)
  - Session status*
  - Settings window:
     - Element scale and rearrangement*
@@ -54,6 +54,9 @@ To change the position and scale of hud elements, first click on the "Edit" butt
 <img src="https://user-images.githubusercontent.com/58216719/232799762-dbd964cc-e461-4545-9b21-749b71d136d4.png" height="500">
 
 ---
+
+## Bug Reporting
+Since [v0.3.1-beta](https://github.com/Yuvix25/ReHUD/releases/tag/v0.3.1-beta), the settings window contains a "Show Log File" button. If you encounter a bug/issue, create a [new issue](https://github.com/Yuvix25/ReHUD/issues/new?assignees=Yuvix25&labels=bug&projects=&template=bug_report.md&title=), 
 
 ## Contribution
 Any contribution to the project will be highly appreciated! Feel free to open a new [issue](https://github.com/Yuvix25/ReHUD/issues/new/choose) or [pull request](https://github.com/Yuvix25/ReHUD/compare), and I'll do my best to review them and provide my own feedback.

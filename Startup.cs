@@ -1,11 +1,20 @@
 using ElectronNET.API;
 using ElectronNET.API.Entities;
 using Newtonsoft.Json;
+using log4net;
+using log4net.Appender;
+using log4net.Repository.Hierarchy;
+using log4net.Config;
+using System.Reflection;
 
 namespace ReHUD;
 
 public class Startup
 {
+    public static ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
+    FileAppender? rootAppender;
+    string? logFilePath;
+
     public Startup(IConfiguration configuration)
     {
         Configuration = configuration;
@@ -22,6 +31,12 @@ public class Startup
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+        var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+        XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+
+        rootAppender = ((Hierarchy)logRepository).Root.Appenders.OfType<FileAppender>().FirstOrDefault();
+        logFilePath = rootAppender != null ? rootAppender.File : string.Empty;
+
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
@@ -57,6 +72,8 @@ public class Startup
         }
     }
 
+    private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
+    private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file name 'ReHUD.log' in C:\\Users\\<username>\\AppData\\Local\\Programs\\rehud\\resources\\bin";
 
     private const string userDataFile = "userData.json";
     private const string settingsFile = "settings.json";
@@ -75,16 +92,18 @@ public class Startup
             Transparent = true,
             BackgroundColor = "#00000000",
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
+            WebPreferences = new WebPreferences()
+            {
+                EnableRemoteModule = true,
+                NodeIntegration = true,
+                // ContextIsolation = true,
+            },
         });
 
         bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => { });
         if (!gotLock)
         {
-            MessageBoxOptions options = new MessageBoxOptions("Another instance of ReHUD is already running.");
-            options.Type = MessageBoxType.error;
-            options.Title = "Error";
-
-            await Electron.Dialog.ShowMessageBoxAsync(window, options);
+            await ShowMessageBox(window, anotherInstanceMessage, "Error", MessageBoxType.error);
             Electron.App.Quit();
             return;
         }
@@ -93,6 +112,28 @@ public class Startup
 
         if (!env.IsDevelopment())
             window.SetIgnoreMouseEvents(true);
+
+
+        await Electron.IpcMain.On("log", (args) =>
+        {
+            Newtonsoft.Json.Linq.JObject obj = (Newtonsoft.Json.Linq.JObject)args;
+            if (obj == null || obj["level"] == null)
+                return;
+            string message = ((string)(obj["message"] ?? "(unknown)")).Trim();
+            string level = ((string)obj["level"]).ToUpper();
+
+            switch (level) {
+                case "INFO":
+                    logger.Debug(message);
+                    break;
+                case "WARN":
+                    logger.Info(message);
+                    break;
+                case "ERROR":
+                    logger.Error(message);
+                    break;
+            }
+        });
 
 
         await Electron.IpcMain.On("get-hud-layout", (args) => {
@@ -107,7 +148,7 @@ public class Startup
             try {
                 SendHudLayout(window, new Dictionary<String, Object>());
             } catch (Exception e) {
-                Console.WriteLine(e);
+                logger.Error("Error resetting HUD layout", e);
             }
         });
 
@@ -134,6 +175,13 @@ public class Startup
             Width = 800,
             Height = 600,
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
+            WebPreferences = new WebPreferences()
+            {
+                // ContextIsolation = true,
+                EnableRemoteModule = true,
+                NodeIntegration = true,
+                // Preload = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "js", "utils.js"),
+            },
         });
 
         if (!env.IsDevelopment())
@@ -172,10 +220,52 @@ public class Startup
             if (array.Count == 2 && array[0] != null && array[0].Type == Newtonsoft.Json.Linq.JTokenType.String)
                 SaveSetting(array[0].ToString(), array[1]);
             else
-                Console.WriteLine("Invalid setting: " + arg);
+                logger.Error("Invalid setting when attempting 'set-setting': " + arg);
+        });
+
+
+        await Electron.IpcMain.On("show-log-file", async (arg) => {
+            if (logFilePath == null) {
+                await ShowMessageBox(window, logFilePathWarning, "Warning", MessageBoxType.warning);
+            } else {
+                await Electron.Shell.ShowItemInFolderAsync(Path.Combine(logFilePath));
+            }
         });
 
         window.OnClosed += () => Electron.App.Quit();
+    }
+
+    private async Task<MessageBoxResult> ShowMessageBox(BrowserWindow window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
+    {
+        MessageBoxOptions options = PrepareMessageBox(message, title, type);
+        return await Electron.Dialog.ShowMessageBoxAsync(window, options);
+    }
+
+    private async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
+    {
+        MessageBoxOptions options = PrepareMessageBox(message, title, type);
+        return await Electron.Dialog.ShowMessageBoxAsync(options);
+    }
+
+    private MessageBoxOptions PrepareMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
+    {
+        MessageBoxOptions options = new MessageBoxOptions(message);
+        options.Type = type;
+        options.Title = title;
+
+        switch (type) {
+            case MessageBoxType.error:
+                logger.Error(message);
+                break;
+            case MessageBoxType.info:
+                logger.Info(message);
+                break;
+            case MessageBoxType.warning:
+                logger.Warn(message);
+                break;
+        }
+
+        return options;
     }
 
     Dictionary<String, Object> settings = GetSettings();
@@ -287,7 +377,7 @@ public class Startup
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
+                    logger.Error("Error saving data", e);
                 }
 
                 lastLap = data.CompletedLaps;

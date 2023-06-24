@@ -30,7 +30,7 @@ class Driver {
    * The maximum deviation allowed within all laps for the best lap to be considered trustworthy.
    */
   static get MIN_TRUSTWORTHINESS_FOR_BEST_LAP() {
-    return 0.982; // for example, [102, 101, 98.5] recieves a score of 0.985
+    return 0.982; // for example, [102, 101, 98.5] receives a score of 0.985
   }
 
   get BEST_LAPS_FOR_DEVIATION() {
@@ -138,10 +138,11 @@ class Driver {
         return null;
       return delta;
     } else {
-      if (this.bestLapTrustworthiness > Driver.MIN_TRUSTWORTHINESS_FOR_BEST_LAP) {
+      const res = driver.deltaBetweenPoints(thisLapDistance, otherLapDistance);
+      if (res == null || this.bestLapTrustworthiness > Driver.MIN_TRUSTWORTHINESS_FOR_BEST_LAP) {
         return this.deltaBetweenPoints(thisLapDistance, otherLapDistance);
       }
-      return driver.deltaBetweenPoints(thisLapDistance, otherLapDistance);
+      return res;
     }
   }
 
@@ -161,7 +162,7 @@ class Driver {
     if (this.bestLapTrustworthiness >= Driver.MIN_TRUSTWORTHINESS_FOR_BEST_LAP) {
       lapData = this.bestLap;
     }
-    
+
     const point1Index = Driver.findClosestPointIndex(point1, lapData);
     const point2Index = Driver.findClosestPointIndex(point2, lapData);
 
@@ -175,7 +176,7 @@ class Driver {
       const pointDistance = lapData[point1Index][0];
       point1Time += (nextPointTime - point1Time) * (point1 - pointDistance) / (nextPointDistance - pointDistance);
     }
-  
+
     let point2Time = lapData[point2Index][1];
     if (point2Index < lapData.length - 1) {
       const nextPointTime = lapData[point2Index + 1][1];
@@ -252,7 +253,7 @@ class Driver {
 function standardDeviation(values) {
   var avg = average(values);
 
-  var squareDiffs = values.map(function(value) {
+  var squareDiffs = values.map(function (value) {
     var diff = value - avg;
     var sqrDiff = diff * diff;
     return sqrDiff;
@@ -270,7 +271,7 @@ function standardDeviation(values) {
  * @return {number}
  */
 function average(data) {
-  var sum = data.reduce(function(sum, value) {
+  var sum = data.reduce(function (sum, value) {
     return sum + value;
   }, 0);
 
@@ -356,7 +357,7 @@ class AudioController {
   mediaSource = this.audioContext.createMediaElementSource(this.audio);
   stereoPanner = this.audioContext.createStereoPanner();
 
-  constructor({minPlaybackRate=0.1, maxPlaybackRate=10, playbackRateMultiplier=2, volumeMultiplier=1} = {}) {
+  constructor({ minPlaybackRate = 0.1, maxPlaybackRate = 10, playbackRateMultiplier = 2, volumeMultiplier = 1 } = {}) {
     this.minPlaybackRate = minPlaybackRate;
     this.maxPlaybackRate = maxPlaybackRate;
     this.playbackRateMultiplier = playbackRateMultiplier;
@@ -376,6 +377,10 @@ class AudioController {
     };
   }
 
+  setVolume(volume) {
+    this.volumeMultiplier = volume;
+  }
+
   /**
    * @param {number} amount - Controls the volume and playback rate of the audio (higher = louder and faster)
    * @param {number} pan - Controls the panning of the audio (negative = left, positive = right), between -1 and 1
@@ -386,7 +391,80 @@ class AudioController {
     this.stereoPanner.pan.value = pan;
 
     if (this.audio.paused && this.audioContext.state !== 'suspended' && !this.audioIsPlaying) {
-      this.audio.play().catch(() => {});
+      this.audio.play().catch(() => { });
     }
   }
 }
+
+const INFO = 'INFO';
+const WARN = 'WARN';
+const ERROR = 'ERROR';
+
+function writeToLog(ipc, message, level = INFO) {
+  ipc.send('log', { message, level });
+}
+
+
+function enableLogging(ipc, filename) {
+  function proxy(ipc, f, level) {
+    return function (...args) {
+      f(...args);
+      function getErrorObject(){
+        try { throw Error('') } catch(err) { return err; }
+      }
+      
+      let origin = null;
+      try {
+        const err = getErrorObject();
+        const caller_line = err.stack.split("\n")[3];
+        const index = caller_line.indexOf("at ");
+        origin = caller_line.slice(index+2, caller_line.length);
+      } catch (e) {
+        origin = filename;
+      }
+
+      writeToLog(ipc, `${origin}: ${args.join(' ')}`, level);
+    }
+  }
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  console.log = proxy(ipc, originalLog, INFO);
+  console.warn = proxy(ipc, originalWarn, WARN);
+  console.error = proxy(ipc, originalError, ERROR);
+
+
+  window.onerror = (message, file, line, column, errorObj) => {
+    if (errorObj !== undefined) //so it won't blow up in the rest of the browsers
+      console.error(errorObj.stack);
+
+    return false;
+  };
+  window.addEventListener('unhandledrejection', (e) => {
+    console.error(JSON.stringify(e.reason));
+  });
+  window.addEventListener('securitypolicyviolation', (e) => {
+    const message = `Blocked '${e.blockedURI}' from ${e.documentURI}:${e.lineNumber} (${e.violatedDirective})`;
+    console.error(message);
+  });
+}
+
+
+// const { contextBridge } = require('electron')
+
+
+// contextBridge.exposeInMainWorld('utils', {
+//   Driver,
+//   vectorSubtract,
+//   distanceFromZero,
+//   rotationMatrixFromEular,
+//   rotateVector,
+//   mpsToKph,
+//   AudioController,
+//   writeToLog,
+//   enableLogging,
+//   INFO,
+//   WARN,
+//   ERROR
+// });
+

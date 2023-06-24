@@ -94,7 +94,6 @@ table {
 }
 
 #main-container {
-  display: none;
   width: calc(100vw - 14px);
   height: calc(100vh - 14px) !important;
   margin: 7px;
@@ -159,7 +158,7 @@ progress::-webkit-progress-bar {
 }
 
 he#basic {
-  width: 217px !important;
+  min-width: 217px !important;
 }
 he#basic td {
   border: 1px solid white;
@@ -434,7 +433,6 @@ span#gear {
   margin: 0 !important;
   margin-top: -3px !important;
   color: var(--revs-color);
-  width: 69px !important;
 }
 
 

@@ -16,7 +16,7 @@ namespace R3E
         enum VersionMinor
         {
             // Minor version number to test against
-            R3E_VERSION_MINOR = 13
+            R3E_VERSION_MINOR = 14
         };
 
         enum Session
@@ -554,9 +554,8 @@ namespace R3E
             public Int32 ClassPerformanceIndex;
             // Note: See the EngineType enum
             public Int32 EngineType;
-
-            public Int32 Unused1;
-            public Int32 Unused2;
+            public Single CarWidth;
+            public Single CarLength;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -656,14 +655,13 @@ namespace R3E
             // DisqualifyPenaltyIgnoredBlueFlag = 13,
             // DisqualifyPenaltyMax = 14
             public Int32 PenaltyReason;
-
+	
             // -1 unavailable, 0 = ignition off, 1 = ignition on but not running, 2 = ignition on and running
             public Int32 EngineState;
 
-            // Reserved data
-            public Int32 Unused1;
-            public Single Unused2;
-            public Single Unused3;
+            // Car body orientation
+            // Unit: Euler angles
+            public Vector3<Single> Orientation;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -732,7 +730,7 @@ namespace R3E
 
             // If the session is time based, lap based or time based with an extra lap at the end
             public Int32 SessionLengthFormat;
-
+ 
             // Unit: Meter per second (m/s)
             public Single SessionPitSpeedLimit;
 
@@ -1051,7 +1049,7 @@ namespace R3E
             public Int32 TireTypeRear;
             // Which subtype of tires the car has
             // Note: See the R3E.Constant.TireSubtype enum
-            public Int32 TireSubtypeFront;
+			public Int32 TireSubtypeFront;
             public Int32 TireSubtypeRear;
 
             // Current brake temperature (-1.0 = N/A)

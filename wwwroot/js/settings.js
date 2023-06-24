@@ -1,9 +1,15 @@
 const {ipcRenderer} = require('electron');
+const { remote } = require('electron');
+
+// document.addEventListener('DOMContentLoaded', () => utils.enableLogging(ipcRenderer, 'settings.js'));
+document.addEventListener('DOMContentLoaded', () => enableLogging(ipcRenderer, 'settings.js'));
+
 
 let settings = {};
 
 const writeSettingsMap = {
   'speedUnits': speedUnits,
+  'radarBeepVolume': radarBeepVolume,
 };
 
 
@@ -21,6 +27,32 @@ function setSettings(newSettings) {
 document.addEventListener('DOMContentLoaded', () => {
   const settingsBase64 = location.hash.substring(1);
   setSettings(JSON.parse(Buffer.from(settingsBase64, 'base64').toString('utf8')));
+
+  const onclick = [
+    { id: 'edit-layout', func: () => lockOverlay(true) },
+    { id: 'cancel-reset-layout', func: () => lockOverlay(false) },
+    { id: 'speed-units-kmh', func: () => speedUnits('kmh') },
+    { id: 'speed-units-mph', func: () => speedUnits('mph') },
+    { id: 'show-log-file', func: () => ipcRenderer.send('show-log-file') },
+  ];
+
+  const oninput = [
+    { id: 'radar-beep-volume', func: (v) => radarBeepVolume(v) },
+    { id: 'radar-beep-volume-text', func: (v) => radarBeepVolume(v) },
+  ];
+
+  onclick.forEach((o) => {
+    const element = document.getElementById(o.id);
+    if (element) {
+      element.addEventListener('click', o.func);
+    }
+  });
+  oninput.forEach((o) => {
+    const element = document.getElementById(o.id);
+    if (element) {
+      element.addEventListener('input', () => o.func(element.value));
+    }
+  });
 });
 
 
@@ -66,6 +98,23 @@ function speedUnits(val) {
     kmh.classList.add('selected');
     mph.classList.remove('selected');
   }
+}
+
+const MINIMUM_RADAR_BEEP_VOLUME = 0;
+const MAXIMUM_RADAR_BEEP_VOLUME = 3;
+function radarBeepVolume(val) {
+  sendToMainWindow(['radarBeepVolume', val]);
+
+  const volumeSlider = document.getElementById('radar-beep-volume');
+  const volume = volumeSlider.nextElementSibling;
+
+  volumeSlider.min = MINIMUM_RADAR_BEEP_VOLUME;
+  volumeSlider.max = MAXIMUM_RADAR_BEEP_VOLUME;
+  volume.min = MINIMUM_RADAR_BEEP_VOLUME;
+  volume.max = MAXIMUM_RADAR_BEEP_VOLUME;
+  volumeSlider.value = val;
+  volume.value = val;
+
 }
 
 function sendToMainWindow(arg) {

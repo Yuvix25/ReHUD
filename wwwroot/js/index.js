@@ -3,6 +3,9 @@
 
 const {ipcRenderer} = require('electron');
 
+document.addEventListener('DOMContentLoaded', () => enableLogging(ipcRenderer, 'index.js'));
+
+
 const defaultRenderCycle = 30;
 
 class Value {
@@ -88,10 +91,8 @@ function insertCell(row, value, className) {
 
 const RADAR_RADIUS = 12; // meters
 const RADAR_BEEP_MIN_SPEED = 15; // km/h
-const DEFAULT_CAR_WIDTH = 1.9; // meters
-const DEFAULT_CAR_LENGTH = 4.5; // meters
-
 let RADAR_AUDIO_CONTROLLER = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     RADAR_AUDIO_CONTROLLER = new AudioController({volumeMultiplier: 1});
 });
@@ -141,14 +142,26 @@ const laptimeFormat = (time) => {
  */
 let SPEED_UNITS = 'kmh';
 
+
+const NA = 'N/A';
+
 const root = document.querySelector(':root');
 const VALUES = [
     new Value('speed', 'carSpeed', 5, (x) => Math.round((typeof x !== 'number' ? 0 : x * 3.6) * (SPEED_UNITS === 'mph' ? 0.621371 : 1))),
-    new Value('gear', 'gear', 3, (x) => x == undefined || x == 0 ? 'N' : x == -1 ? 'R' : x),
-    new Value('engine-map', 'engineMapSetting', (x) => `EM: ${x == -1 ? 5 : x}`),
+    new Value('gear', 'gear', 3, (x, gearId) => {
+        const gearElement = document.getElementById(gearId);
+        const res = (x == undefined || x == 0) ? 'N' : x == -1 ? 'R' : x.toString();
+        if (res.length == 1)
+            gearElement.width = '69px';
+        else
+            gearElement.width = '117px';
+        
+        return res;
+    }),
+    new Value('engine-map', 'engineMapSetting', (x) => `EM: ${valueIsValid(x) ? 5 : x}`),
     new Value('traction-control', ['tractionControlSetting', 'tractionControlPercent'], (x, y) =>
-                `TC${x}` + (y == undefined ? `` : `: ${Math.round(y)}%`)),
-    new Value('engine-brake', 'engineBrakeSetting', (x) => `EB: ${x}`),
+                `TC${(valueIsValid(x) ? x : ': ' + NA)}` + (valueIsValid(y) ? `: ${Math.round(y)}%` : '')),
+    new Value('engine-brake', 'engineBrakeSetting', (x) => `EB: ${valueIsValid(x) ? x : NA}`),
     new Value('brake-bias', 'brakeBias', (x) => `BB: ${(100 - x * 100).toFixed(1)}%`),
     new Value('revs', ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'], 1, (current, max, upshift, pitLimiter, id) => {
         if (current == undefined || max == undefined)
@@ -173,12 +186,12 @@ const VALUES = [
         }
     }),
 
-    new Value('fuel-left', 'fuelLeft', (x) => x == undefined ? 'N/A' : `${x.toFixed(1)}`),
-    new Value('fuel-per-lap', '+fuelPerLap', (x) => x == undefined ? 'N/A' : `${x.toFixed(2)}`),
+    new Value('fuel-left', 'fuelLeft', (x) => x == undefined ? NA : `${x.toFixed(1)}`),
+    new Value('fuel-per-lap', '+fuelPerLap', (x) => x == undefined ? NA : `${x.toFixed(2)}`),
     new Value('fuel-laps', ['fuelLeft', '+fuelPerLap'], (x, y) => {
         if (x == undefined || y == undefined) {
             root.style.setProperty('--fuel-left-color', 'rgb(0, 255, 0)')
-            return 'N/A';
+            return NA;
         }
         
         // 1 lap left - red, 5 laps left - green
@@ -187,7 +200,7 @@ const VALUES = [
     }),
     new Value('fuel-time', ['fuelLeft', '+fuelPerLap', '+averageLapTime'], (x, y, z) => {
         if (x == undefined || y == undefined || z == undefined)
-            return 'N/A';
+            return NA;
         const time = x / y * z;
         const hours = Math.floor(time / 3600);
         const minutes = (Math.floor(time / 60) % 60).toString().padStart(2, '0');
@@ -197,7 +210,7 @@ const VALUES = [
     new Value('fuel-last-lap', ['+fuelLastLap', '+fuelPerLap'], (x, y) => {
         if (x == undefined) {
             root.style.setProperty('--fuel-last-lap-color', 'var(--fuel-middle-color)');
-            return 'N/A';
+            return NA;
         }
         
         // lastlap consumed more than average - red, less - green, average - middle point
@@ -206,13 +219,13 @@ const VALUES = [
     }),
     new Value('fuel-to-end', ['+lapsUntilFinish', '+fuelPerLap'], (x, y) => {
         if (x == undefined || y == undefined)
-            return 'N/A';
+            return NA;
         return `${(x * y).toFixed(1)}`;
     }),
     new Value('fuel-to-add', ['+lapsUntilFinish', '+fuelPerLap', 'fuelLeft'], (x, y, z) => {
         if (x == undefined || y == undefined || z == undefined) {
             root.style.setProperty('--fuel-to-add-color', 'var(--fuel-middle-color)');
-            return 'N/A';
+            return NA;
         }
         
         const fuelToAdd = x * y - z;
@@ -257,7 +270,7 @@ const VALUES = [
                 const temp = x?.[tire]?.currentTemp?.[side];
 
                 if (temp == undefined) {
-                    text.innerText = 'N/A';
+                    text.innerText = NA;
                     root.style.setProperty(`--${name}-${i}-color`, 'var(--temp-color-normal)');
                     continue;
                 }
@@ -333,6 +346,16 @@ const VALUES = [
         tc = valueIsValid(tc) ? tc : 0;
         abs = valueIsValid(abs) ? abs : 0;
 
+        if (tc == 0)
+            document.getElementById('tc-icon').style.display = 'none';
+        else
+            document.getElementById('tc-icon').style.display = 'block';
+        
+        if (abs == 0)
+            document.getElementById('abs-icon').style.display = 'none';
+        else
+            document.getElementById('abs-icon').style.display = 'block';
+
         root.style.setProperty('--tc-grayscale', tc == 5 ? 0 : 1);
         root.style.setProperty('--abs-grayscale', abs == 5 ? 0 : 1);
         root.style.setProperty('--tc-brightness', tc == 0 ? 1 : 10);
@@ -341,13 +364,7 @@ const VALUES = [
 
     new Value('relative-viewer', ['driverData', 'position', 'layoutLength', 'sessionPhase'], 5, (all, place, trackLength, phase) => {
         const relative = document.getElementById('relative-viewer');
-        if (all == null || place == null)
-            return false;
-
-        relative.style.display = 'block';
         const relativeTable = relative.getElementsByTagName('tbody')[0];
-
-        place--;
 
         // 1 - garage, 2 - gridwalk, 3 - formation, 4 - countdown, 5 - green flag, 6 - checkered flag
         if (phase < 3) {
@@ -355,9 +372,19 @@ const VALUES = [
             drivers = {};
             return false;
         }
+
+        if (all == null || place == null)
+            return false;
+        
         const driverCount = all.length;
         if (driverCount <= 1)
             return false;
+
+        
+
+        place--;
+
+        relative.style.display = 'block';
         
         const classes = [];
         /**
@@ -499,7 +526,7 @@ const VALUES = [
             insertCell(row, carName, 'car-name');
     
             const deltaRaw = mergedDeltas[i][1];
-            const delta = driver.place == place + 1 ? '' : (deltaRaw == null ? 'N/A' : deltaRaw.toFixed(1));
+            const delta = driver.place == place + 1 ? '' : (deltaRaw == null ? NA : deltaRaw.toFixed(1));
             insertCell(row, delta, 'time-delta');
         }
 
@@ -616,10 +643,12 @@ const VALUES = [
             const rotationMatrix = rotationMatrixFromEular(driver.orientation);
 
             drivers.forEach(d => {
-                if (myPlace != d.place)
+                if (myPlace != d.place) {
                     d.relativePosition = rotateVector(rotationMatrix, vectorSubtract(driver.position, d.position)); // x - left/right, z - front/back
-                else {
+                    d.relativeOrientation = vectorSubtract(d.orientation, driver.orientation);
+                } else {
                     d.relativePosition = { x: 0, y: 0, z: 0 };
+                    d.relativeOrientation = { x: 0, y: 0, z: 0 };
                 }
             });
             const close = drivers.filter(d => distanceFromZero(d.relativePosition) < RADAR_RADIUS);
@@ -639,25 +668,31 @@ const VALUES = [
                 }
                 radar.children[i].style.display = null;
                 const driver = close[i];
+
+                const rotation = driver.relativeOrientation.y;
                 const leftRight = driver.relativePosition.x;
                 let frontBack = driver.relativePosition.z;
 
-                if (leftRight < 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= DEFAULT_CAR_LENGTH))
+                const car_width = driver.driverInfo.carWidth;
+                const car_length = driver.driverInfo.carLength;
+
+                if (leftRight < 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= car_length))
                     closeLeft = 1;
-                else if (leftRight > 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= DEFAULT_CAR_LENGTH))
+                else if (leftRight > 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= car_length))
                     closeRight = 1;
 
                 frontBack = -frontBack;
                 
                 const distance = distanceFromZero(driver.relativePosition);
 
-                const width = DEFAULT_CAR_WIDTH / RADAR_RADIUS * radar_size / 2;
-                const height = DEFAULT_CAR_LENGTH / RADAR_RADIUS * radar_size / 2;
+                const width = car_width / RADAR_RADIUS * radar_size / 2;
+                const height = car_length / RADAR_RADIUS * radar_size / 2;
                 
                 radar.children[i].style.left = `${(leftRight / RADAR_RADIUS) * radar_size / 2 + radar_size / 2 - width / 2}px`;
                 radar.children[i].style.top = `${(frontBack / RADAR_RADIUS) * radar_size / 2 + radar_size / 2 - height / 2}px`;
                 radar.children[i].style.width = `${width}px`;
                 radar.children[i].style.height = `${height}px`;
+                radar.children[i].style.transform = `rotate(${rotation}rad)`;
 
                 if (myPlace == driver.place) {
                     radar.children[i].classList.add('radar-car-self');
@@ -724,14 +759,15 @@ ipcRenderer.on('data', (event, data) => {
 
 function show() {
     isShown = true;
-    document.getElementById('main-container').style.display = 'flex';
+    document.body.style.display = 'block';
 }
 
 function hide() {
     isShown = false;
-    document.getElementById('main-container').style.display = 'none';
+    document.body.style.display = 'none';
 }
 
+document.addEventListener('DOMContentLoaded', hide);
 ipcRenderer.on('hide', hide);
 ipcRenderer.on('show', show);
 
@@ -749,6 +785,9 @@ ipcRenderer.on('set-setting', (e, arg) => {
         case 'speedUnits':
             SPEED_UNITS = value;
             break;
+        case 'radarBeepVolume':
+            if (RADAR_AUDIO_CONTROLLER != null)
+                RADAR_AUDIO_CONTROLLER.setVolume(value);
     }
 });
 

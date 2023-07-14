@@ -44,12 +44,11 @@ namespace R3E
 
                 timeLast = timeNow;
 
-
-                if (Utilities.IsRrreRunning() && !Mapped)
+                if (Utilities.IsRaceRoomRunning() && !Mapped)
                 {
                     if (!found)
                         ReHUD.Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
-                    
+
                     found = true;
 
                     if (Map())
@@ -75,8 +74,9 @@ namespace R3E
                 _file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
                 return true;
             }
-            catch (FileNotFoundException)
+            catch (FileNotFoundException e)
             {
+                ReHUD.Startup.logger.Error("Error mapping shared memory", e);
                 return false;
             }
         }
@@ -85,25 +85,26 @@ namespace R3E
         {
             if (_file == null)
                 return false;
-            
+
             try
             {
                 var _view = _file.CreateViewStream();
                 BinaryReader _stream = new BinaryReader(_view);
                 _buffer = _stream.ReadBytes(Marshal.SizeOf(typeof(Shared)));
                 GCHandle _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
-                
+
                 var res = Marshal.PtrToStructure(_handle.AddrOfPinnedObject(), typeof(Shared));
                 if (res == null)
                     return false;
 
-                _data = (Shared) res;
+                _data = (Shared)res;
                 _handle.Free();
 
                 return true;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                ReHUD.Startup.logger.Error("Error reading shared memory", e);
                 return false;
             }
         }

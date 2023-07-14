@@ -122,7 +122,8 @@ public class Startup
             string message = ((string)(obj["message"] ?? "(unknown)")).Trim();
             string level = ((string)obj["level"]).ToUpper();
 
-            switch (level) {
+            switch (level)
+            {
                 case "INFO":
                     logger.Debug(message);
                     break;
@@ -136,18 +137,24 @@ public class Startup
         });
 
 
-        await Electron.IpcMain.On("get-hud-layout", (args) => {
+        await Electron.IpcMain.On("get-hud-layout", (args) =>
+        {
             SendHudLayout(window);
         });
 
-        await Electron.IpcMain.On("set-hud-layout", (args) => {
+        await Electron.IpcMain.On("set-hud-layout", (args) =>
+        {
             SetHudLayout(JsonConvert.DeserializeObject<Object>(args.ToString() ?? "{}") ?? new Dictionary<String, Object>());
         });
 
-        await Electron.IpcMain.On("reset-hud-layout", (args) => {
-            try {
+        await Electron.IpcMain.On("reset-hud-layout", (args) =>
+        {
+            try
+            {
                 SendHudLayout(window, new Dictionary<String, Object>());
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 logger.Error("Error resetting HUD layout", e);
             }
         });
@@ -156,7 +163,7 @@ public class Startup
 
         window.OnClosed += () => Electron.App.Quit();
     }
-    
+
     private void SendHudLayout(ElectronNET.API.BrowserWindow window)
     {
         SendHudLayout(window, GetHudLayout());
@@ -206,9 +213,12 @@ public class Startup
             mainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
             window.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
 
-            if (locked && save) {
+            if (locked && save)
+            {
                 Electron.IpcMain.Send(mainWindow, "save-hud-layout");
-            } else if (locked) {
+            }
+            else if (locked)
+            {
                 SendHudLayout(mainWindow);
             }
         });
@@ -224,10 +234,14 @@ public class Startup
         });
 
 
-        await Electron.IpcMain.On("show-log-file", async (arg) => {
-            if (logFilePath == null) {
+        await Electron.IpcMain.On("show-log-file", async (arg) =>
+        {
+            if (logFilePath == null)
+            {
                 await ShowMessageBox(window, logFilePathWarning, "Warning", MessageBoxType.warning);
-            } else {
+            }
+            else
+            {
                 await Electron.Shell.ShowItemInFolderAsync(Path.Combine(logFilePath));
             }
         });
@@ -253,7 +267,8 @@ public class Startup
         options.Type = type;
         options.Title = title;
 
-        switch (type) {
+        switch (type)
+        {
             case MessageBoxType.error:
                 logger.Error(message);
                 break;
@@ -283,7 +298,8 @@ public class Startup
         return JsonConvert.DeserializeObject<Dictionary<String, Object>>(ReadDataFile(settingsFile)) ?? new Dictionary<String, Object>();
     }
 
-    private object GetHudLayout() {
+    private object GetHudLayout()
+    {
         return settings.ContainsKey("hudLayout") ? settings["hudLayout"] : new Dictionary<String, Object>();
     }
 
@@ -341,11 +357,14 @@ public class Startup
             ExtraData extraData = new ExtraData();
             Thread thread = new Thread(() => memory.Run((data) =>
             {
-                if (data.FuelUseActive != 1 && !userDataClearedForMultiplier) {
+                if (data.FuelUseActive != 1 && !userDataClearedForMultiplier)
+                {
                     userDataClearedForMultiplier = true;
                     SaveUserData(userData);
                     userData = new R3E.UserData();
-                } else if (data.FuelUseActive == 1 && userDataClearedForMultiplier) {
+                }
+                else if (data.FuelUseActive == 1 && userDataClearedForMultiplier)
+                {
                     userDataClearedForMultiplier = false;
                     userData = GetUserData();
                 }
@@ -354,7 +373,8 @@ public class Startup
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
                 extraData.RawData = data;
                 int driverDataSize = 0;
-                foreach (var d in extraData.RawData.DriverData) {
+                foreach (var d in extraData.RawData.DriverData)
+                {
                     if (d.DriverInfo.CarNumber == -1)
                         break;
                     driverDataSize++;
@@ -366,7 +386,9 @@ public class Startup
                     extraData.FuelLastLap = combination.GetLastLapFuelUsage();
                     extraData.AverageLapTime = combination.GetAverageLapTime();
                     extraData.BestLapTime = combination.GetBestLapTime();
-                    extraData.LapsUntilFinish = R3E.Utilities.GetLapsUntilFinish(data, combination);
+                    Tuple<int, double> lapData = R3E.Utilities.GetEstimatedLapCount(data, combination);
+                    extraData.EstimatedRaceLapCount = lapData.Item1;
+                    extraData.LapsUntilFinish = lapData.Item2;
                     iter = 0;
                 }
                 iter++;
@@ -404,6 +426,7 @@ public class Startup
                 else if (window != null && !(isShown ?? false))
                 {
                     Electron.IpcMain.Send(window, "show");
+                    window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
                     isShown = true;
                 }
             }));

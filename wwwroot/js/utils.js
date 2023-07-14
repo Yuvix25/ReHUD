@@ -423,7 +423,7 @@ function enableLogging(ipc, filename) {
         origin = filename;
       }
 
-      writeToLog(ipc, `${origin}: ${args.join(' ')}`, level);
+      writeToLog(ipc, `${origin}: ${args.map(x => JSON.stringify(x)).join(' ')}`, level);
     }
   }
   const originalLog = console.log;

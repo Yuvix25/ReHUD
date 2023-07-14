@@ -433,6 +433,7 @@ span#gear {
   margin: 0 !important;
   margin-top: -3px !important;
   color: var(--revs-color);
+  width: 69px !important;
 }
 
 
@@ -628,6 +629,7 @@ progress#revs::-webkit-progress-value {
 
 #top-group .container {
   align-items: center;
+  margin: 10px;
 }
 
 #top-right-group {
@@ -642,7 +644,7 @@ progress#revs::-webkit-progress-value {
 
 #time-left-container {
   align-items: center;
-  margin: 10px;
+  /* margin: 10px; */
 }
 
 #time-left {
@@ -668,10 +670,6 @@ progress#revs::-webkit-progress-value {
 #time-left span::after, #top-group .label {
   color: #e5e5e5;
   font-size: 23px;
-}
-
-#position-container {
-  margin: 10px;
 }
 
 

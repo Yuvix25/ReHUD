@@ -6,15 +6,16 @@ const {ipcRenderer} = require('electron');
 document.addEventListener('DOMContentLoaded', () => enableLogging(ipcRenderer, 'index.js'));
 
 
-const defaultRenderCycle = 30;
+const DEFAULT_RENDER_CYCLE = 30;
 
 class Value {
     // if valueName starts with '+', it will be taken from the extra data (and not from rawData)
-    constructor(elementId, valuesNames, renderEvery = defaultRenderCycle, valueMap=null) {
+    constructor({containerId = null, elementId, inputValues, renderEvery = DEFAULT_RENDER_CYCLE, valueMap = null}) {
+        this.containerId = containerId;
         this.elementId = elementId;
-        this.valueNames = typeof valuesNames === 'string' ? [valuesNames] : valuesNames;
+        this.inputValues = typeof inputValues === 'string' ? [inputValues] : inputValues;
         this.valueMap = typeof renderEvery === 'function' ? renderEvery : valueMap ?? ((x) => x);
-        this.refreshRate = typeof renderEvery === 'number' ? renderEvery : defaultRenderCycle;
+        this.refreshRate = typeof renderEvery === 'number' ? renderEvery : DEFAULT_RENDER_CYCLE;
     }
 
     /**
@@ -26,7 +27,7 @@ class Value {
      */
     getValueFromData(data) {
         const values = [];
-        for (const valueName of this.valueNames) {
+        for (const valueName of this.inputValues) {
             if (valueName[0] === '+') {
                 values.push(data[valueName.slice(1)]);
                 continue;
@@ -36,6 +37,14 @@ class Value {
         return this.valueMap(...values, this.elementId);
     }
 }
+
+class _Hide {
+    constructor(elementId=null) {
+        this.elementId = elementId;
+    }
+}
+
+const Hide = (elementId=null) => new _Hide(elementId);
 
 
 function lerpRGB(color1, color2, t) {
@@ -147,8 +156,8 @@ const NA = 'N/A';
 
 const root = document.querySelector(':root');
 const VALUES = [
-    new Value('speed', 'carSpeed', 5, (x) => Math.round((typeof x !== 'number' ? 0 : x * 3.6) * (SPEED_UNITS === 'mph' ? 0.621371 : 1))),
-    new Value('gear', 'gear', 3, (x, gearId) => {
+    new Value({elementId: 'speed', inputValues: 'carSpeed', renderEvery: 5, valueMap: (x) => Math.round((typeof x !== 'number' ? 0 : x * 3.6) * (SPEED_UNITS === 'mph' ? 0.621371 : 1))}),
+    new Value({elementId: 'gear', inputValues: 'gear', renderEvery: 3, valueMap: (x, gearId) => {
         const gearElement = document.getElementById(gearId);
         const res = (x == undefined || x == 0) ? 'N' : x == -1 ? 'R' : x.toString();
         if (res.length == 1)
@@ -157,19 +166,25 @@ const VALUES = [
             gearElement.width = '117px';
         
         return res;
-    }),
-    new Value('engine-map', 'engineMapSetting', (x) => `EM: ${valueIsValid(x) ? 5 : x}`),
-    new Value('traction-control', ['tractionControlSetting', 'tractionControlPercent'], (x, y) =>
-                `TC${(valueIsValid(x) ? x : ': ' + NA)}` + (valueIsValid(y) ? `: ${Math.round(y)}%` : '')),
-    new Value('engine-brake', 'engineBrakeSetting', (x) => `EB: ${valueIsValid(x) ? x : NA}`),
-    new Value('brake-bias', 'brakeBias', (x) => `BB: ${(100 - x * 100).toFixed(1)}%`),
-    new Value('revs', ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'], 1, (current, max, upshift, pitLimiter, id) => {
-        if (current == undefined || max == undefined)
+    }}),
+    new Value({elementId: 'engine-map', inputValues: 'engineMapSetting', valueMap: (x) => `EM: ${valueIsValid(x) ? 5 : x}`}),
+    new Value({elementId: 'traction-control', inputValues: ['tractionControlSetting', 'tractionControlPercent'], valueMap: (x, y) =>
+                `TC${(valueIsValid(x) ? x : ': ' + NA)}` + (valueIsValid(y) ? `: ${Math.round(y)}%` : '')}),
+    new Value({elementId: 'engine-brake', inputValues: 'engineBrakeSetting', valueMap: (x) => `EB: ${valueIsValid(x) ? x : NA}`}),
+    new Value({elementId: 'brake-bias', inputValues: 'brakeBias', valueMap: (x) => `BB: ${(100 - x * 100).toFixed(1)}%`}),
+    new Value({elementId: 'revs', inputValues: ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'], renderEvery: 1, valueMap: (current, max, upshift, pitLimiter, id) => {
+        if (!valueIsValid(current) || !valueIsValid(max))
             return;
         if (upshift == undefined)
             upshift = max;
 
-        document.getElementById(id).value = current;
+        try {
+            document.getElementById(id).value = current;
+        } catch (e) {
+            console.error(e);
+            console.error(`error setting value of '${id}' to ${current} (revs)`);
+            return;
+        }
         document.getElementById(id).max = max;
 
         if (pitLimiter === 1) {
@@ -184,11 +199,11 @@ const VALUES = [
         } else {
             root.style.setProperty('--revs-color', 'var(--revs-color-redline)');
         }
-    }),
+    }}),
 
-    new Value('fuel-left', 'fuelLeft', (x) => x == undefined ? NA : `${x.toFixed(1)}`),
-    new Value('fuel-per-lap', '+fuelPerLap', (x) => x == undefined ? NA : `${x.toFixed(2)}`),
-    new Value('fuel-laps', ['fuelLeft', '+fuelPerLap'], (x, y) => {
+    new Value({elementId: 'fuel-left', inputValues: 'fuelLeft', valueMap: (x) => x == undefined ? NA : `${x.toFixed(1)}`}),
+    new Value({elementId: 'fuel-per-lap', inputValues: '+fuelPerLap', valueMap: (x) => x == undefined ? NA : `${x.toFixed(2)}`}),
+    new Value({elementId: 'fuel-laps', inputValues: ['fuelLeft', '+fuelPerLap'], valueMap: (x, y) => {
         if (x == undefined || y == undefined) {
             root.style.setProperty('--fuel-left-color', 'rgb(0, 255, 0)')
             return NA;
@@ -197,8 +212,8 @@ const VALUES = [
         // 1 lap left - red, 5 laps left - green
         root.style.setProperty('--fuel-left-color', lerpRGB([255, 0, 0], [0, 255, 0], (x / y - 1) / 4));
         return `${(x / y).toFixed(1)}`;
-    }),
-    new Value('fuel-time', ['fuelLeft', '+fuelPerLap', '+averageLapTime'], (x, y, z) => {
+    }}),
+    new Value({elementId: 'fuel-time', inputValues: ['fuelLeft', '+fuelPerLap', '+averageLapTime'], valueMap: (x, y, z) => {
         if (x == undefined || y == undefined || z == undefined)
             return NA;
         const time = x / y * z;
@@ -206,23 +221,23 @@ const VALUES = [
         const minutes = (Math.floor(time / 60) % 60).toString().padStart(2, '0');
         const seconds = (Math.floor(time) % 60).toString().padStart(2, '0');
         return `${hours}:${minutes}:${seconds}`;
-    }),
-    new Value('fuel-last-lap', ['+fuelLastLap', '+fuelPerLap'], (x, y) => {
+    }}),
+    new Value({elementId: 'fuel-last-lap', inputValues: ['+fuelLastLap', '+fuelPerLap'], valueMap: (x, y) => {
         if (x == undefined) {
             root.style.setProperty('--fuel-last-lap-color', 'var(--fuel-middle-color)');
             return NA;
         }
         
-        // lastlap consumed more than average - red, less - green, average - middle point
+        // last lap consumed more than average - red, less - green, average - middle point
         root.style.setProperty('--fuel-last-lap-color', lerpRGB([255, 0, 0], [0, 255, 0], (y - x) * 2.5 + 0.5));
         return `${x.toFixed(2)}`;
-    }),
-    new Value('fuel-to-end', ['+lapsUntilFinish', '+fuelPerLap'], (x, y) => {
+    }}),
+    new Value({elementId: 'fuel-to-end', inputValues: ['+lapsUntilFinish', '+fuelPerLap'], valueMap: (x, y) => {
         if (x == undefined || y == undefined)
             return NA;
         return `${(x * y).toFixed(1)}`;
-    }),
-    new Value('fuel-to-add', ['+lapsUntilFinish', '+fuelPerLap', 'fuelLeft'], (x, y, z) => {
+    }}),
+    new Value({elementId: 'fuel-to-add', inputValues: ['+lapsUntilFinish', '+fuelPerLap', 'fuelLeft'], valueMap: (x, y, z) => {
         if (x == undefined || y == undefined || z == undefined) {
             root.style.setProperty('--fuel-to-add-color', 'var(--fuel-middle-color)');
             return NA;
@@ -231,10 +246,10 @@ const VALUES = [
         const fuelToAdd = x * y - z;
         root.style.setProperty('--fuel-to-add-color', lerpRGB([0, 255, 0], [255, 0, 0], (fuelToAdd + 0.7) * 1.43));
         return `${fuelToAdd.toFixed(1)}`;
-    }),
-    new Value('fuel-data', 'fuelUseActive', (x) => x ? undefined : false),
+    }}),
+    new Value({elementId: 'fuel-data', inputValues: 'fuelUseActive', valueMap: (x) => x ? undefined : Hide()}),
 
-    new Value('tires', ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt'], (x, y, z, w) => {
+    new Value({renderEvery: 15, elementId: 'tires', inputValues: ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt'], valueMap: (x, y, z, w) => {
         const nameMap = {
             'frontLeft': 'front-left',
             'frontRight': 'front-right',
@@ -296,8 +311,9 @@ const VALUES = [
                 root.style.setProperty(`--dirty-${name}-color`, dirt < blackLevel ? `black` : lerpRGB3([0, 0, 0], [130, 50, 50], [255, 50, 50], 0.15, (dirt - blackLevel) / 0.9));
             }
         }
-    }),
-    new Value('inputs', ['throttleRaw', 'brakeRaw', 'clutchRaw', 'steerInputRaw', 'steerWheelRangeDegrees'], 1, (tRaw, bRaw, cRaw, sRaw, sRange) => {
+    }}),
+
+    new Value({renderEvery: 1, elementId: 'inputs', inputValues: ['throttleRaw', 'brakeRaw', 'clutchRaw', 'steerInputRaw', 'steerWheelRangeDegrees'], valueMap: (tRaw, bRaw, cRaw, sRaw, sRange) => {
         const throttle = document.getElementById('throttle-input');
         const brake = document.getElementById('brake-input');
         const clutch = document.getElementById('clutch-input');
@@ -322,24 +338,23 @@ const VALUES = [
 
         const steerAngle = sRaw * sRange / 2;
         steer.style.transform = `rotate(${steerAngle}deg)`;
-    }),
+    }}),
 
-    new Value('damage', ['carDamage'], (x) => {
+    new Value({elementId: 'damage', inputValues: ['carDamage'], valueMap: (x) => {
         for (const part of ['engine', 'transmission', 'suspension', 'aerodynamics']) {
             const element = document.querySelector(`#${part}-damage progress`);
             let value = x[part];
             if (value == null)
                 value = 0;
             if (value == -1)
-                return false;
-                // value = 1;
+                return Hide();
 
             element.value = value === 0 ? 1 : value;
             root.style.setProperty(`--${part}-damage-color`, value == 0 ? 'var(--damage-color-full)' : value == 1 ? 'var(--damage-color-ok)' : 'var(--damage-color-partial)');
         }
-    }),
+    }}),
 
-    new Value('assist', ['aidSettings'], 3, (x) => {
+    new Value({renderEvery: 1, elementId: 'assist', inputValues: ['aidSettings'], valueMap: (x) => {
         let tc = x?.tc;
         let abs = x?.abs;
 
@@ -360,9 +375,9 @@ const VALUES = [
         root.style.setProperty('--abs-grayscale', abs == 5 ? 0 : 1);
         root.style.setProperty('--tc-brightness', tc == 0 ? 1 : 10);
         root.style.setProperty('--abs-brightness', abs == 0 ? 1 : 10);
-    }),
+    }}),
 
-    new Value('relative-viewer', ['driverData', 'position', 'layoutLength', 'sessionPhase'], 5, (all, place, trackLength, phase) => {
+    new Value({renderEvery: 5, elementId: 'relative-viewer', inputValues: ['driverData', 'position', 'layoutLength', 'sessionPhase'], valueMap: (all, place, trackLength, phase) => {
         const relative = document.getElementById('relative-viewer');
         const relativeTable = relative.getElementsByTagName('tbody')[0];
 
@@ -370,15 +385,15 @@ const VALUES = [
         if (phase < 3) {
             relativeTable.innerHTML = '';
             drivers = {};
-            return false;
+            return Hide();
         }
 
         if (all == null || place == null)
-            return false;
+            return Hide();
         
         const driverCount = all.length;
         if (driverCount <= 1)
-            return false;
+            return Hide();
 
         
 
@@ -533,9 +548,9 @@ const VALUES = [
         while (relativeTable.children.length > end - start) {
             relativeTable.deleteRow(relativeTable.children.length - 1);
         }
-    }),
+    }}),
 
-    new Value('time-laps-left', ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps', 'lapDistance', 'driverData'], (timeLeft, lapsLeft, sessionType, myLaps, myDistance, driverData) => {
+    new Value({renderEvery: 5, elementId: 'time-laps-left', inputValues: ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps'], valueMap: (timeLeft, lapsLeft, sessionType, myLaps) => {
         const timeLeftElement = document.getElementById('time-left');
         const lapsLeftElement = document.getElementById('laps-left');
         const sessionTypeElement = document.getElementById('session-type');
@@ -549,14 +564,6 @@ const VALUES = [
 
             sessionType = 4;
 
-            const leaderDistance = driverData[0].lapDistance;
-            let leaderLaps = driverData[0].completedLaps;
-            if (!valueIsValid(leaderLaps))
-                leaderLaps = 0;
-            lapsLeft -= leaderLaps - myLaps;
-            if (leaderDistance < myDistance && myLaps != leaderLaps) {
-                lapsLeft++;
-            }
             lapsLeftElement.innerText = `${myLaps+1}/${lapsLeft}`;
         } else if (timeLeft >= 0) {
             timeLeftElement.style.display = 'block';
@@ -566,11 +573,6 @@ const VALUES = [
             timeLeftElement.children[2].innerText = (Math.floor(timeLeft) % 60).toString().padStart(2, '0'); // seconds
         }
 
-        if (sessionType == -1) {
-            sessionTypeElement.style.display = 'none';
-        } else {
-            sessionTypeElement.style.display = 'block';
-        }
         switch (sessionType) {
             case 0:
                 sessionTypeElement.innerText = 'Practice';
@@ -585,15 +587,33 @@ const VALUES = [
                 sessionTypeElement.innerText = 'Warmup';
                 break;
             case 4:
-                sessionTypeElement.innerText = 'Lap';
+                sessionTypeElement.innerText = 'Laps';
+                break;
+            default:
+                sessionTypeElement.innerText = 'Time Left';
                 break;
         }
-    }),
-    new Value('last-lap-session', 'lapTimePreviousSelf', laptimeFormat),
-    new Value('best-lap-session', 'lapTimeBestSelf', laptimeFormat),
-    new Value('position', ['position', 'positionClass', 'driverData'], (position, positionClass, drivers) => {
+    }}),
+    new Value({'containerId': 'estimated-laps-left-container', elementId: 'estimated-laps-left', inputValues: ['sessionType', 'completedLaps', 'lapDistanceFraction', '+estimatedRaceLapCount'], valueMap: (sessionType, completedLaps, fraction, totalLaps) => {
+        if (sessionType != 2 || !valueIsValid(totalLaps))
+            return Hide();
+        
+        if (!valueIsValid(completedLaps)) {
+            completedLaps = -1;
+            totalLaps--; // in the backend, completedLaps is 0 before the start, so you get an extra lap calculated (the one you'll complete when crossing the start line)
+        }
+        if (!valueIsValid(fraction))
+            fraction = 0;
+        
+        completedLaps += fraction;
+
+        return `${Math.max(completedLaps, 0).toFixed(1)}/${totalLaps}`;
+    }}),
+    new Value({elementId: 'last-lap-session', inputValues: 'lapTimePreviousSelf', valueMap: laptimeFormat}),
+    new Value({elementId: 'best-lap-session', inputValues: 'lapTimeBestSelf', valueMap: laptimeFormat}),
+    new Value({containerId: 'position-container', elementId: 'position', inputValues: ['position', 'positionClass', 'driverData'], valueMap: (position, positionClass, drivers) => {
         if (!valueIsValid(position))
-            return false;
+            return Hide();
 
         let myIndex = -1;
         for (let i = 0; i < drivers.length; i++) {
@@ -609,9 +629,9 @@ const VALUES = [
                 classCount++;
 
         return `${position}/${classCount}`;
-    }),
+    }}),
 
-    new Value('leaderboard-challenge', 'sessionLengthFormat', 120, (f) => {
+    new Value({renderEvery: 120, elementId: 'leaderboard-challenge', inputValues: 'sessionLengthFormat', valueMap: (f) => {
         const elements = [
             document.getElementById('position-container'),
             document.getElementById('time-left-container'),
@@ -622,17 +642,17 @@ const VALUES = [
         } else {
             elements.forEach(e => e.style.display = null);
         }
-    }),
+    }}),
 
 
-    new Value('radar', ['driverData', 'player', 'position','carSpeed'], 1,
+    new Value({renderEvery: 1, elementId: 'radar', inputValues: ['driverData', 'player', 'position','carSpeed'], valueMap:
         /**
          * @param {Array} drivers
          * @param {Object} driver
          */
         (drivers, driver, myPlace, speed, radar) => {
             if (driver == undefined)
-                return false;
+                return Hide();
 
             radar = document.getElementById(radar);
 
@@ -715,8 +735,8 @@ const VALUES = [
                 RADAR_AUDIO_CONTROLLER.play(1 - closest / RADAR_RADIUS, closeLeft * -1 + closeRight * 1);
             
             if (closest === null)
-                return false;
-    }),
+                return Hide();
+    }}),
 ];
 
 
@@ -740,14 +760,24 @@ ipcRenderer.on('data', (event, data) => {
             continue;
 
         const element = document.getElementById(value.elementId);
+        const container = value.containerId == null ? null : document.getElementById(value.containerId);
         const newValue = value.getValueFromData(data);
 
-        if (newValue === false && element != null)
-            element.style.display = 'none';
-        else if (element != null)
-            element.style.display = null;
+        const hide = newValue instanceof _Hide;
 
-        if (newValue !== false && newValue !== undefined && element != null)
+        if (hide) {
+            if (container != null)
+                container.style.display = 'none';
+            else if (element != null)
+                element.style.display = 'none';
+        } else {
+            if (container != null)
+                container.style.display = null;
+            else if (element != null)
+                element.style.display = null;
+        }
+
+        if (!hide && newValue !== undefined && element != null)
             element.innerText = newValue;
     }
     iteration++;
@@ -812,7 +842,7 @@ ipcRenderer.on('save-hud-layout', saveLayout);
 
 function loadLayout(layout) {
     LAYOUT = layout;
-    for (const id of TRASNFORMABLES) {
+    for (const id of TRANSFORMABLES) {
         const element = document.getElementById(id);
         let left, top, scale;
         if (LAYOUT[id] != undefined) {
@@ -826,7 +856,7 @@ function loadLayout(layout) {
         element.style.position = 'relative';
         element.style.left = left;
         element.style.top = top;
-        element.style.transform = `scale(${scale})`;
+        element.style.transform = scale == null || scale === '' ? null : `scale(${scale})`;
         element.dataset.scale = scale;
     }
 }
@@ -862,7 +892,7 @@ function addTransformable(id) {
 }
 
 
-const TRASNFORMABLES = [
+const TRANSFORMABLES = [
     'position-container',
     
     'last-lap-session-container',
@@ -881,7 +911,7 @@ const TRASNFORMABLES = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-    for (const id of TRASNFORMABLES) {
+    for (const id of TRANSFORMABLES) {
         addTransformable(id);
     }
 

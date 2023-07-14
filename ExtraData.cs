@@ -8,5 +8,6 @@ internal struct ExtraData {
     public double? FuelLastLap;
     public double AverageLapTime;
     public double BestLapTime;
+    public int EstimatedRaceLapCount;
     public double LapsUntilFinish;
 }

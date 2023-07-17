@@ -23,7 +23,7 @@ class Value {
      * If the return value is undefined, no change will be made.
      * If the return value is false, the element will be hidden.
      * @param {object} data - Shared memory data
-     * @return {string|undefined|false}
+     * @return {string|undefined|false|_Hide|_Style}
      */
     getValueFromData(data) {
         const values = [];
@@ -38,13 +38,35 @@ class Value {
     }
 }
 
-class _Hide {
-    constructor(elementId=null) {
+class _Hide {}
+class _Style {
+    constructor(value, style, elementId) {
+        if (value == undefined)
+            throw new Error('`value` cannot be null when using Style');
+        if (style == undefined)
+            throw new Error('`style` cannot be null when using Style');
+        
         this.elementId = elementId;
+        this.value = value;
+        this.style = style;
     }
 }
 
-const Hide = (elementId=null) => new _Hide(elementId);
+const HIDE = new _Hide();
+/**
+ * Apply a style to an element. Make sure to set the also unset the style when you don't want it to be applied, as the framework will not do this for you.
+ * @param {string} value - the value to be displayed
+ * @param {object} style - the style to be applied to the element
+ * @param {string} elementId - the id of the element to be styled
+ * @return {_Style}
+ */
+const Style = (value, style, elementId=null) => new _Style(value, style, elementId);
+
+function setStyle(element, style) {
+    for (const [key, value] of Object.entries(style)) {
+        element.style[key] = value;
+    }
+}
 
 
 function lerpRGB(color1, color2, t) {
@@ -97,6 +119,8 @@ function insertCell(row, value, className) {
     return cell;
 }
 
+
+const INC_POINTS_RED_THRESHOLD = 4; // will be red if maxIncidents - currentIncidents >= this value
 
 const RADAR_RADIUS = 12; // meters
 const RADAR_BEEP_MIN_SPEED = 15; // km/h
@@ -167,7 +191,7 @@ const VALUES = [
         
         return res;
     }}),
-    new Value({elementId: 'engine-map', inputValues: 'engineMapSetting', valueMap: (x) => `EM: ${valueIsValid(x) ? 5 : x}`}),
+    new Value({elementId: 'engine-map', inputValues: 'engineMapSetting', valueMap: (x) => `EM: ${valueIsValid(x) ? x : 5}`}),
     new Value({elementId: 'traction-control', inputValues: ['tractionControlSetting', 'tractionControlPercent'], valueMap: (x, y) =>
                 `TC${(valueIsValid(x) ? x : ': ' + NA)}` + (valueIsValid(y) ? `: ${Math.round(y)}%` : '')}),
     new Value({elementId: 'engine-brake', inputValues: 'engineBrakeSetting', valueMap: (x) => `EB: ${valueIsValid(x) ? x : NA}`}),
@@ -347,7 +371,7 @@ const VALUES = [
             if (value == null)
                 value = 0;
             if (value == -1)
-                return Hide();
+                return HIDE;
 
             element.value = value === 0 ? 1 : value;
             root.style.setProperty(`--${part}-damage-color`, value == 0 ? 'var(--damage-color-full)' : value == 1 ? 'var(--damage-color-ok)' : 'var(--damage-color-partial)');
@@ -377,7 +401,8 @@ const VALUES = [
         root.style.setProperty('--abs-brightness', abs == 0 ? 1 : 10);
     }}),
 
-    new Value({renderEvery: 5, elementId: 'relative-viewer', inputValues: ['driverData', 'position', 'layoutLength', 'sessionPhase'], valueMap: (all, place, trackLength, phase) => {
+    new Value({
+        renderEvery: 5, elementId: 'relative-viewer', inputValues: ['driverData', 'position', 'layoutLength', 'sessionPhase', 'gameInReplay'], valueMap: (all, place, trackLength, phase, gameInReplay) => {
         const relative = document.getElementById('relative-viewer');
         const relativeTable = relative.getElementsByTagName('tbody')[0];
 
@@ -385,27 +410,32 @@ const VALUES = [
         if (phase < 3) {
             relativeTable.innerHTML = '';
             drivers = {};
-            return Hide();
+            return HIDE;
         }
 
         if (all == null || place == null)
-            return Hide();
+            return HIDE;
         
-        const driverCount = all.length;
-        if (driverCount <= 1)
-            return Hide();
 
+        let driverCount = all.length;
+        if (driverCount <= 1)
+            return HIDE;
         
 
         place--;
 
         relative.style.display = 'block';
         
+
+        const existingUids = new Set();
+
         const classes = [];
         /**
          * @type {string}
          */
         let myUid = null;
+        let mySharedMemory = null;
+        let myDriver = null;
         for (let i = 0; i < all.length; i++) {
             const driver = all[i];
 
@@ -413,24 +443,48 @@ const VALUES = [
             if (!classes.includes(classIndex))
                 classes.push(classIndex);
 
-            const uid = JSON.stringify(driver.driverInfo);
+            const uid = getUid(driver.driverInfo);
             driver.driverInfo.uid = uid;
-            if (i == place)
-                myUid = uid;
+
+            existingUids.add(uid);
             
             if (!(uid in drivers)) {
                 drivers[uid] = new Driver(uid, trackLength, driver.completedLaps);
             }
 
-            if (drivers[uid].completedLaps != driver.completedLaps) {
-                const prevSectors = driver.sectorTimePreviousSelf;
-                drivers[uid].endLap(prevSectors.sector1 + prevSectors.sector2 + prevSectors.sector3);
+            if (driver.place == place + 1) {
+                myUid = uid;
+                mySharedMemory = driver;
+                myDriver = drivers[myUid];
+
+                myDriver.setAsMainDriver();
             }
-            drivers[uid].addDeltaPoint(driver.lapDistance, new Date().getTime() / 1000, driver.completedLaps);
+
+            if (driver.inPitlane || gameInReplay) {
+                drivers[uid].clearTempData(driver.lapDistance);
+            } else {
+                if (!driver.currentLapValid)
+                    drivers[uid].setLapInvalid();
+
+                if (drivers[uid].completedLaps != driver.completedLaps) {
+                    const prevSectors = driver.sectorTimePreviousSelf;
+                    if (valueIsValid(prevSectors.sector1) && valueIsValid(prevSectors.sector2) && valueIsValid(prevSectors.sector3))
+                        drivers[uid].endLap(prevSectors.sector1 + prevSectors.sector2 + prevSectors.sector3);
+                    else
+                        drivers[uid].endLap(null);
+                }
+                drivers[uid].addDeltaPoint(driver.lapDistance, driver.completedLaps);
+            }
         }
 
-        all = all.slice(0, driverCount);
+        if (myUid == null)
+            return HIDE;
 
+        for (const uid in drivers) {
+            if (!existingUids.has(uid)) {
+                delete drivers[uid];
+            }
+        }
 
         if (driverCount <= RELATIVE_LENGTH / 2)
             relativeTable.parentElement.style.height = 'auto';
@@ -440,13 +494,15 @@ const VALUES = [
         const deltasFront = [];
         const deltasBehind = [];
         for (let i = 0; i < all.length; i++) {
-            if (all[i].place == place + 1)
+            if (all[i] === mySharedMemory || all[i].inPitlane)
                 continue;
+
             const uid = all[i].driverInfo.uid;
-            const deltaAhead = drivers[myUid].getDeltaToDriverAhead(drivers[uid]);
-            const deltaBehind = drivers[myUid].getDeltaToDriverBehind(drivers[uid]);
+            
+            const deltaAhead = myDriver.getDeltaToDriverAhead(drivers[uid]);
+            const deltaBehind = myDriver.getDeltaToDriverBehind(drivers[uid]);
             if (deltaAhead == null && deltaBehind == null) {
-                if (all[i].place < place + 1)
+                if (myDriver.getDistanceToDriverAhead(drivers[uid]) < myDriver.getDistanceToDriverBehind(drivers[uid]))
                     deltasFront.push([all[i], null, drivers[uid]]);
                 else
                     deltasBehind.push([all[i], null, drivers[uid]]);
@@ -461,19 +517,21 @@ const VALUES = [
         }
 
         deltasFront.sort((a, b) => {
-            return drivers[myUid].getDistanceToDriverAhead(b[2]) - drivers[myUid].getDistanceToDriverAhead(a[2]);
+            return myDriver.getDistanceToDriverAhead(b[2]) - myDriver.getDistanceToDriverAhead(a[2]);
         });
         deltasBehind.sort((a, b) => {
-            return drivers[myUid].getDistanceToDriverBehind(a[2]) - drivers[myUid].getDistanceToDriverBehind(b[2]);
+            return myDriver.getDistanceToDriverBehind(a[2]) - myDriver.getDistanceToDriverBehind(b[2]);
         });
 
-        deltasFront.push([all[place], 0]);
+        deltasFront.push([mySharedMemory, 0]);
 
         classes.sort((a, b) => a - b);
         const classMap = {};
         for (let i = 0; i < classes.length; i++) {
             classMap[classes[i]] = i;
         }
+
+        driverCount = deltasFront.length + deltasBehind.length;
 
         let start = 0, end = RELATIVE_LENGTH;
         if (deltasFront.length-1 >= halfLengthTop && deltasBehind.length >= halfLengthBottom) {
@@ -485,7 +543,7 @@ const VALUES = [
         } else if (deltasBehind.length < halfLengthBottom) {
             start = Math.max(0, driverCount - RELATIVE_LENGTH);
             end = driverCount;
-        }  
+        }
 
         const mergedDeltas = [...deltasFront, ...deltasBehind];
         for (let i = start; i < end; i++) {
@@ -498,7 +556,7 @@ const VALUES = [
             const row = relativeTable.children.length > i - start ? relativeTable.children[i - start] : relativeTable.insertRow(i - start);
             row.dataset.classIndex = driver.driverInfo.classPerformanceIndex;
 
-            if (driver.place == place + 1) {
+            if (driver === mySharedMemory) {
                 row.style.backgroundColor = 'rgba(255, 255, 0, 0.4)';
             } else {
                 row.style.backgroundColor = '';
@@ -596,7 +654,7 @@ const VALUES = [
     }}),
     new Value({'containerId': 'estimated-laps-left-container', elementId: 'estimated-laps-left', inputValues: ['sessionType', 'completedLaps', 'lapDistanceFraction', '+estimatedRaceLapCount'], valueMap: (sessionType, completedLaps, fraction, totalLaps) => {
         if (sessionType != 2 || !valueIsValid(totalLaps))
-            return Hide();
+            return HIDE;
         
         if (!valueIsValid(completedLaps)) {
             completedLaps = -1;
@@ -613,7 +671,7 @@ const VALUES = [
     new Value({elementId: 'best-lap-session', inputValues: 'lapTimeBestSelf', valueMap: laptimeFormat}),
     new Value({containerId: 'position-container', elementId: 'position', inputValues: ['position', 'positionClass', 'driverData'], valueMap: (position, positionClass, drivers) => {
         if (!valueIsValid(position))
-            return Hide();
+            return HIDE;
 
         let myIndex = -1;
         for (let i = 0; i < drivers.length; i++) {
@@ -652,7 +710,7 @@ const VALUES = [
          */
         (drivers, driver, myPlace, speed, radar) => {
             if (driver == undefined)
-                return Hide();
+                return HIDE;
 
             radar = document.getElementById(radar);
 
@@ -735,7 +793,18 @@ const VALUES = [
                 RADAR_AUDIO_CONTROLLER.play(1 - closest / RADAR_RADIUS, closeLeft * -1 + closeRight * 1);
             
             if (closest === null)
-                return Hide();
+                return HIDE;
+    }}),
+
+    new Value({ renderEvery: 5, containerId: 'incident-points-container', elementId: 'incident-points', inputValues: ['incidentPoints', 'maxIncidentPoints'], valueMap: (incidentPoints, maxIncidentPoints, elementId) => {
+        if (!valueIsValid(incidentPoints))
+            return HIDE;
+        
+        let res = incidentPoints.toString();
+        if (valueIsValid(maxIncidentPoints)) {
+            res += `/${maxIncidentPoints}`;
+        }
+        return Style(res, { color: valueIsValid(maxIncidentPoints) && maxIncidentPoints - incidentPoints < INC_POINTS_RED_THRESHOLD ? 'red' : 'white' });
     }}),
 ];
 
@@ -745,7 +814,7 @@ function valueIsValid(val) {
 }
 
 
-const iterationCycle = 100;
+const ITERATION_CYCLE = 1000;
 
 let isShown = true;
 let iteration = 0;
@@ -761,9 +830,19 @@ ipcRenderer.on('data', (event, data) => {
 
         const element = document.getElementById(value.elementId);
         const container = value.containerId == null ? null : document.getElementById(value.containerId);
-        const newValue = value.getValueFromData(data);
+        const valueResult = value.getValueFromData(data);
+        let textValue = valueResult;
 
-        const hide = newValue instanceof _Hide;
+        const hide = valueResult instanceof _Hide;
+        const style = valueResult instanceof _Style ? valueResult.style : null;
+
+        if (style !== null) {
+            textValue = valueResult.value;
+            if (valueResult.elementId != null)
+                setStyle(valueResult.elementId, style);
+            else if (element != null)
+                setStyle(element, style);
+        }
 
         if (hide) {
             if (container != null)
@@ -777,11 +856,11 @@ ipcRenderer.on('data', (event, data) => {
                 element.style.display = null;
         }
 
-        if (!hide && newValue !== undefined && element != null)
-            element.innerText = newValue;
+        if (!hide && element != null && textValue != null)
+            element.innerText = textValue;
     }
     iteration++;
-    if (iteration >= iterationCycle) {
+    if (iteration >= ITERATION_CYCLE) {
         iteration = 0;
     }
 });
@@ -795,6 +874,12 @@ function show() {
 function hide() {
     isShown = false;
     document.body.style.display = 'none';
+
+    if (drivers != null) {
+        for (const driver of Object.values(drivers)) {
+            driver.clearTempData();
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', hide);

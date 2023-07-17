@@ -372,14 +372,7 @@ public class Startup
 
                 R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
                 extraData.RawData = data;
-                int driverDataSize = 0;
-                foreach (var d in extraData.RawData.DriverData)
-                {
-                    if (d.DriverInfo.CarNumber == -1)
-                        break;
-                    driverDataSize++;
-                }
-                extraData.RawData.DriverData = extraData.RawData.DriverData.Take(driverDataSize).ToArray();
+                extraData.RawData.DriverData = extraData.RawData.DriverData.Take(data.NumCars).ToArray();
                 if (iter % (1000 / R3E.SharedMemory.timeInterval.Milliseconds) * 10 == 0)
                 {
                     extraData.FuelPerLap = combination.GetAverageFuelUsage();

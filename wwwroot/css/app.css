@@ -117,7 +117,7 @@ he {
   flex-direction: row;
 }
 
-.col {
+.col, .container {
   display: flex;
   flex-direction: column;
 }

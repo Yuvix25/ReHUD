@@ -1,4 +1,12 @@
 class Driver {
+  static pointsPerMeter = 0.5;
+  static positionJumpThreshold = 150; // meters
+
+  /**
+   * @type {Driver}
+   */
+  static mainDriver = null;
+
   /**
    * Represents a driver
    * @param {number} userId
@@ -8,83 +16,195 @@ class Driver {
   constructor(userId, trackLength, completedLaps) {
     this.userId = userId;
     this.trackLength = trackLength;
-    this.points = [];
+    this.points = this.newPointArray(); // points[distance] = time
+    this.currentIndex = -1;
+    this.currentLapValid = true;
     this.bestLap = null;
     this.bestLapTime = null;
-    this.bestLapTrustworthiness = 0;
-    this.laptimes = []; // sorted
     this.completedLaps = completedLaps;
 
     this.crossedFinishLine = false;
     this.previousDistance = -1;
   }
 
-
   /**
-   * The minimum amount of laps needed for the best lap to be considered trustworthy.
+   * Sets the main driver (the one currently being viewed)
+   * @param {Driver} driver
    */
-  static get MIN_LAP_COUNT_FOR_TRUSTWORTHINESS() {
-    return 2;
-  }
-  /**
-   * The maximum deviation allowed within all laps for the best lap to be considered trustworthy.
-   */
-  static get MIN_TRUSTWORTHINESS_FOR_BEST_LAP() {
-    return 0.982; // for example, [102, 101, 98.5] receives a score of 0.985
+  static setMainDriver(driver) {
+    Driver.mainDriver = driver;
   }
 
-  get BEST_LAPS_FOR_DEVIATION() {
-    return this.laptimes.slice(0, Driver.MIN_LAP_COUNT_FOR_TRUSTWORTHINESS);
+  /**
+   * Sets the main driver to this driver.
+   */
+  setAsMainDriver() {
+    Driver.setMainDriver(this);
+  }
+
+  /**
+   * Initializes a new point array.
+   * @return {Array.<null>}
+   */
+  newPointArray() {
+    return Array(Math.floor(this.trackLength * Driver.pointsPerMeter)).fill(null);
+  }
+
+
+  /**
+   * Erases the temporary data of the driver.
+   * @param {number} distance - The current distance of the driver.
+   */
+  clearTempData(distance=null) {
+    this.crossedFinishLine = false;
+    this.currentLapValid = false;
+    this.currentIndex = distance == null ? -1 : Math.min(Math.floor(distance * Driver.pointsPerMeter), this.points.length - 1);
+    this.points = this.newPointArray();
   }
 
 
   /**
    * Add a point to the delta path.
+   * MUST BE CALLED AFTER `endLap` IF THE LAP IS COMPLETED.
    * @param {number} distance
-   * @param {number} time
    * @param {number} completedLaps
    */
-  addDeltaPoint(distance, time, completedLaps) {
+  addDeltaPoint(distance, completedLaps) {
+    const time = new Date().getTime() / 1000;
+
     if (this.previousDistance != -1 && this.previousDistance - distance > this.trackLength / 2 && this.completedLaps == null) { // TODO: get rid of this when RR decides to fix its CompletedLaps value...
-      this.points = [];
       this.crossedFinishLine = true;
+    } else if (this.completedLaps == completedLaps && Math.abs(this.previousDistance - distance) > Driver.positionJumpThreshold) {
+      // jump in position detected, which is not a lap completion
+      this.clearTempData(distance);
     }
+    
+    const gapToSpot = distance * Driver.pointsPerMeter - this.currentIndex;
+    if (gapToSpot >= 0) {
+      for (let i = 0; i < gapToSpot; i++) {
+        this.points[++this.currentIndex] = time;
+      }
+    }
+
     this.previousDistance = distance;
-
-    if (this.crossedFinishLine && (this.points.length == 0 || this.points[this.points.length - 1][0] != distance))
-      this.points.push([distance, time]);
-
     this.completedLaps = completedLaps;
+  }
+
+
+  setLapInvalid() {
+    this.currentLapValid = false;
   }
 
   /**
    * End the current lap.
+   * MUST BE CALLED BEFORE `addDeltaPoint`.
    * @param {number} laptime
    */
   endLap(laptime) {
-    this.crossedFinishLine = true;
-    if (this.points.length != 0) {
-      laptime = this.points[this.points.length - 1][1] - this.points[0][1];
-      if (laptime != null && laptime > 0) {
-        this.laptimes.push(laptime);
-        this.laptimes.sort((a, b) => a - b);
-      }
+    const time = new Date().getTime() / 1000;
+
+    for (let i = this.currentIndex + 1; i < this.points.length; i++) {
+      this.points[i] = this.points[this.currentIndex];
+    }
+    this.currentIndex = -1;
+
+    if (this.crossedFinishLine) {
+      laptime == null && (laptime = time - this.points[0]);
 
       //                       number < null == false
-      if ((laptime != null && laptime < this.bestLapTime) || this.bestLap == null) {
-        this.bestLap = this.points;
+      if (this.currentLapValid && this.completedLaps >= 0) {
+        this.bestLap = this.points.slice();
         this.bestLapTime = laptime;
-        if (laptime == null || this.laptimes.length < Driver.MIN_LAP_COUNT_FOR_TRUSTWORTHINESS) {
-          this.bestLapTrustworthiness = 0;
-        } else {
-          this.bestLapTrustworthiness = 1 - standardDeviation(this.BEST_LAPS_FOR_DEVIATION) / average(this.BEST_LAPS_FOR_DEVIATION);
-        }
       }
     }
 
-    this.points = [];
+    this.crossedFinishLine = true;
+    this.currentLapValid = true;
   }
 
+  /**
+   * Get a relative delta to another driver (positions are based on the last delta points).
+   * @param {Driver} driver
+   * @param {boolean} includeLapDifference
+   * @return {number} If `includeLapDifference` is true and the lap difference between the drivers is not 0,
+   * the lap difference will be returned instead of the delta. Otherwise, the delta will be returned.
+   */
+  getDeltaToDriverAhead(driver, includeLapDifference = false) { // TODO: implement includeLapDifference
+    const thisLapDistance = this.currentIndex;
+    const otherLapDistance = driver.currentIndex;
+
+    if (thisLapDistance == null || otherLapDistance == null)
+      return null;
+
+    if (otherLapDistance < thisLapDistance) {
+      let res;
+      const estimatedLapTime = this.getEstimatedLapTime() || driver.getEstimatedLapTime();
+
+      if ((Driver.mainDriver === this || Driver.mainDriver === driver) && estimatedLapTime != null) {
+        res = estimatedLapTime - Driver.mainDriver.deltaBetweenPoints(thisLapDistance, otherLapDistance, true, false);
+        if (res != null && res >= 0)
+          return res;
+      }
+
+      res = driver.deltaBetweenPoints(otherLapDistance, thisLapDistance, false);
+      if (res != null)
+        return res;
+      
+      if (estimatedLapTime == null)
+        return null;
+
+      const delta = driver.getDeltaToDriverAhead(this, includeLapDifference);
+      res = estimatedLapTime - delta;
+      if (delta == null || res < 0)
+        return null;
+
+      return res;
+    } else {
+      let res = this.deltaBetweenPoints(thisLapDistance, otherLapDistance, true, false);
+      if (res == null) {
+        res = driver.deltaBetweenPoints(thisLapDistance, otherLapDistance);
+      }
+      return res
+    }
+  }
+
+  getDeltaToDriverBehind(driver, includeLapDifference = false) {
+    return driver.getDeltaToDriverAhead(this, includeLapDifference);
+  }
+
+  /**
+   * The delta between two points on the track (distances).
+   * Calculated using either the current lap or the best lap.
+   * @param {number} point1
+   * @param {number} point2
+   * @param {boolean} [useBestLap=true]
+   * @param {boolean} [fallbackToCurrentLap=true]
+   * @return {number}
+   */
+  deltaBetweenPoints(point1, point2, useBestLap = true, fallbackToCurrentLap = true) {
+    let usingBestLap = false;
+    let lapData;
+    if (useBestLap && this.bestLap != null) {
+      lapData = this.bestLap;
+      usingBestLap = true;
+    } else if (fallbackToCurrentLap) {
+      lapData = this.points;
+    } else {
+      return null;
+    }
+
+    const point1Time = lapData[point1];
+    const point2Time = lapData[point2];
+
+    if (point1Time == null || point2Time == null) {
+      if (usingBestLap && fallbackToCurrentLap) {
+        return this.deltaBetweenPoints(point1, point2, false);
+      }
+      return null;
+    }
+
+    return Math.abs(point2Time - point1Time);
+  }
 
   /**
    * Get the track distance to a driver ahead.
@@ -92,8 +212,8 @@ class Driver {
    * @return {number}
    */
   getDistanceToDriverAhead(driver) {
-    const thisLapDistance = this.points[this.points.length - 1]?.[0];
-    const otherLapDistance = driver.points[driver.points.length - 1]?.[0];
+    const thisLapDistance = this.currentIndex;
+    const otherLapDistance = driver.currentIndex;
 
     if (thisLapDistance == null || otherLapDistance == null)
       return null;
@@ -113,136 +233,38 @@ class Driver {
     return driver.getDistanceToDriverAhead(this);
   }
 
-  /**
-   * Get a relative delta to another driver (positions are based on the last delta points).
-   * @param {Driver} driver
-   * @param {boolean} includeLapDifference
-   * @return {number} If `includeLapDifference` is true and the lap difference between the drivers is not 0,
-   * the lap difference will be returned instead of the delta. Otherwise, the delta will be returned.
-   */
-  getDeltaToDriverAhead(driver, includeLapDifference = false) { // TODO: implement includeLapDifference
-    const thisLapDistance = this.points[this.points.length - 1]?.[0];
-    const otherLapDistance = driver.points[driver.points.length - 1]?.[0];
-
-    if (thisLapDistance == null || otherLapDistance == null)
-      return null;
-
-    if (otherLapDistance < thisLapDistance) {
-      const estimatedLapTime = this.getEstimatedLapTime();
-      if (estimatedLapTime == null) {
-        return null;
-      }
-
-      const delta = estimatedLapTime - driver.getDeltaToDriverAhead(this, includeLapDifference);
-      if (delta < 0)
-        return null;
-      return delta;
-    } else {
-      const res = driver.deltaBetweenPoints(thisLapDistance, otherLapDistance);
-      if (res == null || this.bestLapTrustworthiness > Driver.MIN_TRUSTWORTHINESS_FOR_BEST_LAP) {
-        return this.deltaBetweenPoints(thisLapDistance, otherLapDistance);
-      }
-      return res;
-    }
-  }
-
-  getDeltaToDriverBehind(driver, includeLapDifference = false) {
-    return driver.getDeltaToDriverAhead(this, includeLapDifference);
-  }
-
-  /**
-   * The delta between two points on the track (distances).
-   * Calculated using either the current lap or the best lap.
-   * @param {number} point1
-   * @param {number} point2
-   * @return {number}
-   */
-  deltaBetweenPoints(point1, point2) {
-    let lapData = this.points;
-    if (this.bestLapTrustworthiness >= Driver.MIN_TRUSTWORTHINESS_FOR_BEST_LAP) {
-      lapData = this.bestLap;
-    }
-
-    const point1Index = Driver.findClosestPointIndex(point1, lapData);
-    const point2Index = Driver.findClosestPointIndex(point2, lapData);
-
-    if (point1Index == null || point2Index == null)
-      return null;
-
-    let point1Time = lapData[point1Index][1];
-    if (point1Index < lapData.length - 1) {
-      const nextPointTime = lapData[point1Index + 1][1];
-      const nextPointDistance = lapData[point1Index + 1][0];
-      const pointDistance = lapData[point1Index][0];
-      point1Time += (nextPointTime - point1Time) * (point1 - pointDistance) / (nextPointDistance - pointDistance);
-    }
-
-    let point2Time = lapData[point2Index][1];
-    if (point2Index < lapData.length - 1) {
-      const nextPointTime = lapData[point2Index + 1][1];
-      const nextPointDistance = lapData[point2Index + 1][0];
-      const pointDistance = lapData[point2Index][0];
-      point2Time += (nextPointTime - point2Time) * (point2 - pointDistance) / (nextPointDistance - pointDistance);
-    }
-
-    return point2Time - point1Time;
-  }
-
 
   static average = 0;
   static count = 0;
 
-  /**
-   * The index of the closest point to the given point which is also smaller than it.
-   * @param {number} point
-   * @param {number[]} points
-   * @return {number}
-   */
-  static findClosestPointIndex(point, points) {
-    let min = 0;
-    let max = points.length - 1;
-    let res;
-    while (min <= max) {
-      const mid = Math.floor((min + max) / 2);
-      if (mid == 0 && points[mid][0] > point) {
-        res = mid;
-        break;
-      }
-
-      if (points[mid][0] < point) {
-        min = mid + 1;
-      } else if (points[mid][0] > point) {
-        if (points[mid - 1][0] <= point) {
-          res = mid - 1;
-          break;
-        }
-        max = mid - 1;
-      } else {
-        res = mid;
-        break;
-      }
-    }
-
-    return res;
-  }
-
   getEstimatedLapTime() {
     if (this.bestLapTime == null) {
       if (this.bestLap == null) {
-        if (this.points.length == 0) {
-          return null;
-        }
-        // Estimate lap time based on the average speed so far
-        const totalDistance = this.points[this.points.length - 1][0];
-        const totalTime = this.points[this.points.length - 1][1] - this.points[0][1];
-        return totalTime / (totalDistance / this.trackLength);
+        return null;
       }
       // Get invalid lap time from the best lap
-      return this.bestLap[this.bestLap.length - 1][1] - this.bestLap[0][1];
+      return this.bestLap[this.bestLap.length - 1] - this.bestLap[0];
     }
     // Return the best lap time
     return this.bestLapTime;
   }
+}
+
+
+/**
+ * @param {object} driverInfo - DriverData[x].DriverInfo
+ * @return {string} - Unique ID for the driver (JSON of some fields)
+ */
+function getUid(driverInfo) {
+  const obj = {
+    name: driverInfo.name,
+    classId: driverInfo.classId,
+    teamId: driverInfo.teamId,
+    userId: driverInfo.userId,
+    liveryId: driverInfo.liveryId,
+    engineType: driverInfo.engineType,
+  };
+  return JSON.stringify(obj);
 }
 
 /**

@@ -48,15 +48,17 @@ Once you've installed the app, you will find a desktop shortcut to it, or you ca
 
 To change the position and scale of hud elements, first click on the "Edit" button near "HUD Layout" in the settings window. Now you will be able to move elements by dragging them with your mouse, and scale them by scrolling over them. Once you're done with your changes, choose "Save" to apply them or "Cancel" to undo them.
 
+It is recommended to set the "In Game Overlays" setting of RaceRoom under Settings->GAMEPLAY->HUD to "Essentials only" as I am currently not planning to re-implement RaceRoom's essentials.
+
 **Please note that you must run RaceRoom in borderless-windowed or windowed mode, as the HUD cannot appear on top of fullscreen apps.**
 
 ## Screenshots
-<img src="https://user-images.githubusercontent.com/58216719/232799762-dbd964cc-e461-4545-9b21-749b71d136d4.png" height="500">
+<img src="https://user-images.githubusercontent.com/58216719/232799762-dbd964cc-e461-4545-9b21-749b71d136d4.png" style="max-height: 500px">
 
 ---
 
 ## Bug Reporting
-Since [v0.3.1-beta](https://github.com/Yuvix25/ReHUD/releases/tag/v0.3.1-beta), the settings window contains a "Show Log File" button. If you encounter a bug/issue, create a [new issue](https://github.com/Yuvix25/ReHUD/issues/new?assignees=Yuvix25&labels=bug&projects=&template=bug_report.md&title=), 
+Since [v0.3.1-beta](https://github.com/Yuvix25/ReHUD/releases/tag/v0.3.1-beta), the settings window contains a "Show Log File" button. If you encounter a bug/issue, create a [new issue](https://github.com/Yuvix25/ReHUD/issues/new?assignees=Yuvix25&labels=bug&projects=&template=bug_report.md&title=), fill in the template and attach the log file to it. This will help identifying the issue and fixing it as soon as possible.
 
 ## Contribution
 Any contribution to the project will be highly appreciated! Feel free to open a new [issue](https://github.com/Yuvix25/ReHUD/issues/new/choose) or [pull request](https://github.com/Yuvix25/ReHUD/compare), and I'll do my best to review them and provide my own feedback.

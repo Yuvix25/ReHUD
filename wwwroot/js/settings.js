@@ -69,11 +69,13 @@ function lockOverlay(save) {
   if (!save && cancelResetButton.innerText === RESET_TEXT) {
     doEdit = true;
     ipcRenderer.send('reset-hud-layout');
-  } else {
-    ipcRenderer.send('lock-overlay', [!didEdit, save]);
-
-    doEdit = didEdit;
   }
+
+  setTimeout(() => {
+    ipcRenderer.send('lock-overlay', [!didEdit, save]);
+  }, 150);
+
+  doEdit = didEdit;
 
   if (doEdit) {
     element.innerText = SAVE_TEXT;

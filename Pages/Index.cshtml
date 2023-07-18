@@ -9,6 +9,7 @@
     <title>ReHUD</title>
 
     <script src="~/lib/agnostic-draggable/dist/agnostic-draggable.min.js"></script>
+    <script src="~/js/eventEmitter.js" asp-append-version="true"></script>
     <script src="~/js/index.js" asp-append-version="true"></script>
 </head>
 
@@ -261,6 +262,19 @@
             </he>
         </div>
     </div>
+</div>
+
+<div id="delta" class="col center-items">
+    <span id="delta-number"></span>
+    <div id="delta-bar-container">
+        <div id="delta-bar"></div>
+    </div>
+</div>
+
+<div id="sector-times" class="row">
+    <span id="sector-1"></span>
+    <span id="sector-2"></span>
+    <span id="sector-3"></span>
 </div>
 
 <div id="radar"></div>

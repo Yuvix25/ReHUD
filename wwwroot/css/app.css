@@ -63,6 +63,17 @@
 
 
   --relative-view-height: 236px;
+
+
+  --delta-positive: rgb(255, 0, 0);
+  --delta-negative: rgb(0, 255, 0);
+  --delta-neutral: white;
+  --delta-color: var(--delta-neutral);
+
+
+  --sector-time-gray: rgb(127, 127, 127);
+  --sector-time-green: rgb(0, 255, 0);
+  --sector-time-purple: rgb(202, 0, 202);
 }
 
 
@@ -87,6 +98,13 @@ html {
   font-family: 'Oswald', sans-serif;
 }
 
+body,
+html,
+main {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
 
 table {
   border-spacing: 0;
@@ -120,6 +138,10 @@ he {
 .col, .container {
   display: flex;
   flex-direction: column;
+}
+
+.center-items {
+  align-items: center;
 }
 
 .sb {
@@ -561,6 +583,7 @@ progress#revs::-webkit-progress-value {
   margin-bottom: auto;
   padding-left: 2px;
   padding-right: 2px;
+  min-width: 400px;
 }
 
 #relative-viewer table {
@@ -632,7 +655,8 @@ progress#revs::-webkit-progress-value {
   margin: 10px;
 }
 
-#top-right-group {
+#top-right-group,
+#top-left-group {
   gap: 70px;
 }
 
@@ -672,12 +696,11 @@ progress#revs::-webkit-progress-value {
   font-size: 23px;
 }
 
-
 #radar {
   border-radius: 50%;
   width: 300px;
   height: 300px;
-  position: absolute;
+  position: absolute !important;
   top: calc(100vh - 300px - 15px);
   left: 50%;
   transform: translateX(-50%);
@@ -694,4 +717,67 @@ progress#revs::-webkit-progress-value {
 
 #radar .radar-car-self {
   background-color: white;
+}
+
+
+
+#delta {
+  width: max-content;
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  gap: 10px;
+}
+
+#delta-number {
+  font-size: 33px;
+  color: var(--delta-color);
+  text-align: left;
+  width: 94px !important;
+}
+
+#delta-bar-container {
+  position: relative;
+  background-color: rgba(15, 15, 15, 0.6);
+  height: 22px;
+  width: 300px;
+}
+
+#delta-bar {
+  position: absolute !important;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: 0;
+  background-color: var(--delta-color);
+}
+
+
+
+#sector-times {
+  position: absolute !important;
+  top: 130px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 26px;
+  width: 229px !important;
+  justify-content: flex-start;
+  gap: 2px;
+
+  background-color: rgba(0, 0, 0, 0.8);
+  box-shadow: 0px 0px 3px 1px black;
+}
+
+#sector-times span {
+  font-size: 20px;
+  background-color: var(--sector-time-gray);
+  width: 75px !important;
+  height: 100%;
+  text-align: center;
+  color: white;
+  margin: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }

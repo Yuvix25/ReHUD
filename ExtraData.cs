@@ -10,4 +10,5 @@ internal struct ExtraData {
     public double BestLapTime;
     public int EstimatedRaceLapCount;
     public double LapsUntilFinish;
+    public bool ForceUpdateAll;
 }

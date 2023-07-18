@@ -1,3 +1,61 @@
+class DeltaManager {
+  static DELTA_WINDOW = 10; // seconds
+  static DELTA_OF_DELTA_MULTIPLIER = 1.5; // seconds
+  static deltaWindow = [];
+
+  /**
+   * Add a delta to the delta window.
+   * @param {number} delta
+   */
+  static addDelta(delta) {
+    const time = new Date().getTime() / 1000;
+    DeltaManager.deltaWindow.push([time, delta]);
+    while (DeltaManager.deltaWindow[0][0] < time - DeltaManager.DELTA_WINDOW)
+      DeltaManager.deltaWindow.shift();
+  }
+
+  static getLastDelta() {
+    if (DeltaManager.deltaWindow.length == 0)
+      return null;
+    return DeltaManager.deltaWindow[DeltaManager.deltaWindow.length - 1];
+  }
+
+  /**
+   * Get some sort of delta of the delta itself during the window.
+   * @return {number}
+   */
+  static getDeltaOfDeltas() {
+    if (DeltaManager.deltaWindow.length == 0)
+      return 0;
+    
+    
+    const lastDelta = this.getLastDelta()[1]
+    const lastTime = this.getLastDelta()[0];
+
+    const timeRange = lastTime - DeltaManager.deltaWindow[0][0];
+
+    let res = 0;
+    let weight = 0;
+    for (let i = DeltaManager.deltaWindow.length - 1; i >= 0; i--) {
+      const deltaData = DeltaManager.deltaWindow[i];
+      const deltaDelta = lastDelta - deltaData[1];
+      const deltaWeight = (timeRange - (lastTime - deltaData[0])) / timeRange;
+      res += deltaDelta * deltaWeight;
+      weight += deltaWeight;
+    }
+    res = res / weight * DeltaManager.DELTA_OF_DELTA_MULTIPLIER;
+    return res / (Math.abs(res) + 0.5);
+    // return DeltaManager.deltaWindow[DeltaManager.deltaWindow.length - 1][1] - DeltaManager.deltaWindow[0][1];
+  }
+
+  /**
+   * Clear the delta window.
+   */
+  static clear() {
+    DeltaManager.deltaWindow = [];
+  }
+}
+
 class Driver {
   static pointsPerMeter = 0.5;
   static positionJumpThreshold = 150; // meters

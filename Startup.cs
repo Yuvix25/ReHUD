@@ -159,6 +159,10 @@ public class Startup
             }
         });
 
+        await Electron.IpcMain.On("request-layout-visibility", (args) => {
+            isShown = null;
+        });
+
         RunLoop(window, env);
 
         window.OnClosed += () => Electron.App.Quit();
@@ -175,9 +179,20 @@ public class Startup
     }
 
 
+    private async Task SendSettingsWindowSignal(BrowserWindow window)
+    {
+        var url = (await window.WebContents.GetUrl()).Split('#')[0];
+        if (url.EndsWith("Settings"))
+            return;
+        Electron.IpcMain.Send(window, "settings", JsonConvert.SerializeObject(GetSettings()));
+    }
+
+
+    bool enteredEditMode = false;
+
     private async Task CreateSettingsWindow(IWebHostEnvironment env)
     {
-        var window = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
+        var settingsWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
         {
             Width = 800,
             Height = 600,
@@ -191,27 +206,43 @@ public class Startup
             },
         });
 
-        if (!env.IsDevelopment())
-            window.RemoveMenu();
+        settingsWindow.Minimize();
 
-        window.OnReadyToShow += async () =>
+        if (!env.IsDevelopment())
+            settingsWindow.RemoveMenu();
+
+        settingsWindow.OnReadyToShow += async () =>
         {
-            var url = (await window.WebContents.GetUrl()).Split('#')[0];
-            if (url.EndsWith("Settings"))
-                return;
-            Electron.IpcMain.Send(window, "settings", JsonConvert.SerializeObject(GetSettings()));
+            await SendSettingsWindowSignal(settingsWindow);
         };
 
+
         var mainWindow = Electron.WindowManager.BrowserWindows.First();
+
+        await Electron.IpcMain.On("whoami", async (data) =>
+        {
+            await SendSettingsWindowSignal(settingsWindow);
+        });
 
         await Electron.IpcMain.On("lock-overlay", (data) =>
         {
             Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)data;
             bool locked = (bool)array[0];
             bool save = (bool)array[1];
+
+            if (!locked)
+            {
+                Electron.IpcMain.Send(mainWindow, "edit-mode");
+                //TODO: wait for response instead of using a delay
+                Task.Delay(200).ContinueWith((t) =>
+                {
+                    enteredEditMode = true;
+                });
+            }
+
             mainWindow.SetIgnoreMouseEvents(locked);
             mainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
-            window.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
+            settingsWindow.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
 
             if (locked && save)
             {
@@ -238,7 +269,7 @@ public class Startup
         {
             if (logFilePath == null)
             {
-                await ShowMessageBox(window, logFilePathWarning, "Warning", MessageBoxType.warning);
+                await ShowMessageBox(settingsWindow, logFilePathWarning, "Warning", MessageBoxType.warning);
             }
             else
             {
@@ -246,7 +277,7 @@ public class Startup
             }
         });
 
-        window.OnClosed += () => Electron.App.Quit();
+        settingsWindow.OnClosed += () => Electron.App.Quit();
     }
 
     private async Task<MessageBoxResult> ShowMessageBox(BrowserWindow window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
@@ -342,19 +373,21 @@ public class Startup
 
     bool userDataClearedForMultiplier = false;
 
+    bool? isShown = null;
+
     private void RunLoop(BrowserWindow window, IWebHostEnvironment env)
     {
         userData = GetUserData();
 
         using (var memory = new R3E.SharedMemory())
         {
-            bool? isShown = null;
             Thread.Sleep(1000);
             if (env.IsDevelopment())
                 Electron.IpcMain.Send(window, "show");
 
             int iter = 0;
             ExtraData extraData = new ExtraData();
+            extraData.ForceUpdateAll = false;
             Thread thread = new Thread(() => memory.Run((data) =>
             {
                 if (data.FuelUseActive != 1 && !userDataClearedForMultiplier)
@@ -397,8 +430,20 @@ public class Startup
 
                 lastLap = data.CompletedLaps;
                 bool notDriving = data.GameInMenus == 1 || (data.GamePaused == 1 && data.GameInReplay == 0) || data.SessionType == -1;
-                if (!notDriving || env.IsDevelopment())
-                    Electron.IpcMain.Send(window, "data", extraData);
+                if (!notDriving || env.IsDevelopment() || enteredEditMode)
+                {
+                    if (enteredEditMode)
+                    {
+                        extraData.ForceUpdateAll = true;
+                        Electron.IpcMain.Send(window, "data", extraData);
+                        extraData.ForceUpdateAll = false;
+                        enteredEditMode = false;
+                    }
+                    else
+                    {
+                        Electron.IpcMain.Send(window, "data", extraData);
+                    }
+                }
 
                 if (notDriving)
                 {

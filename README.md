@@ -22,6 +22,7 @@ I started this project following the recent increase in the number of bugs in Ra
  - Input meter
  - Damage viewer
  - Radar
+ - Live delta
  - Live on-track relative display*
  - Session status*
  - Settings window:
@@ -33,7 +34,6 @@ _\* work in progress_
 
 ## Planned Features
  - Position bar
- - Live delta
  - Manual rolling start
 
 ---

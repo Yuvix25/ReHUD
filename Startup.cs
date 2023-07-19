@@ -6,6 +6,7 @@ using log4net.Appender;
 using log4net.Repository.Hierarchy;
 using log4net.Config;
 using System.Reflection;
+using System.Net.Http.Headers;
 
 namespace ReHUD;
 
@@ -72,6 +73,9 @@ public class Startup
         }
     }
 
+
+    private const string githubUrl = "https://github.com/Yuvix25/ReHUD";
+    private const string githubReleasesUrl = "releases/latest";
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
     private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file name 'ReHUD.log' in C:\\Users\\<username>\\AppData\\Local\\Programs\\rehud\\resources\\bin";
 
@@ -144,14 +148,14 @@ public class Startup
 
         await Electron.IpcMain.On("set-hud-layout", (args) =>
         {
-            SetHudLayout(JsonConvert.DeserializeObject<Object>(args.ToString() ?? "{}") ?? new Dictionary<String, Object>());
+            SetHudLayout(JsonConvert.DeserializeObject<object>(args.ToString() ?? "{}") ?? new Dictionary<string, object>());
         });
 
         await Electron.IpcMain.On("reset-hud-layout", (args) =>
         {
             try
             {
-                SendHudLayout(window, new Dictionary<String, Object>());
+                SendHudLayout(window, new Dictionary<string, object>());
             }
             catch (Exception e)
             {
@@ -159,7 +163,8 @@ public class Startup
             }
         });
 
-        await Electron.IpcMain.On("request-layout-visibility", (args) => {
+        await Electron.IpcMain.On("request-layout-visibility", (args) =>
+        {
             isShown = null;
         });
 
@@ -224,6 +229,23 @@ public class Startup
             await SendSettingsWindowSignal(settingsWindow);
         });
 
+        await Electron.IpcMain.On("check-for-updates", async (data) =>
+        {
+            Tuple<string, string>? newVersion = await CheckForUpdates();
+            if (newVersion != null)
+            {
+                string versionUrl = newVersion.Item1;
+                string newVersionText = newVersion.Item2;
+                await ShowMessageBox("A new version is available: " + newVersionText, "Update available", MessageBoxType.info, new string[] { "Show me", "Cancel" }).ContinueWith((t) =>
+                {
+                    if (t.Result.Response == 0)
+                    {
+                        Electron.Shell.OpenExternalAsync(versionUrl);
+                    }
+                });
+            }
+        });
+
         await Electron.IpcMain.On("lock-overlay", (data) =>
         {
             Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)data;
@@ -280,6 +302,61 @@ public class Startup
         settingsWindow.OnClosed += () => Electron.App.Quit();
     }
 
+
+    private async Task<Tuple<string, string>?> CheckForUpdates()
+    {
+        string currentVersion = await Electron.App.GetVersionAsync();
+        logger.Info("Checking for updates (current version: " + currentVersion + ")");
+        string? remoteUrl = await GetRedirectedUrl(githubUrl + "/" + githubReleasesUrl);
+        if (remoteUrl == null)
+        {
+            logger.Error("Could not get remote URL for checking updates");
+            return null;
+        }
+
+        string remoteVersionText = remoteUrl.Split('/').Last();
+        string remoteVersion = remoteVersionText.Split('v').Last().Split('-').First();
+
+        Version current = new Version(currentVersion);
+        Version remote = new Version(remoteVersion);
+
+        if (current < remote)
+        {
+            logger.Info("Update available: " + remoteVersion);
+            return Tuple.Create(remoteUrl, remoteVersionText);
+        }
+        logger.Info("No updates available");
+        return null;
+    }
+
+    public static async Task<string?> GetRedirectedUrl(string url)
+    {
+        //this allows you to set the settings so that we can get the redirect url
+        var handler = new HttpClientHandler()
+        {
+            AllowAutoRedirect = false
+        };
+        string? redirectedUrl = null;
+
+        using (HttpClient client = new HttpClient(handler))
+        using (HttpResponseMessage response = await client.GetAsync(url))
+        using (HttpContent content = response.Content)
+        {
+            // ... Read the response to see if we have the redirected url
+            if (response.StatusCode == System.Net.HttpStatusCode.Found)
+            {
+                HttpResponseHeaders headers = response.Headers;
+                if (headers != null && headers.Location != null)
+                {
+                    redirectedUrl = headers.Location.AbsoluteUri;
+                }
+            }
+        }
+
+        return redirectedUrl;
+    }
+
+
     private async Task<MessageBoxResult> ShowMessageBox(BrowserWindow window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
     {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
@@ -289,6 +366,14 @@ public class Startup
     private async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
     {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
+        return await Electron.Dialog.ShowMessageBoxAsync(options);
+    }
+
+    private async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error, string[]? buttons = null)
+    {
+        MessageBoxOptions options = PrepareMessageBox(message, title, type);
+        if (buttons != null)
+            options.Buttons = buttons;
         return await Electron.Dialog.ShowMessageBoxAsync(options);
     }
 
@@ -314,9 +399,9 @@ public class Startup
         return options;
     }
 
-    Dictionary<String, Object> settings = GetSettings();
+    Dictionary<string, object> settings = GetSettings();
 
-    private void SaveSetting(String key, Object value)
+    private void SaveSetting(string key, object value)
     {
         if (key == null)
             return;
@@ -324,17 +409,17 @@ public class Startup
         WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
     }
 
-    private static Dictionary<String, Object> GetSettings()
+    private static Dictionary<string, object> GetSettings()
     {
-        return JsonConvert.DeserializeObject<Dictionary<String, Object>>(ReadDataFile(settingsFile)) ?? new Dictionary<String, Object>();
+        return JsonConvert.DeserializeObject<Dictionary<string, object>>(ReadDataFile(settingsFile)) ?? new Dictionary<string, object>();
     }
 
     private object GetHudLayout()
     {
-        return settings.ContainsKey("hudLayout") ? settings["hudLayout"] : new Dictionary<String, Object>();
+        return settings.ContainsKey("hudLayout") ? settings["hudLayout"] : new Dictionary<string, object>();
     }
 
-    private void SetHudLayout(Object layout)
+    private void SetHudLayout(object layout)
     {
         SaveSetting("hudLayout", layout);
     }
@@ -349,7 +434,7 @@ public class Startup
         WriteDataFile(userDataFile, JsonConvert.SerializeObject(data));
     }
 
-    private static String ReadDataFile(String name)
+    private static string ReadDataFile(string name)
     {
         try
         {
@@ -365,7 +450,7 @@ public class Startup
         }
     }
 
-    private void WriteDataFile(String name, String data)
+    private void WriteDataFile(string name, string data)
     {
         File.WriteAllText(Path.Combine(dataPath, name), data);
     }

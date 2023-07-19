@@ -31,6 +31,11 @@ const CLASS_COLORS = [
 
 
 
+
+const CHECK_FOR_UPDATES = "check-for-updates";
+
+
+
 /* ========================================== Functions ========================================== */
 
 

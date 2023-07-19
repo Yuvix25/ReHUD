@@ -2,7 +2,6 @@ const {ipcRenderer} = require('electron');
 const { remote } = require('electron');
 
 // document.addEventListener('DOMContentLoaded', () => utils.enableLogging(ipcRenderer, 'settings.js'));
-document.addEventListener('DOMContentLoaded', () => enableLogging(ipcRenderer, 'settings.js'));
 
 
 let settings = {};
@@ -24,9 +23,21 @@ function setSettings(newSettings) {
   }
 }
 
+let didCheckForUpdates = false;
+function checkForUpdates() {
+  !didCheckForUpdates && ipcRenderer.send(CHECK_FOR_UPDATES);
+  didCheckForUpdates = true;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  enableLogging(ipcRenderer, 'settings.js');
+
   const settingsBase64 = location.hash.substring(1);
   setSettings(JSON.parse(Buffer.from(settingsBase64, 'base64').toString('utf8')));
+
+  if (settings[CHECK_FOR_UPDATES] !== false) {
+    checkForUpdates();
+  }
 
   const onclick = [
     { id: 'edit-layout', func: () => lockOverlay(true) },
@@ -37,8 +48,12 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
 
   const oninput = [
-    { id: 'radar-beep-volume', func: (v) => radarBeepVolume(v) },
-    { id: 'radar-beep-volume-text', func: (v) => radarBeepVolume(v) },
+    { id: 'radar-beep-volume', func: (e) => radarBeepVolume(e.value) },
+    { id: 'radar-beep-volume-text', func: (e) => radarBeepVolume(e.value) },
+    { id: CHECK_FOR_UPDATES, func: (e) => {
+      sendToMainWindow([CHECK_FOR_UPDATES, e.checked]);
+      e.checked && checkForUpdates();
+    } },
   ];
 
   onclick.forEach((o) => {
@@ -50,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   oninput.forEach((o) => {
     const element = document.getElementById(o.id);
     if (element) {
-      element.addEventListener('input', () => o.func(element.value));
+      element.addEventListener('input', () => o.func(element));
     }
   });
 });

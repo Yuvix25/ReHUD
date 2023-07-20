@@ -761,18 +761,15 @@ progress#revs::-webkit-progress-value {
   left: 50%;
   transform: translateX(-50%);
   height: 26px;
-  width: 229px !important;
+  width: 246px !important;
   justify-content: flex-start;
   gap: 2px;
-
-  background-color: rgba(0, 0, 0, 0.8);
-  box-shadow: 0px 0px 3px 1px black;
 }
 
 #sector-times span {
   font-size: 20px;
   background-color: var(--sector-time-gray);
-  width: 75px !important;
+  width: 80px !important;
   height: 100%;
   text-align: center;
   color: white;

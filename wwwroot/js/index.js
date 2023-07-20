@@ -23,6 +23,7 @@ let lastData = null;
 
 const TRANSFORMABLES = [
     'position-container',
+    'estimated-laps-left-container',
 
     'last-lap-session-container',
     'best-lap-session-container',
@@ -275,11 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             return res;
         }}),
-        new Value({elementId: 'engine-map', inputValues: 'engineMapSetting', valueMap: (x) => `EM: ${valueIsValid(x) ? x : 5}`}),
-        new Value({elementId: 'traction-control', inputValues: ['tractionControlSetting', 'tractionControlPercent'], valueMap: (x, y) =>
+        new Value({renderEvery: 3, elementId: 'engine-map', inputValues: 'engineMapSetting', valueMap: (x) => `EM: ${valueIsValid(x) ? x : 5}`}),
+        new Value({
+            renderEvery: 3, elementId: 'traction-control', inputValues: ['tractionControlSetting', 'tractionControlPercent'], valueMap: (x, y) =>
                     `TC${(valueIsValid(x) ? x : ': ' + NA)}` + (valueIsValid(y) ? `: ${Math.round(y)}%` : '')}),
-        new Value({elementId: 'engine-brake', inputValues: 'engineBrakeSetting', valueMap: (x) => `EB: ${valueIsValid(x) ? x : NA}`}),
-        new Value({elementId: 'brake-bias', inputValues: 'brakeBias', valueMap: (x) => `BB: ${(100 - x * 100).toFixed(1)}%`}),
+        new Value({renderEvery: 3, elementId: 'engine-brake', inputValues: 'engineBrakeSetting', valueMap: (x) => `EB: ${valueIsValid(x) ? x : NA}`}),
+        new Value({renderEvery: 3, elementId: 'brake-bias', inputValues: 'brakeBias', valueMap: (x) => `BB: ${(100 - x * 100).toFixed(1)}%`}),
         new Value({elementId: 'revs', inputValues: ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'], renderEvery: 1, valueMap: (current, max, upshift, pitLimiter, id) => {
             if (!valueIsValid(current) || !valueIsValid(max))
                 return;
@@ -357,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }}),
         new Value({elementId: 'fuel-data', inputValues: 'fuelUseActive', valueMap: (x) => x ? undefined : Hide()}),
 
-        new Value({renderEvery: 15, elementId: 'tires', inputValues: ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt'], valueMap: (x, y, z, w) => {
+        new Value({renderEvery: 3, elementId: 'tires', inputValues: ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt'], valueMap: (x, y, z, w) => {
             const nameMap = {
                 'frontLeft': 'front-left',
                 'frontRight': 'front-right',
@@ -701,13 +703,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const lapsLeftElement = document.getElementById('laps-left');
             const sessionTypeElement = document.getElementById('session-type');
 
-            if (isInLeaderboardChallenge) {
+            const localHide = () => {
                 timeLeftElement.style.display = 'block';
                 lapsLeftElement.style.display = 'none';
                 timeLeftElement.children[0].innerText = '0';
                 timeLeftElement.children[1].innerText = '00';
                 timeLeftElement.children[2].innerText = '00';
                 return Hide();
+            }
+
+            if (isInLeaderboardChallenge) {
+                return localHide();
             }
 
             if (!valueIsValid(myLaps))
@@ -726,6 +732,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 timeLeftElement.children[0].innerText = Math.floor(timeLeft / 3600).toString(); // hours
                 timeLeftElement.children[1].innerText = (Math.floor(timeLeft / 60) % 60).toString().padStart(2, '0'); // minutes
                 timeLeftElement.children[2].innerText = (Math.floor(timeLeft) % 60).toString().padStart(2, '0'); // seconds
+            } else {
+                return localHide();
             }
 
             switch (sessionType) {
@@ -976,14 +984,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         sectorElement.style.display = null;
 
                         let color;
-                        if (sectorTimeSessionBest != null && sectorTime <= sectorTimeSessionBest)
+                        if (sectorTimeSessionBest == null || sectorTime <= sectorTimeSessionBest)
                             color = 'var(--sector-time-purple)';
-                        else if (sectorTimeBestSelf != null && sectorTime <= sectorTimeBestSelf)
+                        else if (sectorTimeBestSelf == null || sectorTime <= sectorTimeBestSelf)
                             color = 'var(--sector-time-green)';
                         else
                             color = 'var(--sector-time-gray)';
 
-                        sectorElement.innerText = sectorTime.toFixed(3);
+                        sectorElement.innerText = laptimeFormat(sectorTime);
                         sectorElement.style.backgroundColor = color;
                     }
                 }

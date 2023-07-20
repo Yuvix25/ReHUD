@@ -43,7 +43,12 @@ function valueIsValid(val) {
     return val != undefined && val != -1;
 }
 
-const laptimeFormat = (time) => {
+/**
+ * Formats duration in seconds to string in format 'mm:ss.sss'
+ * @param {number} time - time in seconds
+ * @return {string} - time in format 'mm:ss.sss'
+ */
+function laptimeFormat(time) {
     if (!valueIsValid(time))
         return '-:--.---';
 

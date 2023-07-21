@@ -44,13 +44,27 @@ const TRANSFORMABLES = [
 ];
 
 let LAYOUT = {};
+/**
+ * @param {HTMLElement} element 
+ */
 function elementAdjusted(element) {
     if (LAYOUT[element.id] == undefined)
         LAYOUT[element.id] = [0, 0, 1];
 
-    LAYOUT[element.id][0] = element.style.left;
-    LAYOUT[element.id][1] = element.style.top;
+    const offset = element.getBoundingClientRect();
+    const left = offset.left;
+    const top = offset.top;
+
+    LAYOUT[element.id][0] = left;
+    LAYOUT[element.id][1] = top;
     LAYOUT[element.id][2] = element.dataset.scale ?? 1;
+
+    element.style.left = left + 'px';
+    element.style.top = top + 'px';
+
+    if (!element.classList.contains('dragged')) {
+        element.classList.add('dragged');
+    }
 }
 
 function saveLayout() {
@@ -67,13 +81,24 @@ function loadLayout(layout) {
         let left, top, scale;
         if (LAYOUT[id] != undefined) {
             [left, top, scale] = LAYOUT[id];
+
+            element.style.position = 'absolute !important';
+            if (!element.classList.contains('dragged')) {
+                element.classList.add('dragged');
+            }
         } else {
             left = null;
             top = null;
             scale = null;
+
+            element.style.position = 'relative';
+
+            if (element.classList.contains('dragged')) {
+                element.classList.remove('dragged');
+            }
         }
 
-        element.style.position = 'relative';
+        element.style.position = 'absolute !important';
         element.style.left = left;
         element.style.top = top;
         element.style.transform = scale == null || scale === '' ? null : `scale(${scale})`;
@@ -800,11 +825,15 @@ document.addEventListener('DOMContentLoaded', () => {
              * @param {Object} driver
              */
             (drivers, driver, myPlace, speed, radar) => {
+                radar = document.getElementById(radar);
+
+                let backgroundImage = 'radial-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4) ),url("/icons/radar-grid.png")';
+                radar.style.backgroundImage = backgroundImage;
+
                 if (driver == undefined)
                     return Hide();
 
-                radar = document.getElementById(radar);
-
+                
                 speed = mpsToKph(speed);
 
                 const radar_size = radar.offsetWidth;
@@ -872,7 +901,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                let backgroundImage = 'radial-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4) ),url("/icons/radar-grid.png")';
                 if (closeLeft === 1)
                     backgroundImage += ',url("/icons/radar-grid-warning-left.png")';
                 if (closeRight === 1)

@@ -130,6 +130,12 @@ he {
   margin: 2px;
 }
 
+
+.dragged {
+  position: absolute !important;
+}
+
+
 .row {
   display: flex;
   flex-direction: row;
@@ -702,8 +708,7 @@ progress#revs::-webkit-progress-value {
   height: 300px;
   position: absolute !important;
   top: calc(100vh - 300px - 15px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: calc(50% - 150px);
   overflow: hidden;
   background-size: contain;
   opacity: 0.8;
@@ -725,8 +730,7 @@ progress#revs::-webkit-progress-value {
   width: max-content;
   position: absolute;
   top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: calc(50% - 150px);
   gap: 10px;
 }
 
@@ -758,8 +762,7 @@ progress#revs::-webkit-progress-value {
 #sector-times {
   position: absolute !important;
   top: 130px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: calc(50% - 123px);
   height: 26px;
   width: 246px !important;
   justify-content: flex-start;

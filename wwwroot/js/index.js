@@ -528,16 +528,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return Hide();
             }
 
-            if (all == null || place == null || (all.length == 1 && all[0].place == place +1))
+            if (all == null || place == null || all.length <= 1)
                 return Hide();
             
-
             let driverCount = all.length;
-            if (driverCount <= 1)
-                return Hide();
-            
-
-            place--;
 
             relative.style.display = 'block';
             
@@ -567,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     drivers[uid] = new Driver(uid, trackLength, driver.completedLaps);
                 }
 
-                if (driver.place == place + 1) {
+                if (driver.place == place) {
                     myUid = uid;
                     mySharedMemory = driver;
                     myDriver = drivers[myUid];
@@ -714,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 insertCell(row, carName, 'car-name');
         
                 const deltaRaw = mergedDeltas[i][1];
-                const delta = driver.place == place + 1 ? '' : (deltaRaw == null ? NA : deltaRaw.toFixed(1));
+                const delta = driver.place == place ? '' : (deltaRaw == null ? NA : deltaRaw.toFixed(1));
                 insertCell(row, delta, 'time-delta');
             }
 
@@ -813,10 +807,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let classCount = 0;
             for (const driver of drivers)
-                if (driver.classPerformanceIndex == drivers[myIndex].classPerformanceIndex)
+                if (driver != null && drivers[myIndex] != null && driver.driverInfo.classPerformanceIndex == drivers[myIndex].driverInfo.classPerformanceIndex)
                     classCount++;
 
-            return `${position}/${classCount}`;
+            return `${positionClass}/${classCount}`;
         }}),
 
         new Value({renderEvery: 1, elementId: 'radar', inputValues: ['driverData', 'player', 'position','carSpeed'], valueMap:

@@ -8,7 +8,7 @@ class EventEmitter {
 
 
     static CLOSE_THRESHOLD = 100;
-    static FAR_THRESHOLD = 300;
+    static FAR_THRESHOLD = 100;
 
 
     constructor() {
@@ -39,6 +39,8 @@ class EventEmitter {
      * @param {object} data
      */
     emit(eventName, data) {
+        console.log('Emitting ' + eventName + ' event.');
+
         switch (eventName) {
             case EventEmitter.newLapEvent:
                 this.lapStarted = true;
@@ -76,7 +78,7 @@ class EventEmitter {
                 this.emit(EventEmitter.NEW_LAP_EVENT, data);
             }
 
-            else if (EventEmitter.trackDistance(data.layoutLength, this.previousData.lapDistance, data.lapDistance) > EventEmitter.FAR_THRESHOLD // literal distance jump
+            else if (EventEmitter.trackDistance(data.layoutLength, this.previousData.lapDistance, data.lapDistance) >= EventEmitter.FAR_THRESHOLD // literal distance jump
                 || (data.controlType != null && data.controlType > 0 && this.previousData.controlType == 0)) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
                 this.emit(EventEmitter.POSITION_JUMP_EVENT, data);
             }

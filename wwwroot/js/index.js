@@ -715,6 +715,17 @@ document.addEventListener('DOMContentLoaded', () => {
             while (relativeTable.children.length > end - start) {
                 relativeTable.deleteRow(relativeTable.children.length - 1);
             }
+        }, eventCallbacks: {
+            [EventEmitter.POSITION_JUMP_EVENT]: (data) => {
+                for (const driver of data.driverData) {
+                    if (driver.place != data.position)
+                        continue;
+                    const uid = getUid(driver.driverInfo);
+                    if (uid in drivers) {
+                        drivers[uid].clearTempData(driver.lapDistance);
+                    }
+                }
+            }
         }}),
 
         new Value({renderEvery: 5, containerId: 'time-left-container', elementId: 'time-laps-left', inputValues: ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps'], valueMap: (timeLeft, lapsLeft, sessionType, myLaps) => {
@@ -922,7 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         new Value({
             renderEvery: 3, containerId: 'delta', elementId: 'delta-number', inputValues: ['timeDeltaBestSelf', 'currentLapValid'], valueMap: (timeDeltaBestSelf, currentLapValid, elementId) => {
-            if (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000 || !currentLapValid) {
+            if (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000 || !valueIsValid(currentLapValid) || currentLapValid === 0) {
                 DeltaManager.clear();
                 return Hide('0.000');
             }
@@ -1006,9 +1017,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         sectorElement.style.display = null;
 
                         let color;
-                        if (sectorTimeSessionBest == null || sectorTime <= sectorTimeSessionBest)
+                        if (!valueIsValid(sectorTimeSessionBest) || sectorTime <= sectorTimeSessionBest)
                             color = 'var(--sector-time-purple)';
-                        else if (sectorTimeBestSelf == null || sectorTime <= sectorTimeBestSelf)
+                        else if (!valueIsValid(sectorTimeBestSelf) || sectorTime <= sectorTimeBestSelf)
                             color = 'var(--sector-time-green)';
                         else
                             color = 'var(--sector-time-gray)';

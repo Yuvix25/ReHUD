@@ -43,27 +43,35 @@ const TRANSFORMABLES = [
     'basic',
 ];
 
+
 let LAYOUT = {};
 /**
  * @param {HTMLElement} element 
  */
-function elementAdjusted(element) {
+function elementAdjusted(element, position=true) {
     if (LAYOUT[element.id] == undefined)
         LAYOUT[element.id] = [0, 0, 1];
 
-    const offset = element.getBoundingClientRect();
-    const left = offset.left;
-    const top = offset.top;
+    let scale = 1;
+    if (!isNaN(element.dataset.scale)) {
+        scale = parseFloat(element.dataset.scale);
+    }
+    LAYOUT[element.id][2] = scale;
 
-    LAYOUT[element.id][0] = left;
-    LAYOUT[element.id][1] = top;
-    LAYOUT[element.id][2] = element.dataset.scale ?? 1;
+    if (position) {
+        let {left, top} = getRealOffset(element);
+        left -= 7;
+        top -= 7;
 
-    element.style.left = left + 'px';
-    element.style.top = top + 'px';
+        LAYOUT[element.id][0] = left;
+        LAYOUT[element.id][1] = top;
 
-    if (!element.classList.contains('dragged')) {
-        element.classList.add('dragged');
+        element.style.left = left + 'px';
+        element.style.top = top + 'px';
+
+        if (!element.classList.contains('dragged')) {
+            element.classList.add('dragged');
+        }
     }
 }
 
@@ -82,26 +90,22 @@ function loadLayout(layout) {
         if (LAYOUT[id] != undefined) {
             [left, top, scale] = LAYOUT[id];
 
-            element.style.position = 'absolute !important';
             if (!element.classList.contains('dragged')) {
                 element.classList.add('dragged');
             }
         } else {
             left = null;
             top = null;
-            scale = null;
-
-            element.style.position = 'relative';
+            scale = 1;
 
             if (element.classList.contains('dragged')) {
                 element.classList.remove('dragged');
             }
         }
 
-        element.style.position = 'absolute !important';
-        element.style.left = left;
-        element.style.top = top;
-        element.style.transform = scale == null || scale === '' ? null : `scale(${scale})`;
+        element.style.left = left == null ? null : left + 'px';
+        element.style.top = top == null ? null : top + 'px';
+        element.style.transform = isNaN(scale) ? null : `scale(${Math.pow(parseFloat(scale), ELEMENT_SCALE_POWER)})`;
         element.dataset.scale = scale;
     }
 }
@@ -135,10 +139,11 @@ function addTransformable(id) {
 
     // resizable (scroll to scale)
     element.addEventListener('wheel', (e) => {
-        const scale = -e.deltaY / 1000 + (parseFloat(element.dataset.scale) || 1);
-        element.style.transform = `scale(${scale})`;
+        let scale = Math.max(0.55, -e.deltaY / 2000 + (parseFloat(element.dataset.scale) || 1));
         element.dataset.scale = scale;
-        elementAdjusted(element);
+        scale = Math.pow(scale, ELEMENT_SCALE_POWER);
+        element.style.transform = `scale(${scale})`;
+        elementAdjusted(element, false);
     });
 
     return draggable;

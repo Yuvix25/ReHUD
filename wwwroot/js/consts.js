@@ -1,6 +1,6 @@
 /* ========================================== Constants ========================================== */
 
-const GRID_SIZE = 10;
+const GRID_SIZE = 1;
 const DEFAULT_RENDER_CYCLE = 30;
 const ITERATION_CYCLE = 1000;
 
@@ -10,6 +10,9 @@ const RADAR_RADIUS = 12; // meters
 const RADAR_BEEP_MIN_SPEED = 15; // km/h
 
 const LAST_LAP_SECTORS_TIME_ON_SCREEN = 3; // seconds
+
+
+const ELEMENT_SCALE_POWER = 2;
 
 
 const RELATIVE_LENGTH = 8;
@@ -30,13 +33,26 @@ const CLASS_COLORS = [
 ];
 
 
-
-
 const CHECK_FOR_UPDATES = "check-for-updates";
 
 
 
 /* ========================================== Functions ========================================== */
+
+
+function getRealOffset(element) {
+    let offsetLeft = 0;
+    let offsetTop = 0;
+
+    do {
+        offsetLeft += element.offsetLeft;
+        offsetTop += element.offsetTop;
+
+        element = element.offsetParent;
+    } while (element);
+
+    return { left: offsetLeft, top: offsetTop };
+}
 
 
 function valueIsValid(val) {

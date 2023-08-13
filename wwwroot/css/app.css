@@ -130,6 +130,10 @@ he {
   margin: 2px;
 }
 
+.hidden {
+  display: none !important;
+}
+
 
 .dragged {
   position: absolute !important;

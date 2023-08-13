@@ -33,11 +33,49 @@ const CLASS_COLORS = [
 ];
 
 
-const CHECK_FOR_UPDATES = "check-for-updates";
+const SESSION_TYPES = {
+    0: 'Practice',
+    1: 'Qualifying',
+    2: 'Race',
+    3: 'Warmup',
+    4: 'Lap',
+    5: 'Time Left',
+}
 
+
+
+const TRANSFORMABLES = {
+    'position-container': 'Position',
+    'estimated-laps-left-container': 'Estimated Laps Left',
+
+    'last-lap-session-container': 'Last Laptime',
+    'best-lap-session-container': 'Best Laptime',
+    'incident-points-container': 'Incident Points',
+    'time-left-container': 'Time Left',
+
+    'tires': 'Tires',
+    'damage': 'Damage',
+    'fuel-data': 'Fuel Data',
+
+    'radar': 'Radar',
+    'delta': 'Delta',
+    'sector-times': 'Sector Times',
+
+    'relative-viewer': 'Relative',
+    'driver-inputs': 'Inputs',
+    'basic': 'MoTeC',
+};
 
 
 /* ========================================== Functions ========================================== */
+
+
+function getSessionType(sessionType) {
+    if (valueIsValid(sessionType) && 0 <= sessionType && sessionType <= 4) {
+        return SESSION_TYPES[sessionType];
+    }
+    return SESSION_TYPES[5];
+}
 
 
 function getRealOffset(element) {

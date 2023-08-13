@@ -25,6 +25,8 @@ namespace R3E
                 _file.Dispose();
         }
 
+        public static bool isRunning = false;
+
         public void Run(SharedMemoryCallback callback)
         {
             var timeReset = DateTime.UtcNow;
@@ -62,7 +64,12 @@ namespace R3E
 
                 if (Mapped && Read())
                 {
+                    isRunning = true;
                     callback(_data);
+                }
+                else
+                {
+                    isRunning = false;
                 }
             }
         }

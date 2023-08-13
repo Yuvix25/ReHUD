@@ -5,8 +5,6 @@ const { ipcRenderer } = require('electron');
 
 
 
-
-
 /**
  * @type {Object.<string, Driver>}
  */
@@ -21,36 +19,15 @@ let isInLeaderboardChallenge = false;
 // used for debugging
 let lastData = null;
 
-const TRANSFORMABLES = [
-    'position-container',
-    'estimated-laps-left-container',
-
-    'last-lap-session-container',
-    'best-lap-session-container',
-    'incident-points-container',
-    'time-left-container',
-
-    'tires',
-    'damage',
-    'fuel-data',
-
-    'radar',
-    'delta',
-    'sector-times',
-
-    'relative-viewer',
-    'driver-inputs',
-    'basic',
-];
-
-
+// {id: [left, top, scale, shown]}
 let LAYOUT = {};
+
 /**
  * @param {HTMLElement} element 
  */
 function elementAdjusted(element, position=true) {
     if (LAYOUT[element.id] == undefined)
-        LAYOUT[element.id] = [0, 0, 1];
+        LAYOUT[element.id] = [0, 0, 1, true];
 
     let scale = 1;
     if (!isNaN(element.dataset.scale)) {
@@ -73,6 +50,34 @@ function elementAdjusted(element, position=true) {
             element.classList.add('dragged');
         }
     }
+    
+    element.classList.remove('hidden');
+    if (!LAYOUT[element.id][3]) {
+        element.classList.add('hidden');
+    }
+}
+
+function elementToggled(elementId, shown) {
+    if (!isInEditMode) {
+        console.warn('elementToggled called while not in edit mode');
+        return;
+    }
+
+    if (LAYOUT[elementId] == undefined)
+        LAYOUT[elementId] = [0, 0, 1, true];
+
+    LAYOUT[elementId][3] = shown;
+
+    const element = document.getElementById(elementId);
+    if (element == null) {
+        console.warn(`elementToggled called with invalid element id ${elementId}`);
+        return;
+    }
+
+    element.classList.remove('hidden');
+    if (!shown) {
+        element.classList.add('hidden');
+    }
 }
 
 function saveLayout() {
@@ -82,13 +87,17 @@ function saveLayout() {
 }
 ipcRenderer.on('save-hud-layout', saveLayout);
 
+ipcRenderer.on('toggle-element', (event, arg) => {
+    elementToggled(arg[0], arg[1]);
+});
+
 function loadLayout(layout) {
     LAYOUT = layout;
-    for (const id of TRANSFORMABLES) {
+    for (const id of Object.keys(TRANSFORMABLES)) {
         const element = document.getElementById(id);
-        let left, top, scale;
+        let left, top, scale, shown;
         if (LAYOUT[id] != undefined) {
-            [left, top, scale] = LAYOUT[id];
+            [left, top, scale, shown] = LAYOUT[id];
 
             if (!element.classList.contains('dragged')) {
                 element.classList.add('dragged');
@@ -97,6 +106,7 @@ function loadLayout(layout) {
             left = null;
             top = null;
             scale = 1;
+            shown = true;
 
             if (element.classList.contains('dragged')) {
                 element.classList.remove('dragged');
@@ -107,17 +117,17 @@ function loadLayout(layout) {
         element.style.top = top == null ? null : top + 'px';
         element.style.transform = isNaN(scale) ? null : `scale(${Math.pow(parseFloat(scale), ELEMENT_SCALE_POWER)})`;
         element.dataset.scale = scale;
+
+        element.classList.remove('hidden');
+        if (!shown) {
+            element.classList.add('hidden');
+        }
     }
 }
 
 function requestLayout() {
     ipcRenderer.send('get-hud-layout');
 }
-
-ipcRenderer.on('hud-layout', (e, arg) => {
-    exitEditMode();
-    loadLayout(JSON.parse(arg[0]));
-});
 
 function addTransformable(id) {
     let gridSize;
@@ -262,6 +272,12 @@ ipcRenderer.send('whoami');
 document.addEventListener('DOMContentLoaded', () => {
     enableLogging(ipcRenderer, 'index.js');
 
+
+    ipcRenderer.on('hud-layout', (e, arg) => {
+        exitEditMode();
+        loadLayout(JSON.parse(arg[0]));
+    });
+
     const RADAR_AUDIO_CONTROLLER = new AudioController({ volumeMultiplier: 1 });
     const EVENT_EMITTER = new EventEmitter();
 
@@ -311,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderEvery: 3, elementId: 'traction-control', inputValues: ['tractionControlSetting', 'tractionControlPercent'], valueMap: (x, y) =>
                     `TC${(valueIsValid(x) ? x : ': ' + NA)}` + (valueIsValid(y) ? `: ${Math.round(y)}%` : '')}),
         new Value({renderEvery: 3, elementId: 'engine-brake', inputValues: 'engineBrakeSetting', valueMap: (x) => `EB: ${valueIsValid(x) ? x : NA}`}),
-        new Value({renderEvery: 3, elementId: 'brake-bias', inputValues: 'brakeBias', valueMap: (x) => `BB: ${(100 - x * 100).toFixed(1)}%`}),
+        new Value({renderEvery: 3, elementId: 'brake-bias', inputValues: 'brakeBias', valueMap: (x) => `BB: ${valueIsValid(x) ? (100 - x * 100).toFixed(1) : NA}%`}),
         new Value({elementId: 'revs', inputValues: ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'], renderEvery: 1, valueMap: (current, max, upshift, pitLimiter, id) => {
             if (!valueIsValid(current) || !valueIsValid(max))
                 return;
@@ -741,9 +757,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const localHide = () => {
                 timeLeftElement.style.display = 'block';
                 lapsLeftElement.style.display = 'none';
-                timeLeftElement.children[0].innerText = '0';
-                timeLeftElement.children[1].innerText = '00';
-                timeLeftElement.children[2].innerText = '00';
+                timeLeftElement.children[0].innerText = '24';
+                timeLeftElement.children[1].innerText = '59';
+                timeLeftElement.children[2].innerText = '59';
                 return Hide();
             }
 
@@ -751,14 +767,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 return localHide();
             }
 
-            if (!valueIsValid(myLaps))
-                myLaps = 0;
 
-            if (timeLeft == -1 && lapsLeft >= 0) {
+            if (!valueIsValid(timeLeft) && !valueIsValid(lapsLeft) && sessionType.innerText === getSessionType(sessionType) && document.getElementById('time-left-container').style.display != 'none') { //TODO: once all values inherit from Value, this should be replaced with `this.isHidden()`
+                if (timeLeftElement.style.display != 'none') {
+                    timeLeft = 0;
+                } else if (lapsLeftElement.style.display != 'none') {
+                    lapsLeft = 0;
+                }
+            }
+
+
+            if (!valueIsValid(timeLeft) && lapsLeft >= 0) {
                 timeLeftElement.style.display = 'none';
                 lapsLeftElement.style.display = 'block';
 
                 sessionType = 4;
+
+                if (!valueIsValid(myLaps))
+                    myLaps = 0;
 
                 lapsLeftElement.innerText = `${myLaps+1}/${lapsLeft}`;
             } else if (timeLeft >= 0) {
@@ -771,26 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return localHide();
             }
 
-            switch (sessionType) {
-                case 0:
-                    sessionTypeElement.innerText = 'Practice';
-                    break;
-                case 1:
-                    sessionTypeElement.innerText = 'Qualifying';
-                    break;
-                case 2:
-                    sessionTypeElement.innerText = 'Race';
-                    break;
-                case 3:
-                    sessionTypeElement.innerText = 'Warmup';
-                    break;
-                case 4:
-                    sessionTypeElement.innerText = 'Laps';
-                    break;
-                default:
-                    sessionTypeElement.innerText = 'Time Left';
-                    break;
-            }
+            sessionTypeElement.innerText = getSessionType(sessionType);
         }}),
         new Value({'containerId': 'estimated-laps-left-container', elementId: 'estimated-laps-left', inputValues: ['sessionType', 'completedLaps', 'lapDistanceFraction', '+estimatedRaceLapCount'], valueMap: (sessionType, completedLaps, fraction, totalLaps) => {
             if (sessionType != 2 || !valueIsValid(totalLaps))
@@ -798,14 +805,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!valueIsValid(completedLaps)) {
                 completedLaps = -1;
-                totalLaps--; // in the backend, completedLaps is 0 before the start, so you get an extra lap calculated (the one you'll complete when crossing the start line)
+                totalLaps--; // in the backend, completedLaps is 0 before the start, so you get an extra lap calculated (the one you'll "complete" when crossing the start line)
             }
             if (!valueIsValid(fraction))
                 fraction = 0;
             
             completedLaps += fraction;
+            completedLaps = Math.max(completedLaps, 0);
 
-            return `${Math.max(completedLaps, 0).toFixed(1)}/${totalLaps}`;
+            return `${(totalLaps - completedLaps).toFixed(1)}/${totalLaps}`;
         }}),
         new Value({elementId: 'last-lap-session', inputValues: 'lapTimePreviousSelf', valueMap: laptimeFormat}),
         new Value({elementId: 'best-lap-session', inputValues: 'lapTimeBestSelf', valueMap: laptimeFormat}),
@@ -820,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 }
             }
-            
+
             let classCount = 0;
             for (const driver of drivers)
                 if (driver != null && drivers[myIndex] != null && driver.driverInfo.classPerformanceIndex == drivers[myIndex].driverInfo.classPerformanceIndex)
@@ -843,7 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (driver == undefined)
                     return Hide();
 
-                
+
                 speed = mpsToKph(speed);
 
                 const radar_size = radar.offsetWidth;
@@ -920,7 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if ((closeLeft === 1 || closeRight === 1) && speed >= RADAR_BEEP_MIN_SPEED && RADAR_AUDIO_CONTROLLER != null)
                     RADAR_AUDIO_CONTROLLER.play(1 - closest / RADAR_RADIUS, closeLeft * -1 + closeRight * 1);
-                
+
                 if (closest === null)
                     return Hide();
         }}),
@@ -928,7 +936,7 @@ document.addEventListener('DOMContentLoaded', () => {
         new Value({ renderEvery: 5, containerId: 'incident-points-container', elementId: 'incident-points', inputValues: ['incidentPoints', 'maxIncidentPoints'], valueMap: (incidentPoints, maxIncidentPoints, elementId) => {
             if (!valueIsValid(incidentPoints))
                 return Hide(NA);
-            
+
             let res = incidentPoints.toString();
             if (valueIsValid(maxIncidentPoints)) {
                 res += `/${maxIncidentPoints}`;
@@ -1125,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    for (const id of TRANSFORMABLES) {
+    for (const id of Object.keys(TRANSFORMABLES)) {
         addTransformable(id);
     }
 

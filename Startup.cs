@@ -74,6 +74,9 @@ public class Startup
     }
 
 
+    private BrowserWindow? mainWindow;
+    private BrowserWindow? settingsWindow;
+
     private const string githubUrl = "https://github.com/Yuvix25/ReHUD";
     private const string githubReleasesUrl = "releases/latest";
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
@@ -86,7 +89,7 @@ public class Startup
 
     private async Task CreateMainWindow(IWebHostEnvironment env)
     {
-        var window = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
+        mainWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
         {
             Resizable = false,
             Fullscreen = true,
@@ -107,15 +110,15 @@ public class Startup
         bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => { });
         if (!gotLock)
         {
-            await ShowMessageBox(window, anotherInstanceMessage, "Error", MessageBoxType.error);
+            await ShowMessageBox(mainWindow, anotherInstanceMessage, "Error", MessageBoxType.error);
             Electron.App.Quit();
             return;
         }
 
-        window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
+        mainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
 
         if (!env.IsDevelopment())
-            window.SetIgnoreMouseEvents(true);
+            mainWindow.SetIgnoreMouseEvents(true);
 
 
         await Electron.IpcMain.On("log", (args) =>
@@ -123,16 +126,16 @@ public class Startup
             Newtonsoft.Json.Linq.JObject obj = (Newtonsoft.Json.Linq.JObject)args;
             if (obj == null || obj["level"] == null)
                 return;
-            string message = ((string)(obj["message"] ?? "(unknown)")).Trim();
-            string level = ((string)obj["level"]).ToUpper();
+            string message = ((string?)obj["message"] ?? "(unknown)").Trim();
+            string level = ((string?)obj["level"] ?? "INFO").ToUpper();
 
             switch (level)
             {
                 case "INFO":
-                    logger.Debug(message);
+                    logger.Info(message);
                     break;
                 case "WARN":
-                    logger.Info(message);
+                    logger.Warn(message);
                     break;
                 case "ERROR":
                     logger.Error(message);
@@ -143,7 +146,7 @@ public class Startup
 
         await Electron.IpcMain.On("get-hud-layout", (args) =>
         {
-            SendHudLayout(window);
+            SendHudLayout(mainWindow);
         });
 
         await Electron.IpcMain.On("set-hud-layout", (args) =>
@@ -151,11 +154,23 @@ public class Startup
             SetHudLayout(JsonConvert.DeserializeObject<object>(args.ToString() ?? "{}") ?? new Dictionary<string, object>());
         });
 
+        await Electron.IpcMain.On("toggle-element", (args) =>
+        {
+            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)args;
+            string? elementId = (string?)array[0];
+            bool shown = (bool)array[1];
+
+            if (elementId == null)
+                return;
+
+            Electron.IpcMain.Send(mainWindow, "toggle-element", elementId, shown);
+        });
+
         await Electron.IpcMain.On("reset-hud-layout", (args) =>
         {
             try
             {
-                SendHudLayout(window, new Dictionary<string, object>());
+                SendHudLayout(mainWindow, new Dictionary<string, object>());
             }
             catch (Exception e)
             {
@@ -168,9 +183,9 @@ public class Startup
             isShown = null;
         });
 
-        RunLoop(window, env);
+        RunLoop(mainWindow, env);
 
-        window.OnClosed += () => Electron.App.Quit();
+        mainWindow.OnClosed += () => Electron.App.Quit();
     }
 
     private void SendHudLayout(ElectronNET.API.BrowserWindow window)
@@ -181,6 +196,8 @@ public class Startup
     private void SendHudLayout(ElectronNET.API.BrowserWindow window, object layout)
     {
         Electron.IpcMain.Send(window, "hud-layout", JsonConvert.SerializeObject(layout));
+        if (settingsWindow != null)
+            Electron.IpcMain.Send(settingsWindow, "hud-layout", JsonConvert.SerializeObject(layout));
     }
 
 
@@ -197,7 +214,7 @@ public class Startup
 
     private async Task CreateSettingsWindow(IWebHostEnvironment env)
     {
-        var settingsWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
+        settingsWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
         {
             Width = 800,
             Height = 600,
@@ -252,7 +269,7 @@ public class Startup
             bool locked = (bool)array[0];
             bool save = (bool)array[1];
 
-            if (!locked)
+            if (!locked) // enter edit mode
             {
                 Electron.IpcMain.Send(mainWindow, "edit-mode");
                 //TODO: wait for response instead of using a delay
@@ -261,16 +278,25 @@ public class Startup
                     enteredEditMode = true;
                 });
             }
+            else
+            {
+                isShown = null;
+
+                if (!R3E.SharedMemory.isRunning)
+                {
+                    Electron.IpcMain.Send(mainWindow, "hide");
+                }
+            }
 
             mainWindow.SetIgnoreMouseEvents(locked);
             mainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
             settingsWindow.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
 
-            if (locked && save)
+            if (locked && save) // save
             {
                 Electron.IpcMain.Send(mainWindow, "save-hud-layout");
             }
-            else if (locked)
+            else if (locked) // cancel
             {
                 SendHudLayout(mainWindow);
             }
@@ -407,6 +433,9 @@ public class Startup
             return;
         settings[key] = value;
         WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
+
+        if (settingsWindow != null)
+            Electron.IpcMain.Send(settingsWindow, "settings", settings);
     }
 
     private static Dictionary<string, object> GetSettings()

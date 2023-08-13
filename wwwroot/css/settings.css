@@ -7,10 +7,9 @@
 
 body {
     background-color: #3e3e3e;
-    padding: 10px;
     font-size: 20px;
     font-family: 'Oswald', sans-serif;
-
+    margin: 0px;
     user-select: none;
 }
 
@@ -48,51 +47,6 @@ input[type=number]::-webkit-outer-spin-button {
 .setting {
     margin-bottom: 8px;
 }
-
-
-
-#radar-beep-volume-text {
-    width: 45px;
-    border: none;
-    outline: none !important;
-    border-radius: 4px;
-    padding: 2px;
-}
-
-.slider {
-    appearance: none;
-    height: 8px;
-    border-radius: 4px;
-    background: #d3d3d3;
-    outline: none;
-    opacity: 0.7;
-    transition: opacity .2s;
-}
-.slider:hover {
-    opacity: 1;
-}
-.slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--theme-color-1);
-    cursor: pointer;
-}
-
-#show-log-file {
-    position: fixed;
-    right: 0;
-    bottom: 0;
-    margin: 40px;
-    color: rgb(230, 230, 230);
-    box-shadow: 2px 2px 7px 3px #1a1a1a;
-}
-
-
-
-
-
 
 .switch {
     display: inline-block;
@@ -149,4 +103,98 @@ input[type=number]::-webkit-outer-spin-button {
 .switch__input:checked+.switch__label:after {
     left: 20px;
     background-color: var(--theme-color-2);
+}
+
+
+
+/* Style the tab */
+.tab {
+    overflow: hidden;
+    display: flex;
+    gap: 6px;
+
+    background-color: #4a4a4a;
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+    background-color: inherit;
+    color: white;
+    border-radius: 0px;
+    outline: none;
+    cursor: pointer;
+    padding: 8px 15px 8px 15px;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+    border-bottom: 2px solid white !important;
+}
+
+/* Style the tab content */
+.tabcontent:not(.active) {
+    display: none;
+}
+
+.tabcontent.active {
+    display: block;
+    padding: 10px;
+}
+
+
+
+#radar-beep-volume-text {
+    width: 45px;
+    border: none;
+    outline: none !important;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.slider {
+    appearance: none;
+    height: 8px;
+    border-radius: 4px;
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity .2s;
+}
+.slider:hover {
+    opacity: 1;
+}
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--theme-color-1);
+    cursor: pointer;
+}
+
+#show-log-file {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    margin: 25px;
+    color: rgb(230, 230, 230);
+    box-shadow: 2px 2px 7px 3px #1a1a1a;
+}
+
+
+#element-toggles {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0px 30px;
+}
+
+.element-toggle {
+    flex-basis: 30%;
+    min-width: max-content;
+}
+
+.element-toggle label {
+    margin-left: 5px;
 }

@@ -79,6 +79,7 @@ class Driver {
     this.currentLapValid = true;
     this.bestLap = null;
     this.bestLapTime = null;
+    this.bestLapTimeValid = false;
     this.completedLaps = completedLaps;
 
     this.crossedFinishLine = false;
@@ -170,7 +171,7 @@ class Driver {
       laptime == null && (laptime = time - this.points[0]);
 
       //                       number < null == false
-      if (this.currentLapValid && this.completedLaps >= 0) {
+      if (this.completedLaps >= 0 && (this.bestLapTime == null || !this.bestLapTimeValid || laptime < this.bestLapTime)) {
         this.bestLap = this.points.slice();
         this.bestLapTime = laptime;
       }

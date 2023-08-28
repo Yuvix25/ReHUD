@@ -7,6 +7,7 @@ using log4net.Repository.Hierarchy;
 using log4net.Config;
 using System.Reflection;
 using System.Net.Http.Headers;
+using R3E;
 
 namespace ReHUD;
 
@@ -38,6 +39,8 @@ public class Startup
         rootAppender = ((Hierarchy)logRepository).Root.Appenders.OfType<FileAppender>().FirstOrDefault();
         logFilePath = rootAppender != null ? rootAppender.File : string.Empty;
 
+        lapPointsData.Load();
+
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
@@ -67,8 +70,12 @@ public class Startup
         {
             Electron.App.Ready += async () =>
             {
-                await CreateMainWindow(env);
-                await CreateSettingsWindow(env);
+                try {
+                    await CreateMainWindow(env);
+                    await CreateSettingsWindow(env);
+                } catch (Exception e) {
+                    logger.Error("Error creating windows", e);
+                }
             };
         }
     }
@@ -82,10 +89,9 @@ public class Startup
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
     private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file name 'ReHUD.log' in C:\\Users\\<username>\\AppData\\Local\\Programs\\rehud\\resources\\bin";
 
-    private const string userDataFile = "userData.json";
-    private const string settingsFile = "settings.json";
-    private static string dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD");
-    private R3E.UserData? userData;
+    private readonly FuelData fuelData = new();
+    private readonly LapPointsData lapPointsData = new();
+    private readonly Settings settings = new();
 
     private async Task CreateMainWindow(IWebHostEnvironment env)
     {
@@ -183,17 +189,46 @@ public class Startup
             isShown = null;
         });
 
+        await Electron.IpcMain.On("save-best-lap", (args) =>
+        {
+            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)args;
+            int layoutId = (int)array[0];
+            int classId = (int)array[1];
+            double laptime = (double)array[2];
+            double[] points = ((Newtonsoft.Json.Linq.JArray)array[3]).Select(x => (double)x).ToArray();
+            double pointsPerMeter = (double)array[4];
+
+            LapPointsCombination combination = lapPointsData.GetCombination(layoutId, classId);
+            combination.Set(laptime, points, pointsPerMeter);
+
+            lapPointsData.Save();
+        });
+
+        await Electron.IpcMain.On("load-best-lap", (args) => {
+            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)args;
+            string? uid = (string?)array[0];
+            if (uid == null)
+                return;
+            int layoutId = (int)array[1];
+            int classId = (int)array[2];
+
+            LapPointsCombination? combination = lapPointsData.GetCombination(layoutId, classId, false);
+            if (combination == null)
+                return;
+            Electron.IpcMain.Send(mainWindow, "load-best-lap", combination.Serialize(uid));
+        });
+
         RunLoop(mainWindow, env);
 
         mainWindow.OnClosed += () => Electron.App.Quit();
     }
 
-    private void SendHudLayout(ElectronNET.API.BrowserWindow window)
+    private void SendHudLayout(BrowserWindow window)
     {
         SendHudLayout(window, GetHudLayout());
     }
 
-    private void SendHudLayout(ElectronNET.API.BrowserWindow window, object layout)
+    private void SendHudLayout(BrowserWindow window, object layout)
     {
         Electron.IpcMain.Send(window, "hud-layout", JsonConvert.SerializeObject(layout));
         if (settingsWindow != null)
@@ -206,7 +241,8 @@ public class Startup
         var url = (await window.WebContents.GetUrl()).Split('#')[0];
         if (url.EndsWith("Settings"))
             return;
-        Electron.IpcMain.Send(window, "settings", JsonConvert.SerializeObject(GetSettings()));
+
+        Electron.IpcMain.Send(window, "settings", settings.Serialize());
     }
 
 
@@ -238,8 +274,6 @@ public class Startup
             await SendSettingsWindowSignal(settingsWindow);
         };
 
-
-        var mainWindow = Electron.WindowManager.BrowserWindows.First();
 
         await Electron.IpcMain.On("whoami", async (data) =>
         {
@@ -282,21 +316,24 @@ public class Startup
             {
                 isShown = null;
 
-                if (!R3E.SharedMemory.isRunning)
+                if (!SharedMemory.isRunning)
                 {
                     Electron.IpcMain.Send(mainWindow, "hide");
                 }
             }
 
-            mainWindow.SetIgnoreMouseEvents(locked);
-            mainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
+            if (mainWindow != null)
+            {
+                mainWindow.SetIgnoreMouseEvents(locked);
+                mainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
+            }
             settingsWindow.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
 
             if (locked && save) // save
             {
                 Electron.IpcMain.Send(mainWindow, "save-hud-layout");
             }
-            else if (locked) // cancel
+            else if (locked && mainWindow != null) // cancel
             {
                 SendHudLayout(mainWindow);
             }
@@ -307,7 +344,7 @@ public class Startup
             Electron.IpcMain.Send(mainWindow, "set-setting", arg.ToString());
             Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)arg;
             if (array.Count == 2 && array[0] != null && array[0].Type == Newtonsoft.Json.Linq.JTokenType.String)
-                SaveSetting(array[0].ToString(), array[1]);
+                SaveSetting(array[0].ToString(), array[1], false);
             else
                 logger.Error("Invalid setting when attempting 'set-setting': " + arg);
         });
@@ -425,27 +462,17 @@ public class Startup
         return options;
     }
 
-    Dictionary<string, object> settings = GetSettings();
-
-    private void SaveSetting(string key, object value)
+    private void SaveSetting(string key, object value, bool sendToWindow = true)
     {
-        if (key == null)
-            return;
-        settings[key] = value;
-        WriteDataFile(settingsFile, JsonConvert.SerializeObject(settings));
+        settings.Set(key, value);
 
-        if (settingsWindow != null)
-            Electron.IpcMain.Send(settingsWindow, "settings", settings);
-    }
-
-    private static Dictionary<string, object> GetSettings()
-    {
-        return JsonConvert.DeserializeObject<Dictionary<string, object>>(ReadDataFile(settingsFile)) ?? new Dictionary<string, object>();
+        if (settingsWindow != null && sendToWindow)
+            Electron.IpcMain.Send(settingsWindow, "settings", settings.Serialize());
     }
 
     private object GetHudLayout()
     {
-        return settings.ContainsKey("hudLayout") ? settings["hudLayout"] : new Dictionary<string, object>();
+        return settings.Get("hudLayout", new Dictionary<string, object>());
     }
 
     private void SetHudLayout(object layout)
@@ -453,80 +480,50 @@ public class Startup
         SaveSetting("hudLayout", layout);
     }
 
-    private R3E.UserData GetUserData()
-    {
-        return JsonConvert.DeserializeObject<R3E.UserData>(ReadDataFile(userDataFile)) ?? new R3E.UserData();
-    }
-
-    private void SaveUserData(R3E.UserData data)
-    {
-        WriteDataFile(userDataFile, JsonConvert.SerializeObject(data));
-    }
-
-    private static string ReadDataFile(string name)
-    {
-        try
-        {
-            if (!Directory.Exists(dataPath))
-            {
-                Directory.CreateDirectory(dataPath);
-            }
-            return File.ReadAllText(Path.Combine(dataPath, name));
-        }
-        catch
-        {
-            return "{}";
-        }
-    }
-
-    private void WriteDataFile(string name, string data)
-    {
-        File.WriteAllText(Path.Combine(dataPath, name), data);
-    }
-
-
     bool userDataClearedForMultiplier = false;
 
     bool? isShown = null;
 
     private void RunLoop(BrowserWindow window, IWebHostEnvironment env)
     {
-        userData = GetUserData();
+        fuelData.Load();
 
-        using (var memory = new R3E.SharedMemory())
+        using (var memory = new SharedMemory())
         {
             Thread.Sleep(1000);
             if (env.IsDevelopment())
                 Electron.IpcMain.Send(window, "show");
 
             int iter = 0;
-            ExtraData extraData = new ExtraData();
-            extraData.ForceUpdateAll = false;
+            ExtraData extraData = new ExtraData
+            {
+                ForceUpdateAll = false
+            };
             Thread thread = new Thread(() => memory.Run((data) =>
             {
                 if (data.FuelUseActive != 1 && !userDataClearedForMultiplier)
                 {
                     userDataClearedForMultiplier = true;
-                    SaveUserData(userData);
-                    userData = new R3E.UserData();
+                    fuelData.Save();
+                    fuelData.Clear();
                 }
                 else if (data.FuelUseActive == 1 && userDataClearedForMultiplier)
                 {
                     userDataClearedForMultiplier = false;
-                    userData = GetUserData();
+                    fuelData.Clear();
+                    fuelData.Load();
                 }
 
-
-                R3E.Combination combination = userData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
                 extraData.RawData = data;
                 extraData.RawData.DriverData = extraData.RawData.DriverData.Take(data.NumCars).ToArray();
-                if (iter % (1000 / R3E.SharedMemory.timeInterval.Milliseconds) * 10 == 0)
+                if (data.LayoutId != -1 && data.VehicleInfo.ModelId != -1 && iter % (1000 / SharedMemory.timeInterval.Milliseconds) * 10 == 0)
                 {
+                    FuelCombination combination = fuelData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
                     extraData.FuelPerLap = combination.GetAverageFuelUsage();
                     extraData.FuelLastLap = combination.GetLastLapFuelUsage();
                     extraData.AverageLapTime = combination.GetAverageLapTime();
                     extraData.BestLapTime = combination.GetBestLapTime();
-                    Tuple<int, double> lapData = R3E.Utilities.GetEstimatedLapCount(data, combination);
+                    Tuple<int, double> lapData = Utilities.GetEstimatedLapCount(data, combination);
                     extraData.EstimatedRaceLapCount = lapData.Item1;
                     extraData.LapsUntilFinish = lapData.Item2;
                     iter = 0;
@@ -544,19 +541,16 @@ public class Startup
 
                 lastLap = data.CompletedLaps;
                 bool notDriving = data.GameInMenus == 1 || (data.GamePaused == 1 && data.GameInReplay == 0) || data.SessionType == -1;
-                if (!notDriving || env.IsDevelopment() || enteredEditMode)
+                if (enteredEditMode)
                 {
-                    if (enteredEditMode)
-                    {
-                        extraData.ForceUpdateAll = true;
-                        Electron.IpcMain.Send(window, "data", extraData);
-                        extraData.ForceUpdateAll = false;
-                        enteredEditMode = false;
-                    }
-                    else
-                    {
-                        Electron.IpcMain.Send(window, "data", extraData);
-                    }
+                    extraData.ForceUpdateAll = true;
+                    Electron.IpcMain.Send(window, "data", extraData);
+                    extraData.ForceUpdateAll = false;
+                    enteredEditMode = false;
+                }
+                else
+                {
+                    Electron.IpcMain.Send(window, "data", extraData);
                 }
 
                 if (notDriving)
@@ -592,7 +586,7 @@ public class Startup
     private int lastLap = -1;
     private void SaveData(R3E.Data.Shared data)
     {
-        if (lastLap == -1 || lastLap == data.CompletedLaps || userData == null)
+        if (lastLap == -1 || lastLap == data.CompletedLaps || fuelData == null)
             return;
 
         if (!recordingData)
@@ -604,7 +598,7 @@ public class Startup
 
         int modelId = data.VehicleInfo.ModelId;
         int layoutId = data.LayoutId;
-        R3E.Combination combo = userData.GetCombination(layoutId, modelId);
+        FuelCombination combo = fuelData.GetCombination(layoutId, modelId);
 
         if (data.LapTimePreviousSelf > 0)
             combo.AddLapTime(data.LapTimePreviousSelf);
@@ -615,7 +609,7 @@ public class Startup
         }
 
         if (data.FuelUseActive <= 1)
-            SaveUserData(userData);
+            fuelData.Save();
 
         lastFuel = data.FuelLeft;
     }

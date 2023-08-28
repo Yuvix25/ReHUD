@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "module": "ES2020",
+        "moduleResolution": "node",
+        "sourceMap": false,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "removeComments": false,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
+        "outDir": "wwwroot/js",
+        "allowJs": true
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "include": [
+        "wwwroot/ts/**/*"
+    ]
+}

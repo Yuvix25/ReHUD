@@ -83,7 +83,7 @@ namespace R3E
             }
             catch (FileNotFoundException e)
             {
-                ReHUD.Startup.logger.Error("Error mapping shared memory", e);
+                // ReHUD.Startup.logger.Error("Error mapping shared memory", e);
                 return false;
             }
         }

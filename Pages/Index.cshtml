@@ -10,39 +10,39 @@
 
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
 
-    <script src="~/lib/agnostic-draggable/dist/agnostic-draggable.min.js"></script>
-    <script src="~/js/eventEmitter.js" asp-append-version="true"></script>
-    <script src="~/js/index.js" asp-append-version="true"></script>
+    <script src="~/dist/index-bundle.js" asp-append-version="true"></script>
 </head>
 
 @* he = hud-element *@
 <div id="main-container" class="col sb">
-    <div class="row sb" id="top-group">
-        <div class="row" id="top-left-group">
-            <div class="container" id="position-container">
+
+    <div id="top-group" class="row sb">
+        <div id="top-left-group" class="row">
+            <div class="container hud-element" id="position-container">
                 <span id="position" class="value"></span>
                 <span class="label">Position</span>
             </div>
 
-            <div class="container" id="estimated-laps-left-container">
+            <div class="container hud-element" id="estimated-laps-left-container">
                 <span id="estimated-laps-left" class="value"></span>
                 <span class="label">Estimated Laps Left</span>
             </div>
         </div>
-        <div class="row" id="top-right-group">
-            <div class="container" id="last-lap-session-container">
+
+        <div id="top-right-group" class="row">
+            <div class="container hud-element" id="last-lap-session-container">
                 <span id="last-lap-session" class="value"></span>
                 <span class="label">Last Lap</span>
             </div>
-            <div class="container" id="best-lap-session-container">
+            <div class="container hud-element" id="best-lap-session-container">
                 <span id="best-lap-session" class="value"></span>
                 <span class="label">Best Lap</span>
             </div>
-            <div class="container" id="incident-points-container">
+            <div class="container hud-element" id="incident-points-container">
                 <span id="incident-points" class="value"></span>
                 <span class="label">Incident Points</span>
             </div>
-            <div class="container" id="time-left-container">
+            <div class="container hud-element" id="time-left-container">
                 <div class="row" id="time-left">
                     <span id="time-left-hours" class="value"></span>
                     <span id="time-left-minutes" class="value"></span>
@@ -54,13 +54,13 @@
         </div>
     </div>
 
-    <div class="row sb" id="bottom-group">
-        <div class="row" id="bottom-left-group">
-            <table id="tires">
+    <div id="bottom-group" class="row sb">
+        <div id="bottom-left-group" class="row">
+            <table id="tires" class="hud-element">
                 <tr>
                     <td id="front-left">
                         <div class="row wheel">
-                            <span id="front-left-wear"></span>
+                            <span id="front-left-wear">57%</span>
                             <table>
                                 <tr>
                                     <td class="brake-placeholder"></td>
@@ -147,7 +147,7 @@
                 </tr>
             </table>
 
-            <table id="damage">
+            <table id="damage" class="hud-element">
                 <tr>
                     <td><span>Engine</span></td>
                     <td id="engine-damage"><progress max="1"></progress></td>
@@ -166,7 +166,7 @@
                 </tr>
             </table>
 
-            <div class="row" id="fuel-data">
+            <div class="row hud-element" id="fuel-data">
                 <he class="col sb">
                     <span></span>
                     <span id="fuel-left"></span>
@@ -216,14 +216,14 @@
         </div>
 
 
-        <div class="row" id="bottom-right-group">
-            <he id="relative-viewer">
+        <div id="bottom-right-group" class="row">
+            <he id="relative-viewer" class="hud-element">
                 <table>
                     <tbody></tbody>
                 </table>
             </he>
 
-            <he id="driver-inputs" class="col">
+            <he id="driver-inputs" class="col hud-element">
                 <table>
                     <tr id="input-numbers">
                         <td><span id="clutch-input"></span></td>
@@ -243,7 +243,7 @@
             </he>
 
 
-            <he class="col" id="basic">
+            <he class="col hud-element" id="basic">
                 <table>
                     <tr>
                         <td><span id="engine-map"></span></td>
@@ -266,18 +266,18 @@
     </div>
 </div>
 
-<div id="delta" class="col center-items">
+<div id="delta" class="col center-items hud-element">
     <span id="delta-number"></span>
     <div id="delta-bar-container">
         <div id="delta-bar"></div>
     </div>
 </div>
 
-<div id="sector-times" class="row">
+<div id="sector-times" class="row hud-element">
     <span id="sector-1"></span>
     <span id="sector-2"></span>
     <span id="sector-3"></span>
 </div>
 
-<div id="radar"></div>
+<div id="radar" class="hud-element"></div>
 

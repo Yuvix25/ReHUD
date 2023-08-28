@@ -2,6 +2,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>var exports = {"__esModule": true};</script>
+    
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; img-src 'self' https://game.raceroom.com/ https://prod.r3eassets.com/; connect-src https://raw.githubusercontent.com/; style-src-elem https://fonts.googleapis.com/ 'self'; font-src https://fonts.gstatic.com;">
@@ -17,8 +19,6 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/consts.js" asp-append-version="true"></script>
-    <script src="~/js/utils.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

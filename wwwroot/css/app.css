@@ -114,7 +114,7 @@ table {
 #main-container {
   width: calc(100vw - 14px);
   height: calc(100vh - 14px) !important;
-  margin: 7px;
+  margin: 7px; /* note: this value must match the value of MAIN_CONTAINER_MARGIN in consts.js */
   position: absolute;
   bottom: 0;
   overflow: hidden;
@@ -132,11 +132,6 @@ he {
 
 .hidden {
   display: none !important;
-}
-
-
-.dragged {
-  position: absolute !important;
 }
 
 
@@ -186,11 +181,17 @@ progress::-webkit-progress-value {
 
 progress::-webkit-progress-bar {
   background-color: #424242;
-  border-radius: 6px; /* 2px */
+  border-radius: 6px;
 }
 
+
+.dragged {
+  position: absolute !important;
+}
+
+
 he#basic {
-  min-width: 217px !important;
+  width: 217px !important;
 }
 he#basic td {
   border: 1px solid white;
@@ -267,6 +268,24 @@ he#basic td {
   width: calc(100% - 12px) !important;
   margin: 0 !important;
   font-size: 25px !important;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 60px;
+}
+
+.wheel > span::before {
+  content: attr(data-before);
+}
+.wheel>span::after {
+  content: attr(data-after);
+}
+
+.wheel>span::before,
+.wheel>span::after {
+  font-size: 15px;
+  height: 15px;
 }
 
 .wheel #front-left-wear,
@@ -280,11 +299,11 @@ he#basic td {
 
 .wheel #front-left-wear,
 .wheel #front-right-wear {
-  bottom: 25px !important;
+  top: 28px !important;
 }
 .wheel #rear-left-wear,
 .wheel #rear-right-wear {
-  top: 22px !important;
+  bottom: 30px !important;
 }
 
 
@@ -347,8 +366,6 @@ he#basic td {
 
 #tires progress::-webkit-progress-bar {
   background-color: black;
-  /* border: 1px solid black; */
-  
 }
 
 #tires #front-left progress::-webkit-progress-bar {
@@ -492,7 +509,7 @@ progress#revs::-webkit-progress-value {
 }
 
 #driver-inputs {
-  height: max-content;
+  height: 238px;
 }
 
 #driver-inputs table {
@@ -590,14 +607,13 @@ progress#revs::-webkit-progress-value {
 
 
 #relative-viewer {
-  margin-bottom: auto;
   padding-left: 2px;
   padding-right: 2px;
 }
 
 #relative-viewer table {
   table-layout: fixed;
-  height: 236px;
+  height: 237px;
   border-spacing: 0 2px;
   border-collapse: separate;
   min-width: 400px;
@@ -662,7 +678,7 @@ progress#revs::-webkit-progress-value {
 
 #top-group .container {
   align-items: center;
-  margin: 10px;
+  padding: 10px;
 }
 
 #top-right-group,
@@ -678,7 +694,6 @@ progress#revs::-webkit-progress-value {
 
 #time-left-container {
   align-items: center;
-  /* margin: 10px; */
 }
 
 #time-left {

@@ -261,6 +261,5 @@ __pycache__/
 *.pyc
 
 
-# npm
-package-lock.json
-package.json
+wwwroot/js/
+wwwroot/dist/

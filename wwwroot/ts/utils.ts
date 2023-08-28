@@ -1,20 +1,22 @@
-class DeltaManager {
-  static DELTA_WINDOW = 10; // seconds
-  static DELTA_OF_DELTA_MULTIPLIER = 1.5; // seconds
-  static deltaWindow = [];
+import {uint8ArrayToString, valueIsValid} from './consts.js';
+import {IDriverData, IDriverInfo} from './r3eTypes';
+
+export class DeltaManager {
+  static DELTA_WINDOW: number = 10; // seconds
+  static DELTA_OF_DELTA_MULTIPLIER: number = 1.5; // seconds
+  static deltaWindow: Array<[number, number]> = [];
 
   /**
    * Add a delta to the delta window.
-   * @param {number} delta
    */
-  static addDelta(delta) {
-    const time = new Date().getTime() / 1000;
+  static addDelta(delta: number) {
+    const time = Driver.getTime();
     DeltaManager.deltaWindow.push([time, delta]);
     while (DeltaManager.deltaWindow[0][0] < time - DeltaManager.DELTA_WINDOW)
       DeltaManager.deltaWindow.shift();
   }
 
-  static getLastDelta() {
+  static getLastDelta(): [number, number] {
     if (DeltaManager.deltaWindow.length == 0)
       return null;
     return DeltaManager.deltaWindow[DeltaManager.deltaWindow.length - 1];
@@ -22,9 +24,8 @@ class DeltaManager {
 
   /**
    * Get some sort of delta of the delta itself during the window.
-   * @return {number}
    */
-  static getDeltaOfDeltas() {
+  static getDeltaOfDeltas(): number {
     if (DeltaManager.deltaWindow.length == 0)
       return 0;
     
@@ -45,7 +46,6 @@ class DeltaManager {
     }
     res = res / weight * DeltaManager.DELTA_OF_DELTA_MULTIPLIER;
     return res / (Math.abs(res) + 0.5);
-    // return DeltaManager.deltaWindow[DeltaManager.deltaWindow.length - 1][1] - DeltaManager.deltaWindow[0][1];
   }
 
   /**
@@ -56,68 +56,109 @@ class DeltaManager {
   }
 }
 
-class Driver {
+export class Driver {
   static pointsPerMeter = 0.5;
   static positionJumpThreshold = 150; // meters
 
-  /**
-   * @type {Driver}
-   */
-  static mainDriver = null;
+  static mainDriver: Driver = null;
+
+  userId: string;
+  trackLength: number;
+  points: number[];
+  currentIndex: number;
+  currentLapValid: boolean;
+  bestLap: number[];
+  bestLapTime: number;
+  bestLapTimeValid: boolean;
+  completedLaps: number;
+  crossedFinishLine: boolean;
+  previousDistance: number;
+  attemptedLoadingBestLap: boolean;
 
   /**
    * Represents a driver
-   * @param {number} userId
-   * @param {number} trackLength
-   * @param {number} completedLaps
    */
-  constructor(userId, trackLength, completedLaps) {
+  constructor(userId: string, trackLength: number, completedLaps: number) {
     this.userId = userId;
     this.trackLength = trackLength;
     this.points = this.newPointArray(); // points[distance] = time
-    this.currentIndex = -1;
+    this.currentIndex = null;
     this.currentLapValid = true;
     this.bestLap = null;
     this.bestLapTime = null;
     this.bestLapTimeValid = false;
     this.completedLaps = completedLaps;
 
+    this.attemptedLoadingBestLap = false;
+
     this.crossedFinishLine = false;
     this.previousDistance = -1;
   }
 
+
+  /**
+   * Get the current time.
+   * @return Time in seconds
+   */
+  static getTime(): number {
+    return new Date().getTime() / 1000;
+  }
+
   /**
    * Sets the main driver (the one currently being viewed)
-   * @param {Driver} driver
+   * @return Whether an attempt should be made to load a saved lap
    */
-  static setMainDriver(driver) {
+  static setMainDriver(driver: Driver) {
     Driver.mainDriver = driver;
+
+    if (!driver.attemptedLoadingBestLap && (driver.bestLap == null || !driver.bestLapTimeValid)) {
+      driver.attemptedLoadingBestLap = true;
+      return true;
+    }
+    return false;
   }
 
   /**
    * Sets the main driver to this driver.
    */
   setAsMainDriver() {
-    Driver.setMainDriver(this);
+    return Driver.setMainDriver(this);
+  }
+
+  loadBestLap(bestLapTime: number, points: number[], pointsPerMeter: number) {
+    let newPoints = this.newPointArray();
+    if (pointsPerMeter > Driver.pointsPerMeter) {
+      for (let i = 0; i < newPoints.length; i++) {
+        newPoints[i] = points[Math.floor(i / pointsPerMeter * Driver.pointsPerMeter)];
+      }
+    } else {
+      for (let i = 0; i < points.length; i++) {
+        newPoints[Math.floor(i / Driver.pointsPerMeter * pointsPerMeter)] = points[i];
+      }
+    }
+
+    this.bestLapTime = bestLapTime;
+    this.bestLap = newPoints;
+    this.bestLapTimeValid = true;
+
+    console.log(`Loaded saved best lap for ${this.userId}`);
   }
 
   /**
    * Initializes a new point array.
-   * @return {Array.<null>}
    */
-  newPointArray() {
+  newPointArray(): Array<number> {
     return Array(Math.floor(this.trackLength * Driver.pointsPerMeter)).fill(null);
   }
 
 
   /**
    * Erases the temporary data of the driver.
-   * @param {number} distance - The current distance of the driver.
    */
-  clearTempData(distance=null) {
+  clearTempData() {
     this.crossedFinishLine = false;
     this.currentLapValid = false;
-    this.currentIndex = distance == null ? -1 : Math.min(Math.floor(distance * Driver.pointsPerMeter), this.points.length - 1);
+    this.currentIndex = null;
     this.points = this.newPointArray();
   }
 
@@ -125,25 +166,26 @@ class Driver {
   /**
    * Add a point to the delta path.
    * MUST BE CALLED AFTER `endLap` IF THE LAP IS COMPLETED.
-   * @param {number} distance
-   * @param {number} completedLaps
    */
-  addDeltaPoint(distance, completedLaps) {
-    const time = new Date().getTime() / 1000;
+  addDeltaPoint(distance: number, completedLaps: number) {
+    const time = Driver.getTime();
 
     if (this.previousDistance != -1 && this.previousDistance - distance > this.trackLength / 2 && this.completedLaps == null) { // TODO: get rid of this when RR decides to fix its CompletedLaps value...
       this.crossedFinishLine = true;
-    } else if (this.completedLaps == completedLaps && Math.abs(this.previousDistance - distance) > Driver.positionJumpThreshold) {
-      // jump in position detected, which is not a lap completion
-      this.clearTempData(distance);
     }
-    
-    const gapToSpot = distance * Driver.pointsPerMeter - this.currentIndex;
-    if (gapToSpot >= 0) {
-      for (let i = 0; i < gapToSpot; i++) {
-        this.points[++this.currentIndex] = time;
+
+    const newCurrentIndex = Math.floor(distance * Driver.pointsPerMeter);
+    if (this.currentIndex == null) {
+      this.currentIndex = newCurrentIndex;
+    } else {
+      const gapToSpot = newCurrentIndex - this.currentIndex;
+      if (gapToSpot >= 0) {
+        for (let i = 0; i < gapToSpot; i++) {
+          this.points[++this.currentIndex] = time;
+        }
       }
     }
+    
 
     this.previousDistance = distance;
     this.completedLaps = completedLaps;
@@ -157,10 +199,12 @@ class Driver {
   /**
    * End the current lap.
    * MUST BE CALLED BEFORE `addDeltaPoint`.
-   * @param {number} laptime
+   * @return Whether the best lap should be saved (new best valid lap, main driver)
    */
-  endLap(laptime) {
-    const time = new Date().getTime() / 1000;
+  endLap(laptime: number): boolean {
+    let shouldSaveBestLap = false;
+
+    const time = Driver.getTime();
 
     for (let i = this.currentIndex + 1; i < this.points.length; i++) {
       this.points[i] = this.points[this.currentIndex];
@@ -168,42 +212,63 @@ class Driver {
     this.currentIndex = -1;
 
     if (this.crossedFinishLine) {
-      laptime == null && (laptime = time - this.points[0]);
+      if (!valueIsValid(laptime)) laptime = time - this.points[0];
 
-      //                       number < null == false
-      if (this.completedLaps >= 0 && (this.bestLapTime == null || !this.bestLapTimeValid || laptime < this.bestLapTime)) {
-        this.bestLap = this.points.slice();
-        this.bestLapTime = laptime;
+      if (this.bestLapTime == null || (laptime < this.bestLapTime && (this.currentLapValid || !this.bestLapTimeValid))) {
+        if (this.currentLapValid && Driver.mainDriver === this) {
+          shouldSaveBestLap = true;
+        }
+        if (shouldSaveBestLap || this.completedLaps >= 0) {
+          this.bestLap = this.points.slice();
+          this.bestLapTime = laptime;
+        }
       }
     }
 
     this.crossedFinishLine = true;
     this.currentLapValid = true;
+
+    return shouldSaveBestLap;
+  }
+
+  /**
+   * Save the best lap (locally)
+   */
+  saveBestLap(layoutId: number, carClassId: number, ipcRenderer: import('electron').IpcRenderer) {
+    ipcRenderer.send('save-best-lap', [
+      layoutId,
+      carClassId,
+      this.bestLapTime,
+      this.bestLap,
+      Driver.pointsPerMeter,
+    ]);
   }
 
   /**
    * Get a relative delta to another driver (positions are based on the last delta points).
-   * @param {Driver} driver
-   * @param {boolean} includeLapDifference
-   * @return {number} If `includeLapDifference` is true and the lap difference between the drivers is not 0,
+   * @return If `includeLapDifference` is true and the lap difference between the drivers is not 0,
    * the lap difference will be returned instead of the delta. Otherwise, the delta will be returned.
    */
-  getDeltaToDriverAhead(driver, includeLapDifference = false) { // TODO: implement includeLapDifference
+  getDeltaToDriverAhead(driver: Driver, includeLapDifference: boolean = false): number { // TODO: implement includeLapDifference
     const thisLapDistance = this.currentIndex;
     const otherLapDistance = driver.currentIndex;
 
     if (thisLapDistance == null || otherLapDistance == null)
       return null;
 
+    if ((Driver.mainDriver === this || Driver.mainDriver === driver) && Driver.mainDriver.bestLap != null) {
+      const res = Driver.mainDriver.deltaBetweenPoints(thisLapDistance, otherLapDistance, true, false);
+
+      if (res != null && res >= 0) {
+        if (otherLapDistance < thisLapDistance)
+          return Driver.mainDriver.getEstimatedLapTime() - res;
+        return res;
+      }
+    }
+
     if (otherLapDistance < thisLapDistance) {
       let res;
-      const estimatedLapTime = this.getEstimatedLapTime() || driver.getEstimatedLapTime();
-
-      if ((Driver.mainDriver === this || Driver.mainDriver === driver) && estimatedLapTime != null) {
-        res = estimatedLapTime - Driver.mainDriver.deltaBetweenPoints(thisLapDistance, otherLapDistance, true, false);
-        if (res != null && res >= 0)
-          return res;
-      }
+      let estimatedLapTime = this.getEstimatedLapTime() || driver.getEstimatedLapTime();
 
       res = driver.deltaBetweenPoints(otherLapDistance, thisLapDistance, false);
       if (res != null)
@@ -227,20 +292,15 @@ class Driver {
     }
   }
 
-  getDeltaToDriverBehind(driver, includeLapDifference = false) {
+  getDeltaToDriverBehind(driver: Driver, includeLapDifference: boolean = false): number {
     return driver.getDeltaToDriverAhead(this, includeLapDifference);
   }
 
   /**
    * The delta between two points on the track (distances).
    * Calculated using either the current lap or the best lap.
-   * @param {number} point1
-   * @param {number} point2
-   * @param {boolean} [useBestLap=true]
-   * @param {boolean} [fallbackToCurrentLap=true]
-   * @return {number}
    */
-  deltaBetweenPoints(point1, point2, useBestLap = true, fallbackToCurrentLap = true) {
+  deltaBetweenPoints(point1: number, point2: number, useBestLap: boolean = true, fallbackToCurrentLap: boolean = true): number {
     let usingBestLap = false;
     let lapData;
     if (useBestLap && this.bestLap != null) {
@@ -267,10 +327,8 @@ class Driver {
 
   /**
    * Get the track distance to a driver ahead.
-   * @param {Driver} driver
-   * @return {number}
    */
-  getDistanceToDriverAhead(driver) {
+  getDistanceToDriverAhead(driver: Driver): number {
     const thisLapDistance = this.currentIndex;
     const otherLapDistance = driver.currentIndex;
 
@@ -285,18 +343,16 @@ class Driver {
 
   /**
    * Get the track distance to a driver behind.
-   * @param {Driver} driver
-   * @return {number}
    */
-  getDistanceToDriverBehind(driver) {
+  getDistanceToDriverBehind(driver: Driver): number {
     return driver.getDistanceToDriverAhead(this);
   }
 
 
-  static average = 0;
-  static count = 0;
+  static average: number = 0;
+  static count: number = 0;
 
-  getEstimatedLapTime() {
+  getEstimatedLapTime(): number {
     if (this.bestLapTime == null) {
       if (this.bestLap == null) {
         return null;
@@ -310,13 +366,21 @@ class Driver {
 }
 
 
+export interface IExtendedDriverInfo extends IDriverInfo {
+  uid?: string;
+}
+
+export interface IExtendedDriverData extends IDriverData {
+  driverInfo: IExtendedDriverInfo;
+}
+
 /**
- * @param {object} driverInfo - DriverData[x].DriverInfo
- * @return {string} - Unique ID for the driver (JSON of some fields)
+ * @param driverInfo - DriverData[x].DriverInfo
+ * @return Unique ID for the driver (JSON of some fields)
  */
-function getUid(driverInfo) {
+export function getUid(driverInfo: IDriverInfo): string {
   const obj = {
-    name: driverInfo.name,
+    name: uint8ArrayToString(driverInfo.name),
     classId: driverInfo.classId,
     teamId: driverInfo.teamId,
     userId: driverInfo.userId,
@@ -328,10 +392,8 @@ function getUid(driverInfo) {
 
 /**
  * Calculates the standard deviation of the given values.
- * @param {number[]} values
- * @return {number}
  */
-function standardDeviation(values) {
+export function standardDeviation(values: number[]): number {
   var avg = average(values);
 
   var squareDiffs = values.map(function (value) {
@@ -348,10 +410,8 @@ function standardDeviation(values) {
 
 /**
  * Average of the given values.
- * @param {number[]} data
- * @return {number}
  */
-function average(data) {
+function average(data: number[]): number {
   var sum = data.reduce(function (sum, value) {
     return sum + value;
   }, 0);
@@ -361,37 +421,25 @@ function average(data) {
 }
 
 
-/**
- * @typedef {{x: number, y: number, z: number}} Vector
- */
+export type Vector = {x: number; y: number; z: number;};
 
-/**
- * @param {Vector} a
- * @param {Vector} b
- * @return {Vector}
- */
-function vectorSubtract(a, b) {
-  const res = {};
-  for (const key in a) {
-    res[key] = a[key] - b[key];
+export function vectorSubtract(a: Vector, b: Vector): Vector {
+  const res = {
+    x: a.x - b.x,
+    y: a.y - b.y,
+    z: a.z - b.z,
   }
   return res;
 }
 
-/**
- * @param {Vector} a
- * @return {Vector}
- */
-function distanceFromZero(a) {
+export function distanceFromZero(a: Vector): number {
   return Math.sqrt(a.x ** 2 + a.z ** 2);
 }
 
 /**
  * Get a rotation matrix from the given eular angles - inverted.
- * @param {Vector} eular
- * @return {Array.<Array.<number>>}
  */
-function rotationMatrixFromEular(eular) {
+export function rotationMatrixFromEular(eular: Vector): Array<Array<number>> {
   const x = -eular.x;
   const y = -eular.y;
   const z = -eular.z;
@@ -412,11 +460,8 @@ function rotationMatrixFromEular(eular) {
 
 /**
  * Rotate the given vector by the given matrix.
- * @param {Object} matrix 
- * @param {Vector} vector
- * @return {Vector}
  */
-function rotateVector(matrix, vector) {
+export function rotateVector(matrix: Array<Array<number>>, vector: Vector): Vector {
   return {
     x: matrix[0][0] * vector.x + matrix[0][1] * vector.y + matrix[0][2] * vector.z,
     y: matrix[1][0] * vector.x + matrix[1][1] * vector.y + matrix[1][2] * vector.z,
@@ -425,18 +470,23 @@ function rotateVector(matrix, vector) {
 }
 
 
-function mpsToKph(mps) {
+export function mpsToKph(mps: number) {
   return mps * 3.6;
 }
 
 
 
-class AudioController {
-  audio = new Audio();
-  audioIsPlaying = false;
-  audioContext = new AudioContext();
-  mediaSource = this.audioContext.createMediaElementSource(this.audio);
-  stereoPanner = this.audioContext.createStereoPanner();
+export class AudioController {
+  audio: HTMLAudioElement = new Audio();
+  audioIsPlaying: boolean = false;
+  audioContext: AudioContext = new AudioContext();
+  mediaSource: MediaElementAudioSourceNode = this.audioContext.createMediaElementSource(this.audio);
+  stereoPanner: StereoPannerNode = this.audioContext.createStereoPanner();
+
+  minPlaybackRate: number;
+  maxPlaybackRate: number;
+  playbackRateMultiplier: number;
+  volumeMultiplier: number;
 
   constructor({ minPlaybackRate = 0.1, maxPlaybackRate = 10, playbackRateMultiplier = 2, volumeMultiplier = 1 } = {}) {
     this.minPlaybackRate = minPlaybackRate;
@@ -448,7 +498,6 @@ class AudioController {
     this.stereoPanner.connect(this.audioContext.destination);
 
     this.audio.src = '/sounds/beep.wav';
-    // this.audio.loop = true;
 
     this.audio.onplaying = () => {
       this.audioIsPlaying = true;
@@ -458,7 +507,7 @@ class AudioController {
     };
   }
 
-  setVolume(volume) {
+  setVolume(volume: number) {
     this.volumeMultiplier = volume;
   }
 
@@ -466,7 +515,7 @@ class AudioController {
    * @param {number} amount - Controls the volume and playback rate of the audio (higher = louder and faster)
    * @param {number} pan - Controls the panning of the audio (negative = left, positive = right), between -1 and 1
    */
-  play(amount, pan) {
+  play(amount: number, pan: number) {
     this.audio.volume = Math.max(0, Math.min(1, amount / 10 * this.volumeMultiplier));
     this.audio.playbackRate = Math.min(Math.max(this.minPlaybackRate, amount * this.playbackRateMultiplier), this.maxPlaybackRate);
     this.stereoPanner.pan.value = pan;
@@ -477,18 +526,20 @@ class AudioController {
   }
 }
 
-const INFO = 'INFO';
-const WARN = 'WARN';
-const ERROR = 'ERROR';
+enum LogLevel {
+  INFO = 'INFO',
+  WARN = 'WARN',
+  ERROR = 'ERROR',
+}
 
-function writeToLog(ipc, message, level = INFO) {
+function writeToLog(ipc: import('electron').IpcRenderer, message: string, level: LogLevel = LogLevel.INFO) {
   ipc.send('log', { message, level });
 }
 
 
-function enableLogging(ipc, filename) {
-  function proxy(ipc, f, level) {
-    return function (...args) {
+export function enableLogging(ipc: import('electron').IpcRenderer, filename: string) {
+  function proxy(ipc: import('electron').IpcRenderer, f: (...args: any[]) => void, level: LogLevel) {
+    return function (...args: any[]) {
       f(...args);
       function getErrorObject(){
         try { throw Error('') } catch(err) { return err; }
@@ -510,12 +561,12 @@ function enableLogging(ipc, filename) {
   const originalLog = console.log;
   const originalWarn = console.warn;
   const originalError = console.error;
-  console.log = proxy(ipc, originalLog, INFO);
-  console.warn = proxy(ipc, originalWarn, WARN);
-  console.error = proxy(ipc, originalError, ERROR);
+  console.log = proxy(ipc, originalLog, LogLevel.INFO);
+  console.warn = proxy(ipc, originalWarn, LogLevel.WARN);
+  console.error = proxy(ipc, originalError, LogLevel.ERROR);
 
 
-  window.onerror = (message, file, line, column, errorObj) => {
+  window.onerror = (_message, _file, _line, _column, errorObj) => {
     if (errorObj !== undefined) //so it won't blow up in the rest of the browsers
       console.error(errorObj.stack);
 

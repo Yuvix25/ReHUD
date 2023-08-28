@@ -24,7 +24,7 @@ namespace R3E
         /// <summary>
         /// Returns either the estimated total number of laps and number of laps left, or null if the data is not available. <total, left>
         /// </summary>
-        internal static Tuple<int, double> GetEstimatedLapCount(Data.Shared data, Combination combination)
+        internal static Tuple<int, double> GetEstimatedLapCount(Data.Shared data, FuelCombination combination)
         {
             double fraction = data.LapDistanceFraction == -1 ? 0 : data.LapDistanceFraction;
 

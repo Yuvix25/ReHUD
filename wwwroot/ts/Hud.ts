@@ -1,8 +1,6 @@
 import Action from "./Action";
-import HudElement from "./HudElement";
 import SettingsValue from "./SettingsValue.js";
-import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared} from "./consts.js";
-import IShared from "./r3eTypes";
+import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME} from "./consts.js";
 import {AudioController} from "./utils.js";
 
 export default class Hud {
@@ -29,7 +27,8 @@ export default class Hud {
 
         new SettingsValue(SPEED_UNITS, 'kmh');
         new SettingsValue(PRESSURE_UNITS, 'kPa');
-        new SettingsValue(RADAR_RANGE, DEFAULT_RADAR_RADIUS).onValueChanged((value) => {
+        new SettingsValue(RADAR_RANGE, DEFAULT_RADAR_RADIUS);
+        new SettingsValue(RADAR_BEEP_VOLUME, 1.5).onValueChanged((value) => {
             this.radarAudioController.setVolume(value);
         });
     }

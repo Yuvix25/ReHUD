@@ -99,7 +99,7 @@ export default class EventEmitter {
                 }
             }
 
-            if (!emittedNewLapOrPosJumpForMainDriver && (data.controlType != null && data.controlType > 0 && this.previousData.controlType == 0)) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
+            if (!emittedNewLapOrPosJumpForMainDriver && (data.controlType != null && data.controlType > 0 && this.previousData.controlType != data.controlType)) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
                 this.emit(EventEmitter.POSITION_JUMP_EVENT, data, newDriverMap[mainDriverUid], true);
             }
         }

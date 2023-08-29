@@ -37,7 +37,7 @@ import IncidentPoints from './hudElements/IncidentPoints.js';
 import SectorTimes from './hudElements/SectorTimes.js';
 import Delta from './hudElements/Delta.js';
 import SettingsValue from './SettingsValue.js';
-import {ELEMENT_SCALE_POWER, TRANSFORMABLES, TransformableId} from './consts.js';
+import {ELEMENT_SCALE_POWER, IExtendedShared, TRANSFORMABLES, TransformableId} from './consts.js';
 import TractionControl from './hudElements/TractionControl.js';
 import DriverManager from './actions/DriverManager.js';
 
@@ -256,9 +256,8 @@ ipcRenderer.on('hud-layout', (e, arg) => {
 });
 
 
-
-ipcRenderer.on('data', (event, data) => {
-    data = data[0];
+ipcRenderer.on('data', (event, data_: IExtendedShared[]) => {
+    let data = data_[0];
 
     EventEmitter.cycle(data.rawData);
     hud.render(data, data.forceUpdateAll, isShown);

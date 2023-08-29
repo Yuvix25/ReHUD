@@ -10,7 +10,7 @@ export default class FuelToAdd extends HudElement {
             return NA;
         }
 
-        const fuelToAdd = lapsUntilFinish * fuelLeft - fuelPerLap;
+        const fuelToAdd = lapsUntilFinish * fuelPerLap - fuelLeft;
         this.root.style.setProperty('--fuel-to-add-color', lerpRGB([0, 255, 0], [255, 0, 0], (fuelToAdd + 0.7) * 1.43));
         return `${fuelToAdd.toFixed(1)}`;
     }

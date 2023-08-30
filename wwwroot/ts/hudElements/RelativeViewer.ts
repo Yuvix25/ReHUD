@@ -1,10 +1,8 @@
-import {ipcRenderer} from "electron";
 import HudElement, {HUDElementOptions, Hide} from "../HudElement.js";
-import IShared, {ESessionPhase, IDriverData, IDriverInfo} from "../r3eTypes.js";
+import {ESessionPhase} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
-import {valueIsValid, RELATIVE_LENGTH, halfLengthTop, halfLengthBottom, insertCell, lerpRGBn, CLASS_COLORS, uint8ArrayToString, NA} from "../consts.js";
+import {RELATIVE_LENGTH, halfLengthTop, halfLengthBottom, insertCell, lerpRGBn, CLASS_COLORS, uint8ArrayToString, NA} from "../consts.js";
 import DriverManager from "../actions/DriverManager.js";
-
 
 
 export default class RelativeViewer extends HudElement {

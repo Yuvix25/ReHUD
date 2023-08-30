@@ -2,7 +2,8 @@ import {TransformableId, CHECK_FOR_UPDATES, SPEED_UNITS, PRESSURE_UNITS, RADAR_R
 import {enableLogging} from "./utils.js";
 import {ipcRenderer} from 'electron';
 
-// document.addEventListener('DOMContentLoaded', () => utils.enableLogging(ipcRenderer, 'settingsPage.js'));
+enableLogging(ipcRenderer, 'settingsPage.js');
+
 
 type Writeable<T> = {-readonly [P in keyof T]: T[P]};
 
@@ -25,26 +26,201 @@ type Settings = {
 let settings: Settings = {};
 
 const loadSettingsMap = {
-  [SPEED_UNITS]: speedUnits,
-  [PRESSURE_UNITS]: pressureUnits,
-  [RADAR_RANGE]: sliderValue('radar-range', RADAR_RANGE),
-  [RADAR_BEEP_VOLUME]: sliderValue('radar-beep-volume', RADAR_BEEP_VOLUME),
-  [CHECK_FOR_UPDATES]: checkForUpdates,
   [HUD_LAYOUT]: processHudLayout,
 };
 
 
-function loadSettings(newSettings: Settings) {
+/**
+ * Callbacks for when a setting is changed.
+ */
+const valueChangeCallbacks: {[key: string] : (value: any) => void} = {
+  [CHECK_FOR_UPDATES]: checkForUpdates,
+};
+
+
+function choiceValue(choiceSetting: HTMLDivElement, save: boolean = true) {
+  const key = choiceSetting.dataset.key;
+
+  const callback = valueChangeCallbacks[key];
+
+  const buttons: NodeListOf<HTMLButtonElement> = choiceSetting.querySelectorAll('button');
+
+  return (val: string) => {
+    save && setSetting([key, val]);
+
+    buttons.forEach((button) => {
+      if (button.value === val) {
+        button.classList.add('selected');
+      } else {
+        button.classList.remove('selected');
+      }
+    });
+
+    if (typeof callback === 'function') {
+      callback(val);
+    }
+  };
+}
+
+function sliderValue(sliderSetting: HTMLDivElement) {
+  const key = sliderSetting.dataset.key;
+
+  const callback = valueChangeCallbacks[key];
+  
+  const sliderInput: HTMLInputElement = sliderSetting.querySelector('input[type=range]');
+  const numberInput: HTMLInputElement = sliderSetting.querySelector('input[type=number]');
+
+  const min = parseFloat(sliderInput.min);
+  const max = parseFloat(sliderInput.max);
+
+  let lastVal = sliderInput.value;
+
+  return (val: string) => {
+    if (val === lastVal) return;
+  
+    if (parseFloat(val) < min) val = min.toString();
+    if (parseFloat(val) > max) val = max.toString();
+
+    lastVal = val;
+
+    setSetting([key, val]);
+
+    sliderInput.value = val;
+    numberInput.value = val;
+
+    if (typeof callback === 'function') {
+      callback(val);
+    }
+  };
+}
+
+function toggleValue(toggleSetting: HTMLDivElement) {
+  const key = toggleSetting.dataset.key;
+
+  const callback = valueChangeCallbacks[key];
+
+  const toggleInput: HTMLInputElement = toggleSetting.querySelector('input[type=checkbox]');
+
+  return (val: boolean) => {
+    toggleInput.checked = val;
+    setSetting([key, val]);
+
+    if (typeof callback === 'function') {
+      callback(val);
+    }
+  };
+}
+
+let domContentLoaded = false;
+document.addEventListener('DOMContentLoaded', () => {
+  domContentLoaded = true;
+
+  const choices: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .choices');
+  choices.forEach((choice) => {
+    const buttons: NodeListOf<HTMLButtonElement> = choice.querySelectorAll('button');
+
+    const choiceFunc = choiceValue(choice);
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => choiceFunc(button.value));
+    });
+  });
+
+  const sliders: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .slider-setting');
+  sliders.forEach((slider) => {
+    const sliderInput: HTMLInputElement = slider.querySelector('input[type=range]');
+    const numberInput: HTMLInputElement = slider.querySelector('input[type=number]');
+
+    const sliderFunc = sliderValue(slider);
+    sliderInput.addEventListener('input', () => sliderFunc(sliderInput.value));
+    numberInput.addEventListener('input', () => sliderFunc(numberInput.value));
+  });
+
+  const toggles: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .toggle');
+  toggles.forEach((toggle) => {
+    const toggleInput: HTMLInputElement = toggle.querySelector('input[type=checkbox]');
+
+    const toggleFunc = toggleValue(toggle);
+    toggleInput.addEventListener('input', () => toggleFunc(toggleInput.checked));
+  });
+});
+
+
+function loadSettings(newSettings: Settings = null) {
+  if (newSettings === null) {
+    ipcRenderer.send('load-settings');
+    return;
+  }
   settings = newSettings;
-  for (const key of Object.keys(settings) as (keyof Settings)[]) {
-    if (settings.hasOwnProperty(key)) {
-      if (loadSettingsMap.hasOwnProperty(key)) {
-        // @ts-ignore
-        loadSettingsMap[key](settings[key]);
+
+  const load = () => {
+    for (const key of Object.keys(settings) as (keyof Settings)[]) {
+      if (settings.hasOwnProperty(key)) {
+        if (loadSettingsMap.hasOwnProperty(key)) {
+          // @ts-ignore
+          loadSettingsMap[key](settings[key]);
+        }
       }
     }
+
+    const choices: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .choices');
+    choices.forEach((choice) => {
+      const choiceFunc = choiceValue(choice);
+
+      const key = choice.dataset.key;
+      if (key in settings) {
+        const val = (settings as any)[key];
+        choiceFunc(val);
+      } else {
+        const defaultButton: HTMLButtonElement = choice.querySelector('button.selected');
+        if (defaultButton) {
+          choiceFunc(defaultButton.value);
+        }
+      }
+    });
+
+    const sliders: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .slider-setting');
+    sliders.forEach((slider) => {
+      const sliderInput: HTMLInputElement = slider.querySelector('input[type=range]');
+
+      const sliderFunc = sliderValue(slider);
+
+      const key = slider.dataset.key;
+      if (key in settings) {
+        const val = (settings as any)[key];
+        sliderFunc(val);
+      } else {
+        sliderFunc(sliderInput.value);
+      }
+    });
+
+    const toggles: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .toggle');
+    toggles.forEach((toggle) => {
+      const toggleInput: HTMLInputElement = toggle.querySelector('input[type=checkbox]');
+
+      const toggleFunc = toggleValue(toggle);
+
+      const key = toggle.dataset.key;
+      if (key in settings) {
+        const val = (settings as any)[key];
+        toggleFunc(val);
+      } else {
+        toggleFunc(toggleInput.checked);
+      }
+    });
+  }
+
+  if (domContentLoaded) {
+    load();
+  } else {
+    document.addEventListener('DOMContentLoaded', load);
   }
 }
+
+
+ipcRenderer.on('version', (e, v) => {
+  const version = document.getElementById('version');
+  version.innerText = 'v' + v;
+});
 
 ipcRenderer.on('settings', (e, arg) => {
   loadSettings(JSON.parse(arg[0]));
@@ -81,10 +257,7 @@ function tabChange(event: MouseEvent, tabId: string) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  enableLogging(ipcRenderer, 'settingsPage.js');
-
-  const settingsBase64 = location.hash.substring(1);
-  loadSettings(JSON.parse(Buffer.from(settingsBase64, 'base64').toString('utf8')));
+  loadSettings();
 
   const elementToggles = document.getElementById('element-toggles');
   elementToggles.innerHTML = '';
@@ -111,22 +284,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const onclick = [
     {id: 'edit-layout', func: () => lockOverlay(true)},
     {id: 'cancel-reset-layout', func: () => lockOverlay(false)},
-    {id: 'speed-units-kmh', func: () => speedUnits('kmh')},
-    {id: 'speed-units-mph', func: () => speedUnits('mph')},
-    {id: 'pressure-units-kpa', func: () => pressureUnits('kPa')},
-    {id: 'pressure-units-psi', func: () => pressureUnits('psi')},
     {id: 'show-log-file', func: () => ipcRenderer.send('show-log-file')},
     {id: 'general-tablink', func: (event: MouseEvent) => tabChange(event, 'general-tab')},
     {id: 'layout-tablink', func: (event: MouseEvent) => tabChange(event, 'layout-tab')},
   ];
 
-  const oninput = [
-    {id: 'radar-range', func: (e: HTMLInputElement) => loadSettingsMap[RADAR_RANGE](e.value)},
-    {id: 'radar-range-text', func: (e: HTMLInputElement) => loadSettingsMap[RADAR_RANGE](e.value)},
-    {id: 'radar-beep-volume', func: (e: HTMLInputElement) => loadSettingsMap[RADAR_BEEP_VOLUME](e.value)},
-    {id: 'radar-beep-volume-text', func: (e: HTMLInputElement) => loadSettingsMap[RADAR_BEEP_VOLUME](e.value)},
-    {id: CHECK_FOR_UPDATES, func: (e: HTMLInputElement) => checkForUpdates(e.checked)},
-  ];
+
+  const oninput: {id: string, func: (e: HTMLInputElement) => void}[] = [];
 
   onclick.forEach((o) => {
     document.getElementById(o.id)?.addEventListener('click', o.func);
@@ -172,59 +336,9 @@ function lockOverlay(save: boolean) {
   }
 }
 
-function speedUnits(val: SpeedUnits) {
-  setSetting([SPEED_UNITS, val]);
-  let isMph = val === 'mph';
-
-  const kmh = document.getElementById('speed-units-kmh');
-  const mph = document.getElementById('speed-units-mph');
-
-  // @ts-ignore
-  choiceButtons(isMph, mph, kmh);
-}
-
-function pressureUnits(val: PressureUnits) {
-  setSetting([PRESSURE_UNITS, val]);
-  let isKpa = val === 'kPa';
-
-  const kPa = document.getElementById('pressure-units-kpa');
-  const psi = document.getElementById('pressure-units-psi');
-
-  // @ts-ignore
-  choiceButtons(isKpa, kPa, psi);
-}
-
-function choiceButtons(val: boolean, button1: HTMLButtonElement, button2: HTMLButtonElement) {
-  if (val) {
-    button2.classList.remove('selected');
-    button1.classList.add('selected');
-  } else {
-    button2.classList.add('selected');
-    button1.classList.remove('selected');
-  }
-}
-
-function sliderValue(id: string, setting: keyof Settings) {
-  return (val: string) => {
-    setSetting([setting, val]);
-
-    const slider: HTMLInputElement = document.querySelector("#" + id);
-    // @ts-ignore
-    const text: HTMLInputElement = slider.nextElementSibling;
-
-    slider.value = val;
-    text.value = val;
-  };
-}
-
 
 let didCheckForUpdates = false;
 function checkForUpdates(val: boolean) {
-  setSetting([CHECK_FOR_UPDATES, val]);
-
-  const element: HTMLInputElement = document.querySelector("#" + CHECK_FOR_UPDATES);
-  element.checked = val;
-
   if (val) {
     !didCheckForUpdates && ipcRenderer.send(CHECK_FOR_UPDATES);
     didCheckForUpdates = true;
@@ -253,7 +367,7 @@ function processHudLayout(hudLayout: HudLayout) {
   }
 }
 
-function setSetting(arg: [keyof Settings, any]) {
+function setSetting(arg: [string, any]) {
   ipcRenderer.send('set-setting', arg);
 }
 

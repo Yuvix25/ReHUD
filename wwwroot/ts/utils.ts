@@ -580,23 +580,3 @@ export function enableLogging(ipc: import('electron').IpcRenderer, filename: str
     console.error(message);
   });
 }
-
-
-// const { contextBridge } = require('electron')
-
-
-// contextBridge.exposeInMainWorld('utils', {
-//   Driver,
-//   vectorSubtract,
-//   distanceFromZero,
-//   rotationMatrixFromEular,
-//   rotateVector,
-//   mpsToKph,
-//   AudioController,
-//   writeToLog,
-//   enableLogging,
-//   INFO,
-//   WARN,
-//   ERROR
-// });
-

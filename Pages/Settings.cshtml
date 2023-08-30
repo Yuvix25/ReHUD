@@ -20,32 +20,32 @@
 </div>
 
 <div id="general-tab" class="tabcontent active">
-    <div class="setting" id="speed-units-setting">
+    <div class="setting choices" id="speed-units-setting" data-key="speedUnits">
         <label>Speed Units</label>
-        <button id="speed-units-kmh" class="selected">km/h</button>
-        <button id="speed-units-mph">mp/h</button>
+        <button id="speed-units-kmh" value="kmh" class="choice selected">km/h</button>
+        <button id="speed-units-mph" value="mph" class="choice">mp/h</button>
     </div>
 
-    <div class="setting" id="pressure-units-setting">
+    <div class="setting choices" id="pressure-units-setting" data-key="pressureUnits">
         <label>Pressure Units</label>
-        <button id="pressure-units-kpa" class="selected">kPa</button>
-        <button id="pressure-units-psi">psi</button>
+        <button id="pressure-units-kpa" value="kPa" class="selected">kPa</button>
+        <button id="pressure-units-psi" value=psi>psi</button>
     </div>
 
 
-    <div class="setting" id="radar-range-setting">
+    <div class="setting slider-setting" id="radar-range-setting" data-key="radarRange">
         <label>Radar Range (m)</label>
         <input type="range" min="0" max="30" value="12" step="1" class="slider" id="radar-range">
         <input type="number" min="0" max="30" value="12" step="1" id="radar-range-text">
     </div>
 
-    <div class="setting" id="radar-beep-setting">
+    <div class="setting slider-setting" id="radar-beep-setting" data-key="radarBeepVolume">
         <label>Radar Beep Volume</label>
         <input type="range" min="0" max="3" value="1" step="0.01" class="slider" id="radar-beep-volume">
         <input type="number" min="0" max="3" value="1" step="0.01" id="radar-beep-volume-text">
     </div>
 
-    <div class="setting" id="check-for-updates-setting">
+    <div class="setting toggle" id="check-for-updates-setting" data-key="check-for-updates">
         <label>Check for Updates</label>
         <div class="switch">
             <input type="checkbox" id="check-for-updates" class="switch__input" checked>
@@ -64,5 +64,5 @@
 </div>
 
 
-
+<span id="version"></span>
 <button id="show-log-file">Show Log File</button>

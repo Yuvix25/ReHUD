@@ -70,10 +70,13 @@ public class Startup
         {
             Electron.App.Ready += async () =>
             {
-                try {
+                try
+                {
                     await CreateMainWindow(env);
                     await CreateSettingsWindow(env);
-                } catch (Exception e) {
+                }
+                catch (Exception e)
+                {
                     logger.Error("Error creating windows", e);
                 }
             };
@@ -93,9 +96,15 @@ public class Startup
     private readonly LapPointsData lapPointsData = new();
     private readonly Settings settings = new();
 
+    private async Task<BrowserWindow> CreateWindowAsync(BrowserWindowOptions options, string loadUrl = "/")
+    {
+        loadUrl = "http://localhost:" + BridgeSettings.WebPort + loadUrl;
+        return await Electron.WindowManager.CreateWindowAsync(options, loadUrl);
+    }
+
     private async Task CreateMainWindow(IWebHostEnvironment env)
     {
-        mainWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
+        mainWindow = await CreateWindowAsync(new BrowserWindowOptions()
         {
             Resizable = false,
             Fullscreen = true,
@@ -109,9 +118,8 @@ public class Startup
             {
                 EnableRemoteModule = true,
                 NodeIntegration = true,
-                // ContextIsolation = true,
             },
-        });
+        }, loadUrl: "/Index");
 
         bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => { });
         if (!gotLock)
@@ -204,7 +212,8 @@ public class Startup
             lapPointsData.Save();
         });
 
-        await Electron.IpcMain.On("load-best-lap", (args) => {
+        await Electron.IpcMain.On("load-best-lap", (args) =>
+        {
             Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)args;
             string? uid = (string?)array[0];
             if (uid == null)
@@ -236,13 +245,10 @@ public class Startup
     }
 
 
-    private async Task SendSettingsWindowSignal(BrowserWindow window)
+    private async void InitSettingsWindow()
     {
-        var url = (await window.WebContents.GetUrl()).Split('#')[0];
-        if (url.EndsWith("Settings"))
-            return;
-
-        Electron.IpcMain.Send(window, "settings", settings.Serialize());
+        Electron.IpcMain.Send(settingsWindow, "settings", settings.Serialize());
+        Electron.IpcMain.Send(settingsWindow, "version", await AppVersion());
     }
 
 
@@ -250,34 +256,26 @@ public class Startup
 
     private async Task CreateSettingsWindow(IWebHostEnvironment env)
     {
-        settingsWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions()
+        settingsWindow = await CreateWindowAsync(new BrowserWindowOptions()
         {
             Width = 800,
             Height = 600,
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
             WebPreferences = new WebPreferences()
             {
-                // ContextIsolation = true,
                 EnableRemoteModule = true,
                 NodeIntegration = true,
-                // Preload = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "js", "utils.js"),
             },
-        });
+        }, loadUrl: "/Settings");
 
         settingsWindow.Minimize();
 
         if (!env.IsDevelopment())
             settingsWindow.RemoveMenu();
 
-        settingsWindow.OnReadyToShow += async () =>
+        await Electron.IpcMain.On("load-settings", (data) =>
         {
-            await SendSettingsWindowSignal(settingsWindow);
-        };
-
-
-        await Electron.IpcMain.On("whoami", async (data) =>
-        {
-            await SendSettingsWindowSignal(settingsWindow);
+            InitSettingsWindow();
         });
 
         await Electron.IpcMain.On("check-for-updates", async (data) =>
@@ -365,11 +363,15 @@ public class Startup
         settingsWindow.OnClosed += () => Electron.App.Quit();
     }
 
+    private string? appVersion;
+    private async Task<string> AppVersion() {
+        return appVersion ??= await Electron.App.GetVersionAsync();
+    }
 
     private async Task<Tuple<string, string>?> CheckForUpdates()
     {
-        string currentVersion = await Electron.App.GetVersionAsync();
-        logger.Info("Checking for updates (current version: " + currentVersion + ")");
+        string currentVersion = await AppVersion();
+        logger.Info("Checking for updates (current version: v" + currentVersion + ")");
         string? remoteUrl = await GetRedirectedUrl(githubUrl + "/" + githubReleasesUrl);
         if (remoteUrl == null)
         {
@@ -379,6 +381,7 @@ public class Startup
 
         string remoteVersionText = remoteUrl.Split('/').Last();
         string remoteVersion = remoteVersionText.Split('v').Last().Split('-').First();
+        currentVersion = currentVersion.Split('-').First();
 
         Version current = new Version(currentVersion);
         Version remote = new Version(remoteVersion);

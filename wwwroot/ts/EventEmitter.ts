@@ -1,4 +1,3 @@
-import {uint8ArrayToString} from "./consts.js";
 import IShared, {IDriverData} from "./r3eTypes";
 import {getUid} from "./utils.js";
 

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc;
 
 namespace ReHUD.Pages;
 
@@ -14,6 +13,5 @@ public class IndexModel : PageModel
 
     public void OnGet()
     {
-        // return RedirectToPage("/Settings");
     }
 }

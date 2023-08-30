@@ -1,12 +1,9 @@
-﻿// Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification
-// for details on configuring this project to bundle and minify static web assets.
-
-import {ipcRenderer} from 'electron';
+﻿import {ipcRenderer} from 'electron';
 
 import EventEmitter from './EventEmitter.js';
 import Draggable, {DraggableEvent, TransformableHTMLElement} from './Draggable.js';
 import Hud from './Hud.js';
-import {Driver, enableLogging} from './utils.js';
+import {enableLogging} from './utils.js';
 import {HudLayout} from './settingsPage.js';
 import CarSpeed from './hudElements/CarSpeed.js';
 import Gear from './hudElements/Gear.js';
@@ -236,18 +233,11 @@ function exitEditMode() {
 ipcRenderer.on('hide', hideHUD);
 ipcRenderer.on('show', showHUD);
 
-ipcRenderer.on('settings', (e, arg) => {
-    const dataBase64 = Buffer.from(arg[0]).toString('base64');
-    location.href = '/Settings#' + dataBase64;
-});
-
 ipcRenderer.on('edit-mode', () => {
     enterEditMode();
     showHUD();
 });
 
-
-ipcRenderer.send('whoami');
 
 
 ipcRenderer.on('hud-layout', (e, arg) => {

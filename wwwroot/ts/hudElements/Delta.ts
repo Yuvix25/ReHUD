@@ -1,7 +1,7 @@
 import HudElement, {Hide, Style} from "../HudElement.js";
 import {valueIsValid} from "../consts.js";
 import IShared, {IDriverData} from "../r3eTypes.js";
-import {DeltaManager, getUid} from "../utils.js";
+import {DeltaManager} from "../utils.js";
 
 export default class Delta extends HudElement {
     override inputKeys: string[] = ['timeDeltaBestSelf', 'currentLapValid'];

@@ -1,4 +1,4 @@
-import HudElement, {Hide} from "../HudElement.js";
+import HudElement, {Hide} from "./HudElement.js";
 import {ICarDamage} from "../r3eTypes.js";
 
 export default class Damage extends HudElement {

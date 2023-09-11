@@ -37,14 +37,16 @@ import SettingsValue from './SettingsValue.js';
 import {ELEMENT_SCALE_POWER, IExtendedShared, TRANSFORMABLES, TransformableId} from './consts.js';
 import TractionControl from './hudElements/TractionControl.js';
 import DriverManager from './actions/DriverManager.js';
+import PositionBar from './hudElements/PositionBar.js';
+import RankedData from './actions/RankedData.js';
 
 enableLogging(ipcRenderer, 'index.js');
 
-const driverManager = new DriverManager(0);
-const relativeViewer = new RelativeViewer(driverManager, {elementId: 'relative-viewer', renderEvery: 80});
-const hud = new Hud([
-    driverManager,
-
+const hud = new Hud({
+    rankedData: new RankedData(),
+}, {
+    driverManager: new DriverManager(0),
+}, [
     new CarSpeed({elementId: 'speed', renderEvery: 80}),
     new Gear({elementId: 'gear', renderEvery: 50}),
     new Assists({elementId: 'assist', renderEvery: 0}),
@@ -55,7 +57,8 @@ const hud = new Hud([
     new Revs({elementId: 'revs', renderEvery: 0}),
     new DriverInputs({elementId: 'inputs', renderEvery: 0}),
 
-    relativeViewer,
+    new PositionBar({elementId: 'position-bar', renderEvery: 100}),
+    new RelativeViewer({elementId: 'relative-viewer', renderEvery: 80}),
 
     new FuelLeft({elementId: 'fuel-left', renderEvery: 500}),
     new FuelPerLap({elementId: 'fuel-per-lap', renderEvery: 500}),
@@ -84,9 +87,7 @@ const hud = new Hud([
 
 
 
-// used for debugging
-let lastData = null;
-
+let layoutLoaded = false;
 // {id: [left, top, scale, shown]}
 let LAYOUT: HudLayout = {};
 
@@ -124,10 +125,14 @@ function elementToggled(elementId: TransformableId, shown: boolean) {
         return;
     }
 
-    if (LAYOUT[elementId] == undefined)
-        LAYOUT[elementId] = [0, 0, 1, true];
+    if (shown && LAYOUT[elementId]?.[3] == false) {
+        delete LAYOUT[elementId];
+    } else {
+        if (LAYOUT[elementId] == undefined)
+            LAYOUT[elementId] = [0, 0, 1, true];
 
-    LAYOUT[elementId][3] = shown;
+        LAYOUT[elementId][3] = false;
+    }
 
     const element = document.getElementById(elementId);
     if (element == null) {
@@ -153,6 +158,7 @@ ipcRenderer.on('toggle-element', (event, arg) => {
 });
 
 function loadLayout(layout: HudLayout) {
+    const prevLayout = LAYOUT;
     LAYOUT = layout;
     for (const id of Object.keys(TRANSFORMABLES) as TransformableId[]) {
         const element = document.getElementById(id);
@@ -160,7 +166,15 @@ function loadLayout(layout: HudLayout) {
         if (LAYOUT[id] != undefined) {
             [left, top, scale, shown] = LAYOUT[id];
 
-            element.classList.add('dragged');
+            if (!prevLayout[id]?.[3] && shown && layoutLoaded) {
+                left = null;
+                top = null;
+                scale = 1;
+
+                delete LAYOUT[id];
+            } else {
+                element.classList.add('dragged');
+            }
         } else {
             left = null;
             top = null;
@@ -180,6 +194,8 @@ function loadLayout(layout: HudLayout) {
             element.classList.add('hidden');
         }
     }
+
+    layoutLoaded = true;
 }
 
 function requestLayout() {
@@ -246,13 +262,11 @@ ipcRenderer.on('hud-layout', (e, arg) => {
 });
 
 
-ipcRenderer.on('data', (event, data_: IExtendedShared[]) => {
-    let data = data_[0];
+ipcRenderer.on('data', (event, data_: string) => {
+    let data = JSON.parse(data_[0]) as IExtendedShared;
 
     EventEmitter.cycle(data.rawData);
     hud.render(data, data.forceUpdateAll, isShown);
-
-    lastData = data;
 });
 
 hideHUD();
@@ -263,6 +277,12 @@ ipcRenderer.on('set-setting', (e, arg) => {
     SettingsValue.set(key, value);
 });
 
+ipcRenderer.on('settings', (e, arg) => {
+    SettingsValue.loadSettings(JSON.parse(arg));
+});
+
+ipcRenderer.send('load-settings');
+
 document.addEventListener('DOMContentLoaded', () => {
 
     for (const id of Object.keys(TRANSFORMABLES) as TransformableId[]) {
@@ -270,5 +290,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     requestLayout();
-
 });

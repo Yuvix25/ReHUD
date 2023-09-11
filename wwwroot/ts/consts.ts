@@ -1,6 +1,6 @@
 /* ========================================== Types ========================================== */
 
-import IShared from "./r3eTypes";
+import IShared, {IDriverData} from "./r3eTypes.js";
 
 export interface IExtendedShared {
     rawData: IShared;
@@ -22,6 +22,7 @@ export const SPEED_UNITS = "speedUnits";
 export const PRESSURE_UNITS = "pressureUnits";
 export const RADAR_RANGE = "radarRange";
 export const RADAR_BEEP_VOLUME = "radarBeepVolume";
+export const RELATIVE_SAFE_MODE = "relativeSafeMode";
 export const HUD_LAYOUT = "hudLayout";
 
 
@@ -38,6 +39,8 @@ export const LAST_LAP_SECTORS_TIME_ON_SCREEN = 6; // seconds
 
 export const ELEMENT_SCALE_POWER = 2;
 
+
+export const POSITION_BAR_SIZE = 13;
 
 export const RELATIVE_LENGTH = 8;
 export const halfLengthTop = Math.ceil((RELATIVE_LENGTH - 1) / 2);
@@ -59,6 +62,30 @@ export const CLASS_COLORS = [
     [85, 51, 255],
 ];
 
+/**
+ * @return a map of classPerformanceIndex -> color string or null if there is only one class
+ */
+export function getClassColors(driverData: IDriverData[]) {
+    const classColors = new Map<number, string>();
+    const classes = getClassesSorted(driverData);
+    if (classes.length === 1) {
+        classColors.set(classes[0], null);
+        return classColors;
+    }
+    for (let i = 0; i < classes.length; i++) {
+        classColors.set(classes[i], lerpRGBn(CLASS_COLORS, i / classes.length));
+    }
+    return classColors;
+}
+
+export function getClassesSorted(driverData: IDriverData[]) {
+    const classes = new Set<number>();
+    for (const driver of driverData) {
+        classes.add(driver.driverInfo.classPerformanceIndex);
+    }
+    return Array.from(classes).sort((a, b) => a - b);
+}
+
 
 export const SESSION_TYPES = {
     [-1]: 'Unknown',
@@ -73,6 +100,7 @@ export const SESSION_TYPES = {
 
 
 export const TRANSFORMABLES = {
+    'position-bar': 'Position Bar',
     'position-container': 'Position',
     'estimated-laps-left-container': 'Estimated Laps Left',
 
@@ -124,7 +152,7 @@ export function getRealOffset(element: HTMLElement | any) {
         element = element.offsetParent;
     } while (element);
 
-    return { left: offsetLeft, top: offsetTop };
+    return {left: offsetLeft, top: offsetTop};
 }
 
 /**
@@ -168,23 +196,59 @@ export function validOrDefault(val: any, defaultVal: any) {
 }
 
 export function valueIsValid(val: number) {
-    return val != undefined && val != -1;
+    return val != -1;
+}
+
+export function allValuesAreValid(...values: number[]) {
+    for (const val of values) {
+        if (!valueIsValid(val))
+            return false;
+    }
+    return true;
+}
+
+
+/**
+ * @param name - base64 encoded name
+ * @return formatted name (for example: 'Kodi Nikola Latkovski' -> 'K. N. Latkovski')
+ */
+export function nameFormat(name: string) {
+    const nameSplitted = base64EncodedUint8ArrayToString(name).split(' ');
+    let nameFormatted = '';
+    if (nameSplitted.length != 0) {
+        for (let i = 0; i < nameSplitted.length - 1; i++) {
+            nameFormatted += nameSplitted[i][0] + '. ';
+        }
+        nameFormatted += nameSplitted[nameSplitted.length - 1];
+    }
+    return nameFormatted;
 }
 
 /**
  * Formats duration in seconds to string in format 'mm:ss.sss'
  * @param time - time in seconds
+ * @param minimize - if true, minutes will be omitted when possible
  * @return time in format 'mm:ss.sss'
  */
-export function laptimeFormat(time: number): string {
+export function laptimeFormat(time: number, minimize = false): string {
     if (!valueIsValid(time))
         return '-:--.---';
+
+    let prefix = '';
+    if (time < 0) {
+        prefix = '-';
+        time = -time;
+    }
 
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     const milliseconds = Math.floor((time - Math.floor(time)) * 1000);
 
-    return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+    const withoutMinutes = `${minutes === 0 ? seconds.toString() : seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+    if (minimize && minutes === 0)
+        return prefix + withoutMinutes;
+
+    return `${prefix}${minutes}:${withoutMinutes}`;
 }
 
 /**
@@ -239,10 +303,11 @@ export function lerpRGBn(colors: number[][], t: number) {
 
 
 /**
- * @param {Uint8Array} array
- * @return {string}
+ * @param array
  */
-export function uint8ArrayToString(array: Uint8Array): string {
+export function base64EncodedUint8ArrayToString(base64: string): string {
+    let array = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+
     array = array.slice(0, array.indexOf(0));
     const decoder = new TextDecoder("utf-8");
     return decoder.decode(Buffer.from(array));

@@ -1,7 +1,7 @@
-import HudElement from "../HudElement.js";
+import HudElement from "./HudElement.js";
 import SettingsValue from "../SettingsValue.js";
 import {validOrDefault, convertPressure, PRESSURE_UNITS, NA, valueIsValid, lerpRGB3} from "../consts.js";
-import {IBrakeTemp, ITireData, ITireTemp} from "../r3eTypes";
+import {IBrakeTemp, ITireData, ITireTemp} from "../r3eTypes.js";
 
 export default class Tires extends HudElement {
     override inputKeys: string[] = ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt', 'tirePressure'];
@@ -70,7 +70,7 @@ export default class Tires extends HudElement {
                 const blackLevel = 0.05;
                 // 3 to 5
                 this.root.style.setProperty(`--dirty-${name}-size`, dirt < blackLevel ? '1px' : `${dirt * 2 + 3}px`);
-                this.root.style.setProperty(`--dirty-${name}-color`, dirt < blackLevel ? `black` : lerpRGB3([0, 0, 0], [130, 50, 50], [255, 50, 50], 0.15, (dirt - blackLevel) / 0.9));
+                this.root.style.setProperty(`--dirty-${name}-color`, dirt < blackLevel ? `black` : lerpRGB3([60, 20, 20], [130, 50, 50], [255, 50, 50], 0.15, (dirt - blackLevel) / 0.9));
             }
         }
 

@@ -26,7 +26,7 @@ namespace R3E
         /// </summary>
         internal static Tuple<int, double> GetEstimatedLapCount(Data.Shared data, FuelCombination combination)
         {
-            double fraction = data.LapDistanceFraction == -1 ? 0 : data.LapDistanceFraction;
+            double fraction = data.lapDistanceFraction == -1 ? 0 : data.lapDistanceFraction;
 
             double leaderFraction;
             int leaderCompletedLaps;
@@ -35,21 +35,21 @@ namespace R3E
             if (leader_ == null)
             {
                 leaderFraction = fraction;
-                leaderCompletedLaps = data.CompletedLaps;
+                leaderCompletedLaps = data.completedLaps;
             }
             else
             {
                 Data.DriverData leader = leader_.Value;
-                if (leader.FinishStatus == 1)
+                if (leader.finishStatus == 1)
                 {
-                    return new Tuple<int, double>(data.CompletedLaps + 1, 1 - fraction);
+                    return new Tuple<int, double>(data.completedLaps + 1, 1 - fraction);
                 }
 
-                leaderFraction = leader.LapDistance == -1 ? fraction : leader.LapDistance / data.LayoutLength;
-                leaderCompletedLaps = GetLeader(data)?.CompletedLaps ?? 0;
+                leaderFraction = leader.lapDistance == -1 ? fraction : leader.lapDistance / data.layoutLength;
+                leaderCompletedLaps = GetLeader(data)?.completedLaps ?? 0;
                 if (leaderCompletedLaps == -1)
                 {
-                    leaderCompletedLaps = data.CompletedLaps;
+                    leaderCompletedLaps = data.completedLaps;
                 }
             }
 
@@ -63,18 +63,18 @@ namespace R3E
             // number of laps left for the leader
             int res;
 
-            double sessionTime = data.SessionTimeRemaining;
+            double sessionTime = data.sessionTimeRemaining;
             if (sessionTime != -1)
             {
                 double referenceLap;
 
-                if (data.LapTimeBestLeader > 0 && leaderCompletedLaps > 1)
+                if (data.lapTimeBestLeader > 0 && leaderCompletedLaps > 1)
                 {
-                    referenceLap = data.LapTimeBestLeader;
+                    referenceLap = data.lapTimeBestLeader;
                 }
-                else if (data.LapTimeBestSelf > 0 && data.CompletedLaps > 1)
+                else if (data.lapTimeBestSelf > 0 && data.completedLaps > 1)
                 {
-                    referenceLap = data.LapTimeBestSelf;
+                    referenceLap = data.lapTimeBestSelf;
                 }
                 else
                 {
@@ -89,7 +89,7 @@ namespace R3E
             }
             else
             {
-                int sessionLaps = data.NumberOfLaps;
+                int sessionLaps = data.numberOfLaps;
                 if (sessionLaps == -1)
                 {
                     return new Tuple<int, double>(-1, -1);
@@ -103,16 +103,16 @@ namespace R3E
             }
             res = res +
                     (leaderFraction < fraction ? 1 : 0) +
-                    (data.SessionLengthFormat == 2 ? 1 : 0);
+                    (data.sessionLengthFormat == 2 ? 1 : 0);
 
-            return new Tuple<int, double>(res + data.CompletedLaps, res - fraction);
+            return new Tuple<int, double>(res + data.completedLaps, res - fraction);
         }
 
         internal static Data.DriverData? GetLeader(Data.Shared data)
         {
-            foreach (Data.DriverData leader in data.DriverData)
+            foreach (Data.DriverData leader in data.driverData)
             {
-                if (leader.Place == 1)
+                if (leader.place == 1)
                 {
                     return leader;
                 }

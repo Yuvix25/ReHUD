@@ -25,9 +25,9 @@ public class FuelCombination
     private const int MAX_DATA_SIZE = 20;
     
     [JsonProperty]
-    private LinkedList<double> fuelUsage = new();
+    private readonly LinkedList<double> fuelUsage = new();
     [JsonProperty]
-    private LinkedList<double> lapTimes = new();
+    private readonly LinkedList<double> lapTimes = new();
     [JsonProperty]
     private double bestLapTime = -1;
 
@@ -81,7 +81,7 @@ public class FuelCombination
             return averageFuelUsage;
 
         if (fuelUsage.Count == 0)
-            return 0;
+            return -1;
 
         double sum = 0;
         foreach (double fuel in fuelUsage)
@@ -94,10 +94,10 @@ public class FuelCombination
 
     public double? GetLastLapFuelUsage()
     {
-        if (lastFuel != -1 && fuelUsage.Count > 0)
+        if (fuelUsage.Count > 0)
             return lastFuel;
 
-        return null;
+        return -1;
     }
 
     public double GetAverageLapTime()
@@ -106,7 +106,7 @@ public class FuelCombination
             return averageLapTime;
 
         if (lapTimes.Count == 0)
-            return 0;
+            return -1;
 
         double sum = 0;
         foreach (double lapTime in lapTimes)

@@ -45,6 +45,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .setting {
+    display: block;
     margin-bottom: 8px;
 }
 
@@ -196,8 +197,9 @@ input[type=number]::-webkit-outer-spin-button {
     right: 0;
     bottom: 0;
     margin: 10px;
-    color: rgb(230, 230, 230);
-    box-shadow: 2px 3px 6px 3px #343434;
+    background-color: #262626;
+    color: rgb(191 191 191);
+    box-shadow: 2px 3px 6px 3px #2c2c2c;
 }
 
 
@@ -210,4 +212,10 @@ input[type=number]::-webkit-outer-spin-button {
     font-size: 17px;
     font-weight: 500;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+
+.tooltip {
+    color: white;
+    font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
 }

@@ -1,4 +1,4 @@
-import HudElement, {Hide, Style} from "../HudElement.js";
+import HudElement, {Hide, Style} from "./HudElement.js";
 import {valueIsValid, NA} from "../consts.js";
 
 export default class TractionControl extends HudElement {

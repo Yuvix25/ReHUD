@@ -1,7 +1,7 @@
 import {ipcRenderer} from "electron";
 import Action from "../Action.js";
 import {IExtendedShared, valueIsValid} from "../consts.js";
-import IShared, {IDriverData} from "../r3eTypes";
+import IShared, {ESession, IDriverData} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
 
 export default class DriverManager extends Action {
@@ -39,7 +39,7 @@ export default class DriverManager extends Action {
     }
 
     protected override onPositionJump(_data: IShared, driver: IDriverData): void {
-        const uid = getUid(driver.driverInfo);
+        const uid = getUid(driver?.driverInfo);
         if (uid in this.drivers) {
             this.drivers[uid].clearTempData();
         }
@@ -54,16 +54,20 @@ export default class DriverManager extends Action {
         if (uid in this.drivers) {
             const prevSectors = driver.sectorTimePreviousSelf;
             let shouldSaveBestLap = false;
-            if (isMainDriver)
+            if (isMainDriver && valueIsValid(data.lapTimePreviousSelf))
                 shouldSaveBestLap = this.drivers[uid].endLap(data.lapTimePreviousSelf);
-            else if (valueIsValid(prevSectors.sector1) && valueIsValid(prevSectors.sector2) && valueIsValid(prevSectors.sector3))
-                shouldSaveBestLap = this.drivers[uid].endLap(prevSectors.sector1 + prevSectors.sector2 + prevSectors.sector3);
+            else if (valueIsValid(prevSectors.sector3))
+                shouldSaveBestLap = this.drivers[uid].endLap(prevSectors.sector3);
             else
                 shouldSaveBestLap = this.drivers[uid].endLap(null);
 
             if (shouldSaveBestLap)
                 this.drivers[uid].saveBestLap(data.layoutId, driver.driverInfo.classId, ipcRenderer);
         }
+    }
+
+    protected override onSessionChange(data: IShared, lastSession: ESession): void {
+        this.clearDriversTempData(data);
     }
 
     execute(extendedData: IExtendedShared): void {
@@ -120,9 +124,8 @@ export default class DriverManager extends Action {
             } else {
                 if (!driver.currentLapValid)
                     this.drivers[uid].setLapInvalid();
-
-                this.drivers[uid].addDeltaPoint(driver.lapDistance, driver.completedLaps);
             }
+            this.drivers[uid].addDeltaPoint(driver.lapDistance, driver.completedLaps);
         }
 
         for (const uid in this.drivers) {

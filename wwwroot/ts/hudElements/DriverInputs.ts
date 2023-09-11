@@ -1,10 +1,14 @@
-import HudElement from "../HudElement.js";
-import {valueIsValid} from "../consts.js";
+import HudElement from "./HudElement.js";
+import {validNumberOrDefault, valueIsValid} from "../consts.js";
 
 export default class DriverInputs extends HudElement {
-    override inputKeys: string[] = ['throttleRaw', 'brakeRaw', 'clutchRaw', 'steerInputRaw', 'steerWheelRangeDegrees'];
+    override inputKeys: string[] = ['throttleRaw', 'throttle', 'brakeRaw', 'brake', 'clutchRaw', 'clutch', 'steerInputRaw', 'steerWheelRangeDegrees'];
 
-    protected override render(tRaw: number, bRaw: number, cRaw: number, sRaw: number, sRange: number): null {
+    private static rawOrReal(n: number, r: number): number {
+        return validNumberOrDefault(n, validNumberOrDefault(r, 0));
+    }
+
+    protected override render(tRaw: number, t: number, bRaw: number, b: number, cRaw: number, c: number, sRaw: number, sRange: number): null {
         const throttle = document.getElementById('throttle-input');
         const brake = document.getElementById('brake-input');
         const clutch = document.getElementById('clutch-input');
@@ -14,9 +18,9 @@ export default class DriverInputs extends HudElement {
 
         const steer = document.getElementById('steering-wheel');
 
-        tRaw = valueIsValid(tRaw) ? tRaw : 0;
-        bRaw = valueIsValid(bRaw) ? bRaw : 0;
-        cRaw = valueIsValid(cRaw) ? cRaw : 0;
+        tRaw = DriverInputs.rawOrReal(tRaw, t);
+        bRaw = DriverInputs.rawOrReal(bRaw, b);
+        cRaw = DriverInputs.rawOrReal(cRaw, c);
         sRaw = sRaw != undefined ? sRaw : 0;
         sRange = valueIsValid(sRange) ? sRange : 360;
 

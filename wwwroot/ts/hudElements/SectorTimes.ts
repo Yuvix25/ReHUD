@@ -1,4 +1,4 @@
-import HudElement, {Hide} from "../HudElement.js";
+import HudElement, {Hide} from "./HudElement.js";
 import {LAST_LAP_SECTORS_TIME_ON_SCREEN, laptimeFormat, mapSectorTimes, valueIsValid} from "../consts.js";
 import IShared, {IDriverData, ISectorStarts, ISectors} from "../r3eTypes.js";
 
@@ -40,7 +40,7 @@ export default class SectorTimes extends HudElement {
 
                 sectorElement.style.display = null;
                 sectorElement.innerText = '';
-                sectorElement.style.backgroundColor = 'var(--sector-time-gray)';
+                sectorElement.style.backgroundColor = 'var(--time-gray)';
             }
             return this.hide();
         }
@@ -63,13 +63,13 @@ export default class SectorTimes extends HudElement {
 
                 let color;
                 if (!valueIsValid(sectorTimeSessionBest) || sectorTime <= sectorTimeSessionBest)
-                    color = 'var(--sector-time-purple)';
+                    color = 'var(--time-purple)';
                 else if (!valueIsValid(sectorTimeBestSelf) || sectorTime <= sectorTimeBestSelf)
-                    color = 'var(--sector-time-green)';
+                    color = 'var(--time-green)';
                 else
-                    color = 'var(--sector-time-gray)';
+                    color = 'var(--time-gray)';
 
-                sectorElement.innerText = laptimeFormat(sectorTime);
+                sectorElement.innerText = laptimeFormat(sectorTime, true);
                 sectorElement.style.backgroundColor = color;
             }
         }

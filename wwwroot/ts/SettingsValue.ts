@@ -32,6 +32,12 @@ export default class SettingsValue<T> {
         SettingsValue.instances[key]?.onValueChanged(callback);
     }
 
+    static loadSettings(settings: any) {
+        for (const key of Object.keys(settings)) {
+            SettingsValue.set(key, settings[key]);
+        }
+    }
+
     onValueChanged(callback: (value: T) => void): SettingsValue<T> {
         this.callbacks.push(callback);
         return this;

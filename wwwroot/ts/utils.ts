@@ -1,5 +1,6 @@
-import {uint8ArrayToString, valueIsValid} from './consts.js';
-import {IDriverData, IDriverInfo} from './r3eTypes';
+import SettingsValue from './SettingsValue.js';
+import {RELATIVE_SAFE_MODE, base64EncodedUint8ArrayToString, valueIsValid} from './consts.js';
+import {IDriverData, IDriverInfo} from './r3eTypes.js';
 
 export class DeltaManager {
   static DELTA_WINDOW: number = 10; // seconds
@@ -57,6 +58,8 @@ export class DeltaManager {
 }
 
 export class Driver {
+  static readonly MIN_LAP_TIME: number = 10; // seconds
+
   static pointsPerMeter = 0.5;
   static positionJumpThreshold = 150; // meters
 
@@ -65,15 +68,16 @@ export class Driver {
   userId: string;
   trackLength: number;
   points: number[];
-  currentIndex: number;
-  currentLapValid: boolean;
-  bestLap: number[];
-  bestLapTime: number;
-  bestLapTimeValid: boolean;
+  currentIndex: number = null;
+  currentLapValid: boolean = true;
+  lastLapTime: number = null;
+  bestLap: number[] = null;
+  bestLapTime: number = null;
+  bestLapTimeValid: boolean = false;
   completedLaps: number;
-  crossedFinishLine: boolean;
-  previousDistance: number;
-  attemptedLoadingBestLap: boolean;
+  crossedFinishLine: boolean = false;
+  previousDistance: number = -1;
+  attemptedLoadingBestLap: boolean = false;
 
   /**
    * Represents a driver
@@ -81,18 +85,9 @@ export class Driver {
   constructor(userId: string, trackLength: number, completedLaps: number) {
     this.userId = userId;
     this.trackLength = trackLength;
-    this.points = this.newPointArray(); // points[distance] = time
-    this.currentIndex = null;
-    this.currentLapValid = true;
-    this.bestLap = null;
-    this.bestLapTime = null;
-    this.bestLapTimeValid = false;
     this.completedLaps = completedLaps;
 
-    this.attemptedLoadingBestLap = false;
-
-    this.crossedFinishLine = false;
-    this.previousDistance = -1;
+    this.points = this.newPointArray(); // points[distance] = time
   }
 
 
@@ -141,7 +136,7 @@ export class Driver {
     this.bestLap = newPoints;
     this.bestLapTimeValid = true;
 
-    console.log(`Loaded saved best lap for ${this.userId}`);
+    console.log(`Loaded saved best: ${this.bestLapTime}`);
   }
 
   /**
@@ -157,8 +152,8 @@ export class Driver {
    */
   clearTempData() {
     this.crossedFinishLine = false;
-    this.currentLapValid = false;
     this.currentIndex = null;
+    this.setLapInvalid();
     this.points = this.newPointArray();
   }
 
@@ -212,15 +207,24 @@ export class Driver {
     this.currentIndex = -1;
 
     if (this.crossedFinishLine) {
-      if (!valueIsValid(laptime)) laptime = time - this.points[0];
+      if ((!valueIsValid(laptime)) || laptime == null) {
+        laptime = time - this.points[0];
+      };
 
-      if (this.bestLapTime == null || (laptime < this.bestLapTime && (this.currentLapValid || !this.bestLapTimeValid))) {
-        if (this.currentLapValid && Driver.mainDriver === this) {
-          shouldSaveBestLap = true;
-        }
-        if (shouldSaveBestLap || this.completedLaps >= 0) {
-          this.bestLap = this.points.slice();
-          this.bestLapTime = laptime;
+      this.lastLapTime = laptime;
+
+      if (!SettingsValue.get(RELATIVE_SAFE_MODE)) {
+        if (laptime < Driver.MIN_LAP_TIME) {
+          console.log(`Invalid lap time for ${this.userId}: ${laptime}`)
+          this.setLapInvalid();
+        } else if (this.bestLapTime == null || (laptime < this.bestLapTime && (this.currentLapValid || !this.bestLapTimeValid))) {
+          if (this.currentLapValid && Driver.mainDriver === this) {
+            shouldSaveBestLap = true;
+          }
+          if (shouldSaveBestLap || this.completedLaps >= 0) {
+            this.bestLap = this.points.slice();
+            this.bestLapTime = laptime;
+          }
         }
       }
     }
@@ -379,8 +383,10 @@ export interface IExtendedDriverData extends IDriverData {
  * @return Unique ID for the driver (JSON of some fields)
  */
 export function getUid(driverInfo: IDriverInfo): string {
+  if (driverInfo == null)
+    return null;
   const obj = {
-    name: uint8ArrayToString(driverInfo.name),
+    name: base64EncodedUint8ArrayToString(driverInfo.name),
     classId: driverInfo.classId,
     teamId: driverInfo.teamId,
     userId: driverInfo.userId,

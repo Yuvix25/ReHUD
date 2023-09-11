@@ -2,7 +2,7 @@
 @model IndexModel
 
 @{
-  Layout = "~/Pages/Shared/_Layout.cshtml";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
 <head>
@@ -16,40 +16,58 @@
 @* he = hud-element *@
 <div id="main-container" class="col sb">
 
-    <div id="top-group" class="row sb">
-        <div id="top-left-group" class="row">
-            <div class="container hud-element" id="position-container">
-                <span id="position" class="value"></span>
-                <span class="label">Position</span>
-            </div>
+    <div id="top-group-container" class="col">
 
-            <div class="container hud-element" id="estimated-laps-left-container">
-                <span id="estimated-laps-left" class="value"></span>
-                <span class="label">Estimated Laps Left</span>
-            </div>
+        <div id="position-bar" class="row">
+            @for (int i = 0; i < 13; i++)
+            {
+                @:
+                <div id="position-bar-driver-@i" class="position-bar-driver row">
+                    <span class="position-bar-driver-position"></span>
+                    <div class="col">
+                        <span class="position-bar-driver-name"></span>
+                        <span class="position-bar-driver-delta"></span>
+                        <span class="position-bar-driver-time"></span>
+                    </div>
+                </div>
+            }
         </div>
 
-        <div id="top-right-group" class="row">
-            <div class="container hud-element" id="last-lap-session-container">
-                <span id="last-lap-session" class="value"></span>
-                <span class="label">Last Lap</span>
-            </div>
-            <div class="container hud-element" id="best-lap-session-container">
-                <span id="best-lap-session" class="value"></span>
-                <span class="label">Best Lap</span>
-            </div>
-            <div class="container hud-element" id="incident-points-container">
-                <span id="incident-points" class="value"></span>
-                <span class="label">Incident Points</span>
-            </div>
-            <div class="container hud-element" id="time-left-container">
-                <div class="row" id="time-left">
-                    <span id="time-left-hours" class="value"></span>
-                    <span id="time-left-minutes" class="value"></span>
-                    <span id="time-left-seconds" class="value"></span>
+        <div id="top-group" class="row sb">
+            <div id="top-left-group" class="row">
+                <div class="container hud-element" id="position-container">
+                    <span id="position" class="value"></span>
+                    <span class="label">Position</span>
                 </div>
-                <span id="laps-left" class="value"></span>
-                <span class="label" id="session-type"></span>
+
+                <div class="container hud-element" id="estimated-laps-left-container">
+                    <span id="estimated-laps-left" class="value"></span>
+                    <span class="label">Estimated Laps Left</span>
+                </div>
+            </div>
+
+            <div id="top-right-group" class="row">
+                <div class="container hud-element" id="last-lap-session-container">
+                    <span id="last-lap-session" class="value"></span>
+                    <span class="label">Last Lap</span>
+                </div>
+                <div class="container hud-element" id="best-lap-session-container">
+                    <span id="best-lap-session" class="value"></span>
+                    <span class="label">Best Lap</span>
+                </div>
+                <div class="container hud-element" id="incident-points-container">
+                    <span id="incident-points" class="value"></span>
+                    <span class="label">Incident Points</span>
+                </div>
+                <div class="container hud-element" id="time-left-container">
+                    <div class="row" id="time-left">
+                        <span id="time-left-hours" class="value"></span>
+                        <span id="time-left-minutes" class="value"></span>
+                        <span id="time-left-seconds" class="value"></span>
+                    </div>
+                    <span id="laps-left" class="value"></span>
+                    <span class="label" id="session-type"></span>
+                </div>
             </div>
         </div>
     </div>

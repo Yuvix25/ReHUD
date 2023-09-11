@@ -480,7 +480,7 @@ export interface ISectors {
 }
 
 export interface IDriverInfo {
-    name: Uint8Array;
+    name: string;
     carNumber: number;
     classId: number;
     modelId: number;
@@ -617,8 +617,8 @@ export default interface IShared {
     /** Event And Session */
     //////////////////////////////////////////////////////////////////////////
 
-    trackName: Uint8Array;
-    layoutName: Uint8Array;
+    trackName: string;
+    layoutName: string;
 
     trackId: number;
     layoutId: number;
@@ -828,7 +828,7 @@ export default interface IShared {
     //////////////////////////////////////////////////////////////////////////
 
     vehicleInfo: IDriverInfo;
-    playerName: Uint8Array;
+    playerName: string;
 
     //////////////////////////////////////////////////////////////////////////
     /** Vehicle State */

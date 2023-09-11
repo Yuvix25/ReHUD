@@ -1,4 +1,4 @@
-import HudElement, {Hide} from "../HudElement.js";
+import HudElement, {Hide} from "./HudElement.js";
 import {NA, valueIsValid} from "../consts.js";
 import {IDriverData} from "../r3eTypes.js";
 

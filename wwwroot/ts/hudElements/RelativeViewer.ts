@@ -1,22 +1,27 @@
-import HudElement, {HUDElementOptions, Hide} from "../HudElement.js";
+import HudElement, {HUDElementOptions, Hide} from "./HudElement.js";
 import {ESessionPhase} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
-import {RELATIVE_LENGTH, halfLengthTop, halfLengthBottom, insertCell, lerpRGBn, CLASS_COLORS, uint8ArrayToString, NA} from "../consts.js";
+import {RELATIVE_LENGTH, halfLengthTop, halfLengthBottom, insertCell, NA, nameFormat, getClassColors} from "../consts.js";
 import DriverManager from "../actions/DriverManager.js";
+import RankedData from "../actions/RankedData.js";
 
 
 export default class RelativeViewer extends HudElement {
-    override inputKeys: string[] = ['driverData', 'position', 'layoutLength', 'sessionPhase', 'gameInReplay', 'layoutId'];
+    override inputKeys: string[] = ['driverData', 'position', 'sessionPhase'];
 
-    private readonly driverManager: DriverManager;
+    private driverManager: DriverManager = null;
+    private rankedData: RankedData = null;
 
-    constructor(driverManager: DriverManager, options: HUDElementOptions) {
+    constructor(options: HUDElementOptions) {
         super(options);
-
-        this.driverManager = driverManager;
     }
 
-    protected override render(allDrivers: IExtendedDriverData[], place: number, trackLength: number, phase: ESessionPhase, gameInReplay: number, layoutId: number): null | Hide {
+    protected override onHud(): void {
+        this.driverManager = this.hud.namedActions['driverManager'] as DriverManager;
+        this.rankedData = this.hud.namedEventListeners['rankedData'] as RankedData;
+    }
+
+    protected override render(allDrivers: IExtendedDriverData[], place: number, phase: ESessionPhase): null | Hide {
         const relative = document.getElementById('relative-viewer');
         const relativeTable = relative.getElementsByTagName('tbody')[0];
 
@@ -34,17 +39,13 @@ export default class RelativeViewer extends HudElement {
         relative.style.display = 'block';
 
         const existingUids = new Set();
-        const classes: number[] = [];
+        const classColors = getClassColors(allDrivers);
 
         let myUid: string = null;
         let mySharedMemory: IExtendedDriverData = null;
         let myDriver: Driver = null;
         for (let i = 0; i < allDrivers.length; i++) {
             const driver = allDrivers[i];
-
-            const classIndex = driver.driverInfo.classPerformanceIndex;
-            if (!classes.includes(classIndex))
-                classes.push(classIndex);
 
             const uid = getUid(driver.driverInfo);
             driver.driverInfo.uid = uid;
@@ -65,10 +66,10 @@ export default class RelativeViewer extends HudElement {
         if (myUid == null || mySharedMemory == null || myDriver == null)
             return this.hide();
 
-        if (driverCount <= RELATIVE_LENGTH / 2)
-            relativeTable.parentElement.style.height = 'auto';
+        if (driverCount <= 5)
+            this.root.style.setProperty('--relative-view-row-height', '40px');
         else
-            relativeTable.parentElement.style.height = 'var(--relative-view-height)';
+            this.root.style.setProperty('--relative-view-row-height', 'auto');
 
         const deltasFront: Array<[IExtendedDriverData, number, Driver?]> = [];
         const deltasBehind: Array<[IExtendedDriverData, number, Driver]> = [];
@@ -104,12 +105,6 @@ export default class RelativeViewer extends HudElement {
 
         deltasFront.push([mySharedMemory, 0]);
 
-        classes.sort((a, b) => a - b);
-        const classMap: {[key: number]: number} = {};
-        for (let i = 0; i < classes.length; i++) {
-            classMap[classes[i]] = i;
-        }
-
         driverCount = deltasFront.length + deltasBehind.length;
 
         let start = 0, end = RELATIVE_LENGTH;
@@ -133,6 +128,7 @@ export default class RelativeViewer extends HudElement {
                 break;
 
             const row = relativeTable.children.length > i - start ? relativeTable.children[i - start] : relativeTable.insertRow(i - start);
+            row.classList.remove('last-row')
             if (!(row instanceof HTMLTableRowElement)) {
                 console.error('something went wrong while creating the relative table, row is not an HTMLElement');
                 return this.hide();
@@ -161,20 +157,13 @@ export default class RelativeViewer extends HudElement {
 
             classImg.src = `https://game.raceroom.com/store/image_redirect?id=${classId}&size=thumb`;
 
-            const classColor = lerpRGBn(CLASS_COLORS, classMap[driver.driverInfo.classPerformanceIndex] / classes.length);
+            const classColor = classColors.get(driver.driverInfo.classPerformanceIndex);
             const colorCell = insertCell(row, undefined, 'class-color');
             colorCell.style.backgroundColor = classColor;
 
             insertCell(row, driver.placeClass.toString(), 'place-class');
 
-            const nameSplitted = uint8ArrayToString(driver.driverInfo.name).split(' ');
-            let name = '';
-            if (nameSplitted.length != 0) {
-                for (let i = 0; i < nameSplitted.length - 1; i++) {
-                    name += nameSplitted[i][0] + '. ';
-                }
-                name += nameSplitted[nameSplitted.length - 1];
-            }
+            const name = nameFormat(driver.driverInfo.name)
             insertCell(row, name, 'name');
 
             let carName = '';
@@ -186,6 +175,11 @@ export default class RelativeViewer extends HudElement {
             }
             insertCell(row, carName, 'car-name');
 
+            const rankedData = this.rankedData.getRankedData(driver.driverInfo.userId);
+            const rating = rankedData?.Rating.toFixed(0) ?? '1500';
+            const reputation = rankedData?.Reputation.toFixed(0) ?? '70';
+            insertCell(row, rating + '/' + reputation, 'ranked');
+
             const deltaRaw = mergedDeltas[i][1];
             const delta = driver.place == place ? '' : (deltaRaw == null ? NA : deltaRaw.toFixed(1));
             insertCell(row, delta, 'time-delta');
@@ -194,6 +188,9 @@ export default class RelativeViewer extends HudElement {
         while (relativeTable.children.length > end - start) {
             relativeTable.deleteRow(relativeTable.children.length - 1);
         }
+
+        const lastRow = relativeTable.insertRow(relativeTable.children.length);
+        lastRow.classList.add('last-row');
 
         return null;
     }

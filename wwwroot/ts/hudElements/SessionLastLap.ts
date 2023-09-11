@@ -1,4 +1,4 @@
-import HudElement from "../HudElement.js";
+import HudElement from "./HudElement.js";
 import {laptimeFormat} from "../consts.js";
 
 export default class SessionLastLap extends HudElement {

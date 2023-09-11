@@ -1,4 +1,4 @@
-import HudElement from "../HudElement.js";
+import HudElement from "./HudElement.js";
 import {NA, lerpRGB, valueIsValid} from "../consts.js";
 
 export default class FuelLapsLeft extends HudElement {

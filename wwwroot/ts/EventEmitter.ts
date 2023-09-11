@@ -1,4 +1,4 @@
-import IShared, {IDriverData} from "./r3eTypes";
+import IShared, {ESession, IDriverData} from "./r3eTypes.js";
 import {getUid} from "./utils.js";
 
 export type EventCallbacks = {
@@ -14,6 +14,7 @@ export default class EventEmitter {
     static readonly NEW_LAP_EVENT = 'newLap';
     static readonly POSITION_JUMP_EVENT = 'positionJump';
     static readonly ENTERED_PITLANE_EVENT = 'enteredPitlane';
+    static readonly SESSION_CHANGED_EVENT = 'sessionChanged';
 
 
     static CLOSE_THRESHOLD = 100;
@@ -39,13 +40,13 @@ export default class EventEmitter {
     /**
      * Emit an event.
      */
-    static emit(eventName: string, data: any, driver: IDriverData, isMainDriver: boolean) {
+    static emit(eventName: string, data: any, ...args: any[]) {
         console.log('Emitting ' + eventName + ' event.');
 
         const events = this.events[eventName];
         if (events) {
             events.forEach(fn => {
-                fn.call(null, data, driver, isMainDriver);
+                fn.call(null, data, ...args);
             });
         }
     }
@@ -65,6 +66,10 @@ export default class EventEmitter {
 
         let emittedNewLapOrPosJumpForMainDriver = false;
         if (this.previousData != null) {
+            if (this.previousData.sessionType !== data.sessionType) {
+                this.emit(EventEmitter.SESSION_CHANGED_EVENT, data, this.previousData.sessionType);
+            }
+
             const mainDriverInfo = structuredClone(data.vehicleInfo);
             mainDriverInfo.name = data.playerName;
             const mainDriverUid = getUid(mainDriverInfo);
@@ -87,9 +92,10 @@ export default class EventEmitter {
 
                 if (driverPrevious.completedLaps !== driver.completedLaps && (driverPrevious.completedLaps == null || driver.completedLaps > driverPrevious.completedLaps)) {
                     emitNewLapOrPosJump(EventEmitter.NEW_LAP_EVENT);
-                } else if (driver.completedLaps == undefined
+                } else if (driver.completedLaps == 0
                     && driverPrevious.lapDistance >= data.layoutLength - EventEmitter.CLOSE_THRESHOLD
-                    && driver.lapDistance <= EventEmitter.CLOSE_THRESHOLD) { // lap 1 has completedLaps == undefined for some reason
+                    && driver.lapDistance <= EventEmitter.CLOSE_THRESHOLD
+                    && data.sessionType === ESession.Race) {
                     emitNewLapOrPosJump(EventEmitter.NEW_LAP_EVENT);
                 }
 

@@ -1,4 +1,4 @@
-import HudElement, {Hide, Style} from "../HudElement.js";
+import HudElement, {Hide, Style} from "./HudElement.js";
 import {valueIsValid} from "../consts.js";
 import IShared, {IDriverData} from "../r3eTypes.js";
 import {DeltaManager} from "../utils.js";

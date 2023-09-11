@@ -1,4 +1,4 @@
-import HudElement from "../HudElement.js";
+import HudElement from "./HudElement.js";
 import SettingsValue from "../SettingsValue.js";
 import {convertSpeed, SPEED_UNITS} from "../consts.js";
 

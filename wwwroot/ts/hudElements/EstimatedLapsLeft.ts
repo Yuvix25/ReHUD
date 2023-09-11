@@ -1,4 +1,4 @@
-import HudElement, {Hide} from "../HudElement.js";
+import HudElement, {Hide} from "./HudElement.js";
 import {valueIsValid, NA} from "../consts.js";
 import {ESession} from "../r3eTypes.js";
 

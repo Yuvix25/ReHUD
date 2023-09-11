@@ -1,4 +1,4 @@
-import HudElement from "../HudElement.js";
+import HudElement from "./HudElement.js";
 import {valueIsValid} from "../consts.js";
 
 export default class EngineMap extends HudElement {

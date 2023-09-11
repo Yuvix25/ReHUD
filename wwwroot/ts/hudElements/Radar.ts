@@ -1,4 +1,4 @@
-import HudElement, {Hide} from "../HudElement.js";
+import HudElement, {Hide} from "./HudElement.js";
 import SettingsValue from "../SettingsValue.js";
 import {RADAR_RANGE, RADAR_BEEP_MIN_SPEED} from "../consts.js";
 import {IDriverData, IPlayerData, IVector3} from "../r3eTypes.js";

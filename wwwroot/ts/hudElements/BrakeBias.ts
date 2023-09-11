@@ -1,4 +1,4 @@
-import HudElement from "../HudElement.js";
+import HudElement from "./HudElement.js";
 import {valueIsValid, NA} from "../consts.js";
 
 export default class BrakeBias extends HudElement {

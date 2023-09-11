@@ -1,4 +1,4 @@
-import HudElement, {Hide} from "../HudElement.js";
+import HudElement, {Hide} from "./HudElement.js";
 import {SESSION_TYPES, getSessionType, valueIsValid} from "../consts.js";
 import {ESessionPhase} from "../r3eTypes.js";
 

@@ -1,4 +1,4 @@
-import HudElement, {Hide} from "../HudElement.js";
+import HudElement, {Hide} from "./HudElement.js";
 import {valueIsValid} from "../consts.js";
 
 export default class FuelElement extends HudElement {

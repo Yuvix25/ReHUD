@@ -35,6 +35,7 @@ public class LapPointsCombination
             this.bestLapTime = bestLapTime;
             this.lapPoints = lapPoints;
             this.pointsPerMeter = pointsPerMeter;
+            ReHUD.Startup.logger.Info($"New best lap time: {bestLapTime}");
         }
     }
 

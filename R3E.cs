@@ -4,7 +4,7 @@ namespace R3E
 {
     class Constant
     {
-        public const string SharedMemoryName = "$R3E";
+        public const string sharedMemoryName = "$R3E";
 
         enum VersionMajor
         {
@@ -206,33 +206,33 @@ namespace R3E
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct RaceDuration<T>
         {
-            public T Race1;
-            public T Race2;
-            public T Race3;
+            public T race1;
+            public T race2;
+            public T race3;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct Vector3<T>
         {
-            public T X;
-            public T Y;
-            public T Z;
+            public T x;
+            public T y;
+            public T z;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct Orientation<T>
         {
-            public T Pitch;
-            public T Yaw;
-            public T Roll;
+            public T pitch;
+            public T yaw;
+            public T roll;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct SectorStarts<T>
         {
-            public T Sector1;
-            public T Sector2;
-            public T Sector3;
+            public T sector1;
+            public T sector2;
+            public T sector3;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -240,85 +240,85 @@ namespace R3E
         {
             // Virtual physics time
             // Unit: Ticks (1 tick = 1/400th of a second)
-            public Int32 GameSimulationTicks;
+            public Int32 gameSimulationTicks;
 
             // Virtual physics time
             // Unit: Seconds
-            public Double GameSimulationTime;
+            public Double gameSimulationTime;
 
             // Car world-space position
-            public Vector3<Double> Position;
+            public Vector3<Double> position;
 
             // Car world-space velocity
             // Unit: Meter per second (m/s)
-            public Vector3<Double> Velocity;
+            public Vector3<Double> velocity;
 
             // Car local-space velocity
             // Unit: Meter per second (m/s)
-            public Vector3<Double> LocalVelocity;
+            public Vector3<Double> localVelocity;
 
             // Car world-space acceleration
             // Unit: Meter per second squared (m/s^2)
-            public Vector3<Double> Acceleration;
+            public Vector3<Double> acceleration;
 
             // Car local-space acceleration
             // Unit: Meter per second squared (m/s^2)
-            public Vector3<Double> LocalAcceleration;
+            public Vector3<Double> localAcceleration;
 
             // Car body orientation
             // Unit: Euler angles
-            public Vector3<Double> Orientation;
+            public Vector3<Double> orientation;
 
             // Car body rotation
-            public Vector3<Double> Rotation;
+            public Vector3<Double> rotation;
 
             // Car body angular acceleration (torque divided by inertia)
-            public Vector3<Double> AngularAcceleration;
+            public Vector3<Double> angularAcceleration;
 
             // Car world-space angular velocity
             // Unit: Radians per second
-            public Vector3<Double> AngularVelocity;
+            public Vector3<Double> angularVelocity;
 
             // Car local-space angular velocity
             // Unit: Radians per second
-            public Vector3<Double> LocalAngularVelocity;
+            public Vector3<Double> localAngularVelocity;
 
             // Driver g-force local to car
-            public Vector3<Double> LocalGforce;
+            public Vector3<Double> localGforce;
 
             // Total steering force coming through steering bars
-            public Double SteeringForce;
-            public Double SteeringForcePercentage;
+            public Double steeringForce;
+            public Double steeringForcePercentage;
 
             // Current engine torque
-            public Double EngineTorque;
+            public Double engineTorque;
 
             // Current downforce
             // Unit: Newtons (N)
-            public Double CurrentDownforce;
+            public Double currentDownforce;
 
             // Currently unused
-            public Double Voltage;
-            public Double ErsLevel;
-            public Double PowerMguH;
-            public Double PowerMguK;
-            public Double TorqueMguK;
+            public Double voltage;
+            public Double ersLevel;
+            public Double powerMguH;
+            public Double powerMguK;
+            public Double torqueMguK;
 
             // Car setup (radians, meters, meters per second)
-            public TireData<Double> SuspensionDeflection;
-            public TireData<Double> SuspensionVelocity;
-            public TireData<Double> Camber;
-            public TireData<Double> RideHeight;
-            public Double FrontWingHeight;
-            public Double FrontRollAngle;
-            public Double RearRollAngle;
-            public Double ThirdSpringSuspensionDeflectionFront;
-            public Double ThirdSpringSuspensionVelocityFront;
-            public Double ThirdSpringSuspensionDeflectionRear;
-            public Double ThirdSpringSuspensionVelocityRear;
+            public TireData<Double> suspensionDeflection;
+            public TireData<Double> suspensionVelocity;
+            public TireData<Double> camber;
+            public TireData<Double> rideHeight;
+            public Double frontWingHeight;
+            public Double frontRollAngle;
+            public Double rearRollAngle;
+            public Double thirdSpringSuspensionDeflectionFront;
+            public Double thirdSpringSuspensionVelocityFront;
+            public Double thirdSpringSuspensionDeflectionRear;
+            public Double thirdSpringSuspensionVelocityRear;
 
             // Reserved data
-            public Double Unused1;
+            public Double unused1;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -328,62 +328,62 @@ namespace R3E
             // -1 = no data
             //  0 = not active
             //  1 = active
-            public Int32 Yellow;
+            public Int32 yellow;
 
             // Whether yellow flag was caused by current slot
             // -1 = no data
             //  0 = didn't cause it
             //  1 = caused it
-            public Int32 YellowCausedIt;
+            public Int32 yellowCausedIt;
 
             // Whether overtake of car in front by current slot is allowed under yellow flag
             // -1 = no data
             //  0 = not allowed
             //  1 = allowed
-            public Int32 YellowOvertake;
+            public Int32 yellowOvertake;
 
             // Whether you have gained positions illegaly under yellow flag to give back
             // -1 = no data
             //  0 = no positions gained
             //  n = number of positions gained
-            public Int32 YellowPositionsGained;
+            public Int32 yellowPositionsGained;
 
             // Yellow flag for each sector; -1 = no data, 0 = not active, 1 = active
-            public Sectors<Int32> SectorYellow;
+            public Sectors<Int32> sectorYellow;
 
             // Distance into track for closest yellow, -1.0 if no yellow flag exists
             // Unit: Meters (m)
-            public Single ClosestYellowDistanceIntoTrack;
+            public Single closestYellowDistanceIntoTrack;
 
             // Whether blue flag is currently active
             // -1 = no data
             //  0 = not active
             //  1 = active
-            public Int32 Blue;
+            public Int32 blue;
 
             // Whether black flag is currently active
             // -1 = no data
             //  0 = not active
             //  1 = active
-            public Int32 Black;
+            public Int32 black;
 
             // Whether green flag is currently active
             // -1 = no data
             //  0 = not active
             //  1 = active
-            public Int32 Green;
+            public Int32 green;
 
             // Whether checkered flag is currently active
             // -1 = no data
             //  0 = not active
             //  1 = active
-            public Int32 Checkered;
+            public Int32 checkered;
 
             // Whether white flag is currently active
             // -1 = no data
             //  0 = not active
             //  1 = active
-            public Int32 White;
+            public Int32 white;
 
             // Whether black and white flag is currently active and reason
             // -1 = no data
@@ -392,7 +392,7 @@ namespace R3E
             //  2 = blue flag 2nd warnings
             //  3 = wrong way
             //  4 = cutting track
-            public Int32 BlackAndWhite;
+            public Int32 blackAndWhite;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -400,64 +400,64 @@ namespace R3E
         {
             // Range: 0.0 - 1.0
             // Note: -1.0 = N/A
-            public Single Engine;
+            public Single engine;
 
             // Range: 0.0 - 1.0
             // Note: -1.0 = N/A
-            public Single Transmission;
+            public Single transmission;
 
             // Range: 0.0 - 1.0
             // Note: A bit arbitrary at the moment. 0.0 doesn't necessarily mean completely destroyed.
             // Note: -1.0 = N/A
-            public Single Aerodynamics;
+            public Single aerodynamics;
 
             // Range: 0.0 - 1.0
             // Note: -1.0 = N/A
-            public Single Suspension;
+            public Single suspension;
 
             // Reserved data
-            public Single Unused1;
-            public Single Unused2;
+            public Single unused1;
+            public Single unused2;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct TireData<T>
         {
-            public T FrontLeft;
-            public T FrontRight;
-            public T RearLeft;
-            public T RearRight;
+            public T frontLeft;
+            public T frontRight;
+            public T rearLeft;
+            public T rearRight;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct PitMenuState
         {
             // Pit menu preset
-            public Int32 Preset;
+            public Int32 preset;
 
             // Pit menu actions
-            public Int32 Penalty;
-            public Int32 Driverchange;
-            public Int32 Fuel;
-            public Int32 FrontTires;
-            public Int32 RearTires;
-            public Int32 FrontWing;
-            public Int32 RearWing;
-            public Int32 Suspension;
+            public Int32 penalty;
+            public Int32 driverchange;
+            public Int32 fuel;
+            public Int32 frontTires;
+            public Int32 rearTires;
+            public Int32 frontWing;
+            public Int32 rearWing;
+            public Int32 suspension;
 
             // Pit menu buttons
-            public Int32 ButtonTop;
-            public Int32 ButtonBottom;
+            public Int32 buttonTop;
+            public Int32 buttonBottom;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct CutTrackPenalties
         {
-            public Int32 DriveThrough;
-            public Int32 StopAndGo;
-            public Int32 PitStop;
-            public Int32 TimeDeduction;
-            public Int32 SlowDown;
+            public Int32 driveThrough;
+            public Int32 stopAndGo;
+            public Int32 pitStop;
+            public Int32 timeDeduction;
+            public Int32 slowDown;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -465,143 +465,143 @@ namespace R3E
         {
             // If DRS is equipped and allowed
             // 0 = No, 1 = Yes, -1 = N/A
-            public Int32 Equipped;
+            public Int32 equipped;
             // Got DRS activation left
             // 0 = No, 1 = Yes, -1 = N/A
-            public Int32 Available;
+            public Int32 available;
             // Number of DRS activations left this lap
             // Note: In sessions with 'endless' amount of drs activations per lap this value starts at int32::max
             // -1 = N/A
-            public Int32 NumActivationsLeft;
+            public Int32 numActivationsLeft;
             // DRS engaged
             // 0 = No, 1 = Yes, -1 = N/A
-            public Int32 Engaged;
+            public Int32 engaged;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct PushToPass
         {
-            public Int32 Available;
-            public Int32 Engaged;
-            public Int32 AmountLeft;
-            public Single EngagedTimeLeft;
-            public Single WaitTimeLeft;
+            public Int32 available;
+            public Int32 engaged;
+            public Int32 amountLeft;
+            public Single engagedTimeLeft;
+            public Single waitTimeLeft;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct TireTempInformation
         {
-            public TireTemperature<Single> CurrentTemp;
-            public Single OptimalTemp;
-            public Single ColdTemp;
-            public Single HotTemp;
+            public TireTemperature<Single> currentTemp;
+            public Single optimalTemp;
+            public Single coldTemp;
+            public Single hotTemp;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct BrakeTemp
         {
-            public Single CurrentTemp;
-            public Single OptimalTemp;
-            public Single ColdTemp;
-            public Single HotTemp;
+            public Single currentTemp;
+            public Single optimalTemp;
+            public Single coldTemp;
+            public Single hotTemp;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct TireTemperature<T>
         {
-            public T Left;
-            public T Center;
-            public T Right;
+            public T left;
+            public T center;
+            public T right;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct AidSettings
         {
             // ABS; -1 = N/A, 0 = off, 1 = on, 5 = currently active
-            public Int32 Abs;
+            public Int32 abs;
             // TC; -1 = N/A, 0 = off, 1 = on, 5 = currently active
-            public Int32 Tc;
+            public Int32 tc;
             // ESP; -1 = N/A, 0 = off, 1 = on low, 2 = on medium, 3 = on high, 5 = currently active
-            public Int32 Esp;
+            public Int32 esp;
             // Countersteer; -1 = N/A, 0 = off, 1 = on, 5 = currently active
-            public Int32 Countersteer;
+            public Int32 countersteer;
             // Cornering; -1 = N/A, 0 = off, 1 = on, 5 = currently active
-            public Int32 Cornering;
+            public Int32 cornering;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct Sectors<T>
         {
-            public T Sector1;
-            public T Sector2;
-            public T Sector3;
+            public T sector1;
+            public T sector2;
+            public T sector3;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct DriverInfo
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-            public byte[] Name; // UTF-8
-            public Int32 CarNumber;
-            public Int32 ClassId;
-            public Int32 ModelId;
-            public Int32 TeamId;
-            public Int32 LiveryId;
-            public Int32 ManufacturerId;
-            public Int32 UserId;
-            public Int32 SlotId;
-            public Int32 ClassPerformanceIndex;
+            public byte[] name; // UTF-8
+            public Int32 carNumber;
+            public Int32 classId;
+            public Int32 modelId;
+            public Int32 teamId;
+            public Int32 liveryId;
+            public Int32 manufacturerId;
+            public Int32 userId;
+            public Int32 slotId;
+            public Int32 classPerformanceIndex;
             // Note: See the EngineType enum
-            public Int32 EngineType;
-            public Single CarWidth;
-            public Single CarLength;
+            public Int32 engineType;
+            public Single carWidth;
+            public Single carLength;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct DriverData
         {
-            public DriverInfo DriverInfo;
+            public DriverInfo driverInfo;
             // Note: See the R3E.Constant.FinishStatus enum
-            public Int32 FinishStatus;
-            public Int32 Place;
+            public Int32 finishStatus;
+            public Int32 place;
             // Based on performance index
-            public Int32 PlaceClass;
-            public Single LapDistance;
-            public Vector3<Single> Position;
-            public Int32 TrackSector;
-            public Int32 CompletedLaps;
-            public Int32 CurrentLapValid;
-            public Single LapTimeCurrentSelf;
-            public Sectors<Single> SectorTimeCurrentSelf;
-            public Sectors<Single> SectorTimePreviousSelf;
-            public Sectors<Single> SectorTimeBestSelf;
-            public Single TimeDeltaFront;
-            public Single TimeDeltaBehind;
+            public Int32 placeClass;
+            public Single lapDistance;
+            public Vector3<Single> position;
+            public Int32 trackSector;
+            public Int32 completedLaps;
+            public Int32 currentLapValid;
+            public Single lapTimeCurrentSelf;
+            public Sectors<Single> sectorTimeCurrentSelf;
+            public Sectors<Single> sectorTimePreviousSelf;
+            public Sectors<Single> sectorTimeBestSelf;
+            public Single timeDeltaFront;
+            public Single timeDeltaBehind;
             // Note: See the R3E.Constant.PitStopStatus enum
-            public Int32 PitStopStatus;
-            public Int32 InPitlane;
+            public Int32 pitStopStatus;
+            public Int32 inPitlane;
 
-            public Int32 NumPitstops;
+            public Int32 numPitstops;
 
-            public CutTrackPenalties Penalties;
+            public CutTrackPenalties penalties;
 
-            public Single CarSpeed;
+            public Single carSpeed;
             // Note: See the R3E.Constant.TireType enum
-            public Int32 TireTypeFront;
-            public Int32 TireTypeRear;
+            public Int32 tireTypeFront;
+            public Int32 tireTypeRear;
             // Note: See the R3E.Constant.TireSubtype enum
-            public Int32 TireSubtypeFront;
-            public Int32 TireSubtypeRear;
+            public Int32 tireSubtypeFront;
+            public Int32 tireSubtypeRear;
 
-            public Single BasePenaltyWeight;
-            public Single AidPenaltyWeight;
+            public Single basePenaltyWeight;
+            public Single aidPenaltyWeight;
 
             // -1 unavailable, 0 = not engaged, 1 = engaged
-            public Int32 DrsState;
-            public Int32 PtpState;
+            public Int32 drsState;
+            public Int32 ptpState;
 
             // -1 unavailable, DriveThrough = 0, StopAndGo = 1, Pitstop = 2, Time = 3, Slowdown = 4, Disqualify = 5,
-            public Int32 PenaltyType;
+            public Int32 penaltyType;
 
             // Based on the PenaltyType you can assume the reason is:
 
@@ -653,14 +653,14 @@ namespace R3E
             // DisqualifyPenaltyExcessiveCutting = 12,
             // DisqualifyPenaltyIgnoredBlueFlag = 13,
             // DisqualifyPenaltyMax = 14
-            public Int32 PenaltyReason;
+            public Int32 penaltyReason;
 	
             // -1 unavailable, 0 = ignition off, 1 = ignition on but not running, 2 = ignition on and running
-            public Int32 EngineState;
+            public Int32 engineState;
 
             // Car body orientation
             // Unit: Euler angles
-            public Vector3<Single> Orientation;
+            public Vector3<Single> orientation;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -669,77 +669,77 @@ namespace R3E
             //////////////////////////////////////////////////////////////////////////
             // Version
             //////////////////////////////////////////////////////////////////////////
-            public Int32 VersionMajor;
-            public Int32 VersionMinor;
-            public Int32 AllDriversOffset; // Offset to NumCars variable
-            public Int32 DriverDataSize; // Size of DriverData
+            public Int32 versionMajor;
+            public Int32 versionMinor;
+            public Int32 allDriversOffset; // Offset to NumCars variable
+            public Int32 driverDataSize; // Size of DriverData
 
             //////////////////////////////////////////////////////////////////////////
             // Game State
             //////////////////////////////////////////////////////////////////////////
 
-            public Int32 GamePaused;
-            public Int32 GameInMenus;
-            public Int32 GameInReplay;
-            public Int32 GameUsingVr;
+            public Int32 gamePaused;
+            public Int32 gameInMenus;
+            public Int32 gameInReplay;
+            public Int32 gameUsingVr;
 
-            public Int32 GameUnused1;
+            public Int32 gameUnused1;
 
             //////////////////////////////////////////////////////////////////////////
             // High Detail
             //////////////////////////////////////////////////////////////////////////
 
             // High precision data for player's vehicle only
-            public PlayerData Player;
+            public PlayerData player;
 
             //////////////////////////////////////////////////////////////////////////
             // Event And Session
             //////////////////////////////////////////////////////////////////////////
 
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-            public byte[] TrackName; // UTF-8
+            public byte[] trackName; // UTF-8
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-            public byte[] LayoutName; // UTF-8
+            public byte[] layoutName; // UTF-8
 
-            public Int32 TrackId;
-            public Int32 LayoutId;
+            public Int32 trackId;
+            public Int32 layoutId;
 
             // Layout length in meters
-            public Single LayoutLength;
-            public SectorStarts<Single> SectorStartFactors;
+            public Single layoutLength;
+            public SectorStarts<Single> sectorStartFactors;
 
             // Race session durations
             // Note: Index 0-2 = race 1-3
             // Note: Value -1 = N/A
             // Note: If both laps and minutes are more than 0, race session starts with minutes then adds laps
-            public RaceDuration<Int32> RaceSessionLaps;
-            public RaceDuration<Int32> RaceSessionMinutes;
+            public RaceDuration<Int32> raceSessionLaps;
+            public RaceDuration<Int32> raceSessionMinutes;
 
             // The current race event index, for championships with multiple events
             // Note: 0-indexed, -1 = N/A
-            public Int32 EventIndex;
+            public Int32 eventIndex;
 
             // Which session the player is in (practice, qualifying, race, etc.)
             // Note: See the R3E.Constant.Session enum
-            public Int32 SessionType;
+            public Int32 sessionType;
 
             // The current iteration of the current type of session (second qualifying session, etc.)
             // Note: 1 = first, 2 = second etc, -1 = N/A
-            public Int32 SessionIteration;
+            public Int32 sessionIteration;
 
             // If the session is time based, lap based or time based with an extra lap at the end
-            public Int32 SessionLengthFormat;
+            public Int32 sessionLengthFormat;
  
             // Unit: Meter per second (m/s)
-            public Single SessionPitSpeedLimit;
+            public Single sessionPitSpeedLimit;
 
             // Which phase the current session is in (gridwalk, countdown, green flag, etc.)
             // Note: See the R3E.Constant.SessionPhase enum
-            public Int32 SessionPhase;
+            public Int32 sessionPhase;
 
             // Which phase start lights are in; -1 = unavailable, 0 = off, 1-5 = redlight on and counting down, 6 = greenlight on
             // Note: See the r3e_session_phase enum
-            public Int32 StartLights;
+            public Int32 startLights;
 
             // -1 = no data available
             //  0 = not active
@@ -747,7 +747,7 @@ namespace R3E
             //  2 = 2x
             //  3 = 3x
             //  4 = 4x
-            public Int32 TireWearActive;
+            public Int32 tireWearActive;
 
             // -1 = no data
             //  0 = not active
@@ -755,22 +755,22 @@ namespace R3E
             //  2 = 2x
             //  3 = 3x
             //  4 = 4x
-            public Int32 FuelUseActive;
+            public Int32 fuelUseActive;
 
             // Total number of laps in the race, or -1 if player is not in race mode (practice, test mode, etc.)
-            public Int32 NumberOfLaps;
+            public Int32 numberOfLaps;
 
             // Amount of time and time remaining for the current session
             // Note: Only available in time-based sessions, -1.0 = N/A
             // Units: Seconds
-            public Single SessionTimeDuration;
-            public Single SessionTimeRemaining;
+            public Single sessionTimeDuration;
+            public Single sessionTimeRemaining;
 
             // Server max incident points, -1 = N/A
-            public Int32 MaxIncidentPoints;
+            public Int32 maxIncidentPoints;
 
             // Reserved data
-            public Single EventUnused2;
+            public Single eventUnused2;
 
             //////////////////////////////////////////////////////////////////////////
             // Pit
@@ -778,121 +778,121 @@ namespace R3E
 
             // Current status of the pit stop
             // Note: See the R3E.Constant.PitWindow enum
-            public Int32 PitWindowStatus;
+            public Int32 pitWindowStatus;
 
             // The minute/lap from which you're obligated to pit (-1 = N/A)
             // Unit: Minutes in time-based sessions, otherwise lap
-            public Int32 PitWindowStart;
+            public Int32 pitWindowStart;
 
             // The minute/lap into which you need to have pitted (-1 = N/A)
             // Unit: Minutes in time-based sessions, otherwise lap
-            public Int32 PitWindowEnd;
+            public Int32 pitWindowEnd;
 
             // If current vehicle is in pitline (-1 = N/A)
-            public Int32 InPitlane;
+            public Int32 inPitlane;
 
             // What is currently selected in pit menu, and array of states (preset/buttons: -1 = not selectable, 1 = selectable) (actions: -1 = N/A, 0 = unmarked for fix, 1 = marked for fix)
-            public Int32 PitMenuSelection;
-            public PitMenuState PitMenuState;
+            public Int32 pitMenuSelection;
+            public PitMenuState pitMenuState;
 
             // Current vehicle pit state (-1 = N/A, 0 = None, 1 = Requested stop, 2 = Entered pitlane heading for pitspot, 3 = Stopped at pitspot, 4 = Exiting pitspot heading for pit exit)
-            public Int32 PitState;
+            public Int32 pitState;
 
             // Current vehicle pitstop actions duration
-            public Single PitTotalDuration;
-            public Single PitElapsedTime;
+            public Single pitTotalDuration;
+            public Single pitElapsedTime;
 
             // Current vehicle pit action (-1 = N/A, 0 = None, 1 = Preparing, (combination of 2 = Penalty serve, 4 = Driver change, 8 = Refueling, 16 = Front tires, 32 = Rear tires, 64 = Body, 128 = Front wing, 256 = Rear wing, 512 = Suspension))
-            public Int32 PitAction;
+            public Int32 pitAction;
 
             // Number of pitstops the current vehicle has performed (-1 = N/A)
-            public Int32 NumPitstopsPerformed;
+            public Int32 numPitstopsPerformed;
 
-            public Single PitMinDurationTotal;
-            public Single PitMinDurationLeft;
+            public Single pitMinDurationTotal;
+            public Single pitMinDurationLeft;
 
             //////////////////////////////////////////////////////////////////////////
             // Scoring & Timings
             //////////////////////////////////////////////////////////////////////////
 
             // The current state of each type of flag
-            public Flags Flags;
+            public Flags flags;
 
             // Current position (1 = first place)
-            public Int32 Position;
+            public Int32 position;
             // Based on performance index
-            public Int32 PositionClass;
+            public Int32 positionClass;
 
             // Note: See the R3E.Constant.FinishStatus enum
-            public Int32 FinishStatus;
+            public Int32 finishStatus;
 
             // Total number of cut track warnings (-1 = N/A)
-            public Int32 CutTrackWarnings;
+            public Int32 cutTrackWarnings;
 
             // The number of penalties the car currently has pending of each type (-1 = N/A)
-            public CutTrackPenalties Penalties;
+            public CutTrackPenalties penalties;
             // Total number of penalties pending for the car
             // Note: See the 'penalties' field
-            public Int32 NumPenalties;
+            public Int32 numPenalties;
 
             // How many laps the player has completed. If this value is 6, the player is on his 7th lap. -1 = n/a
-            public Int32 CompletedLaps;
-            public Int32 CurrentLapValid;
-            public Int32 TrackSector;
-            public Single LapDistance;
+            public Int32 completedLaps;
+            public Int32 currentLapValid;
+            public Int32 trackSector;
+            public Single lapDistance;
             // fraction of lap completed, 0.0-1.0, -1.0 = N/A
-            public Single LapDistanceFraction;
+            public Single lapDistanceFraction;
 
             // The current best lap time for the leader of the session (-1.0 = N/A)
-            public Single LapTimeBestLeader;
+            public Single lapTimeBestLeader;
             // The current best lap time for the leader of the player's class in the current session (-1.0 = N/A)
-            public Single LapTimeBestLeaderClass;
+            public Single lapTimeBestLeaderClass;
             // Sector times of fastest lap by anyone in session
             // Unit: Seconds (-1.0 = N/A)
-            public Sectors<Single> SectorTimesSessionBestLap;
+            public Sectors<Single> sectorTimesSessionBestLap;
             // Unit: Seconds (-1.0 = none)
-            public Single LapTimeBestSelf;
-            public Sectors<Single> SectorTimesBestSelf;
+            public Single lapTimeBestSelf;
+            public Sectors<Single> sectorTimesBestSelf;
             // Unit: Seconds (-1.0 = none)
-            public Single LapTimePreviousSelf;
-            public Sectors<Single> SectorTimesPreviousSelf;
+            public Single lapTimePreviousSelf;
+            public Sectors<Single> sectorTimesPreviousSelf;
             // Unit: Seconds (-1.0 = none)
-            public Single LapTimeCurrentSelf;
-            public Sectors<Single> SectorTimesCurrentSelf;
+            public Single lapTimeCurrentSelf;
+            public Sectors<Single> sectorTimesCurrentSelf;
             // The time delta between the player's time and the leader of the current session (-1.0 = N/A)
-            public Single LapTimeDeltaLeader;
+            public Single lapTimeDeltaLeader;
             // The time delta between the player's time and the leader of the player's class in the current session (-1.0 = N/A)
-            public Single LapTimeDeltaLeaderClass;
+            public Single lapTimeDeltaLeaderClass;
             // Time delta between the player and the car placed in front (-1.0 = N/A)
             // Units: Seconds
-            public Single TimeDeltaFront;
+            public Single timeDeltaFront;
             // Time delta between the player and the car placed behind (-1.0 = N/A)
             // Units: Seconds
-            public Single TimeDeltaBehind;
+            public Single timeDeltaBehind;
             // Time delta between this car's current laptime and this car's best laptime
             // Unit: Seconds (-1000.0 = N/A)
-            public Single TimeDeltaBestSelf;
+            public Single timeDeltaBestSelf;
             // Best time for each individual sector no matter lap
             // Unit: Seconds (-1.0 = N/A)
-            public Sectors<Single> BestIndividualSectorTimeSelf;
-            public Sectors<Single> BestIndividualSectorTimeLeader;
-            public Sectors<Single> BestIndividualSectorTimeLeaderClass;
-            public Int32 IncidentPoints;
+            public Sectors<Single> bestIndividualSectorTimeSelf;
+            public Sectors<Single> bestIndividualSectorTimeLeader;
+            public Sectors<Single> bestIndividualSectorTimeLeaderClass;
+            public Int32 incidentPoints;
 
             // -1 = N/A, 0 = this and next lap valid, 1 = this lap invalid, 2 = this and next lap invalid
-            public Int32 LapValidState;
+            public Int32 lapValidState;
 
             // Reserved data
-            public Single ScoreUnused1;
-            public Single ScoreUnused2;
+            public Single scoreUnused1;
+            public Single scoreUnused2;
 
             //////////////////////////////////////////////////////////////////////////
             // Vehicle information
             //////////////////////////////////////////////////////////////////////////
 
-            public DriverInfo VehicleInfo;
+            public DriverInfo vehicleInfo;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-            public byte[] PlayerName; // UTF-8
+            public byte[] playerName; // UTF-8
 
             //////////////////////////////////////////////////////////////////////////
             // Vehicle State
@@ -900,109 +900,109 @@ namespace R3E
 
             // Which controller is currently controlling the player's car (AI, player, remote, etc.)
             // Note: See the R3E.Constant.Control enum
-            public Int32 ControlType;
+            public Int32 controlType;
 
             // Unit: Meter per second (m/s)
-            public Single CarSpeed;
+            public Single carSpeed;
 
             // Unit: Radians per second (rad/s)
-            public Single EngineRps;
-            public Single MaxEngineRps;
-            public Single UpshiftRps;
+            public Single engineRps;
+            public Single maxEngineRps;
+            public Single upshiftRps;
 
             // -2 = N/A, -1 = reverse, 0 = neutral, 1 = first gear, ...
-            public Int32 Gear;
+            public Int32 gear;
             // -1 = N/A
-            public Int32 NumGears;
+            public Int32 numGears;
 
             // Physical location of car's center of gravity in world space (X, Y, Z) (Y = up)
-            public Vector3<Single> CarCgLocation;
+            public Vector3<Single> carCgLocation;
             // Pitch, yaw, roll
             // Unit: Radians (rad)
-            public Orientation<Single> CarOrientation;
+            public Orientation<Single> carOrientation;
             // Acceleration in three axes (X, Y, Z) of car body in local-space.
             // From car center, +X=left, +Y=up, +Z=back.
             // Unit: Meter per second squared (m/s^2)
-            public Vector3<Single> LocalAcceleration;
+            public Vector3<Single> localAcceleration;
 
             // Unit: Kilograms (kg)
             // Note: Car + penalty weight + fuel
-            public Single TotalMass;
+            public Single totalMass;
             // Unit: Liters (l)
             // Note: Fuel per lap show estimation when not enough data, then max recorded fuel per lap
             // Note: Not valid for remote players
-            public Single FuelLeft;
-            public Single FuelCapacity;
-            public Single FuelPerLap;
+            public Single fuelLeft;
+            public Single fuelCapacity;
+            public Single fuelPerLap;
             // Unit: Celsius (C)
             // Note: Not valid for AI or remote players
-            public Single EngineWaterTemp;
-            public Single EngineOilTemp;
+            public Single engineWaterTemp;
+            public Single engineOilTemp;
             // Unit: Kilopascals (KPa)
             // Note: Not valid for AI or remote players
-            public Single FuelPressure;
+            public Single fuelPressure;
             // Unit: Kilopascals (KPa)
             // Note: Not valid for AI or remote players
-            public Single EngineOilPressure;
+            public Single engineOilPressure;
 
             // Unit: (Bar)
             // Note: Not valid for AI or remote players (-1.0 = N/A)
-            public Single TurboPressure;
+            public Single turboPressure;
 
             // How pressed the throttle pedal is
             // Range: 0.0 - 1.0 (-1.0 = N/A)
             // Note: Not valid for AI or remote players
-            public Single Throttle;
-            public Single ThrottleRaw;
+            public Single throttle;
+            public Single throttleRaw;
             // How pressed the brake pedal is
             // Range: 0.0 - 1.0 (-1.0 = N/A)
             // Note: Not valid for AI or remote players
-            public Single Brake;
-            public Single BrakeRaw;
+            public Single brake;
+            public Single brakeRaw;
             // How pressed the clutch pedal is
             // Range: 0.0 - 1.0 (-1.0 = N/A)
             // Note: Not valid for AI or remote players
-            public Single Clutch;
-            public Single ClutchRaw;
+            public Single clutch;
+            public Single clutchRaw;
             // How much the steering wheel is turned
             // Range: -1.0 - 1.0
             // Note: Not valid for AI or remote players
-            public Single SteerInputRaw;
+            public Single steerInputRaw;
             // How many degrees in steer lock (center to full lock)
             // Note: Not valid for AI or remote players
-            public Int32 SteerLockDegrees;
+            public Int32 steerLockDegrees;
             // How many degrees in wheel range (degrees full left to rull right)
             // Note: Not valid for AI or remote players
-            public Int32 SteerWheelRangeDegrees;
+            public Int32 steerWheelRangeDegrees;
 
             // Aid settings
-            public AidSettings AidSettings;
+            public AidSettings aidSettings;
 
             // DRS data
-            public DRS Drs;
+            public DRS drs;
 
             // Pit limiter (-1 = N/A, 0 = inactive, 1 = active)
-            public Int32 PitLimiter;
+            public Int32 pitLimiter;
 
             // Push to pass data
-            public PushToPass PushToPass;
+            public PushToPass pushToPass;
 
             // How much the vehicle's brakes are biased towards the back wheels (0.3 = 30%, etc.) (-1.0 = N/A)
             // Note: Not valid for AI or remote players
-            public Single BrakeBias;
+            public Single brakeBias;
 
             // DRS activations available in total (-1 = N/A or endless)
-            public Int32 DrsNumActivationsTotal;
+            public Int32 drsNumActivationsTotal;
             // PTP activations available in total (-1 = N/A, or there's no restriction per lap, or endless)
-            public Int32 PtpNumActivationsTotal;
+            public Int32 ptpNumActivationsTotal;
 
             // Battery state of charge
             // Range: 0.0 - 100.0 (-1.0 = N/A)
-            public Single BatterySoC;
+            public Single batterySoC;
 
             // Brake water tank (-1.0 = N/A)
             // Unit: Liters (l)
-            public Single WaterLeft;
+            public Single waterLeft;
 
             // Reserved data
             Orientation<Single> VehicleUnused1;
@@ -1013,26 +1013,26 @@ namespace R3E
 
             // Which type of tires the player's car has (option, prime, etc.)
             // Note: See the R3E.Constant.TireType enum, deprecated - use the values further down instead
-            public Int32 TireType;
+            public Int32 tireType;
 
             // Rotation speed
             // Uint: Radians per second
-            public TireData<Single> TireRps;
+            public TireData<Single> tireRps;
             // Wheel speed
             // Uint: Meters per second
-            public TireData<Single> TireSpeed;
+            public TireData<Single> tireSpeed;
             // Range: 0.0 - 1.0 (-1.0 = N/A)
-            public TireData<Single> TireGrip;
+            public TireData<Single> tireGrip;
             // Range: 0.0 - 1.0 (-1.0 = N/A)
-            public TireData<Single> TireWear;
+            public TireData<Single> tireWear;
             // (-1 = N/A, 0 = false, 1 = true)
-            public TireData<Int32> TireFlatspot;
+            public TireData<Int32> tireFlatspot;
             // Unit: Kilopascals (KPa) (-1.0 = N/A)
             // Note: Not valid for AI or remote players
-            public TireData<Single> TirePressure;
+            public TireData<Single> tirePressure;
             // Percentage of dirt on tire (-1.0 = N/A)
             // Range: 0.0 - 1.0
-            public TireData<Single> TireDirt;
+            public TireData<Single> tireDirt;
 
             // Current temperature of three points across the tread of the tire (-1.0 = N/A)
             // Optimum temperature
@@ -1040,16 +1040,16 @@ namespace R3E
             // Hot temperature
             // Unit: Celsius (C)
             // Note: Not valid for AI or remote players
-            public TireData<TireTempInformation> TireTemp;
+            public TireData<TireTempInformation> tireTemp;
 
             // Which type of tires the car has (option, prime, etc.)
             // Note: See the R3E.Constant.TireType enum
-            public Int32 TireTypeFront;
-            public Int32 TireTypeRear;
+            public Int32 tireTypeFront;
+            public Int32 tireTypeRear;
             // Which subtype of tires the car has
             // Note: See the R3E.Constant.TireSubtype enum
-			public Int32 TireSubtypeFront;
-            public Int32 TireSubtypeRear;
+			public Int32 tireSubtypeFront;
+            public Int32 tireSubtypeRear;
 
             // Current brake temperature (-1.0 = N/A)
             // Optimum temperature
@@ -1057,27 +1057,27 @@ namespace R3E
             // Hot temperature
             // Unit: Celsius (C)
             // Note: Not valid for AI or remote players
-            public TireData<BrakeTemp> BrakeTemp;
+            public TireData<BrakeTemp> brakeTemp;
             // Brake pressure (-1.0 = N/A)
             // Unit: Kilo Newtons (kN)
             // Note: Not valid for AI or remote players
-            public TireData<Single> BrakePressure;
+            public TireData<Single> brakePressure;
 
             // Reserved data
-            public Int32 TractionControlSetting;
-            public Int32 EngineMapSetting;
-            public Int32 EngineBrakeSetting;
+            public Int32 tractionControlSetting;
+            public Int32 engineMapSetting;
+            public Int32 engineBrakeSetting;
 
             // -1.0 = N/A, 0.0 -> 100.0 percent
-            public Single TractionControlPercent;
+            public Single tractionControlPercent;
 
             // Which type of material under player car tires (tarmac, gravel, etc.)
             // Note: See the R3E.Constant.MtrlType enum
-            public TireData<Int32> TireOnMtrl;
+            public TireData<Int32> tireOnMtrl;
 
             // Tire load (N)
             // -1.0 = N/A
-            public TireData<Single> TireLoad;
+            public TireData<Single> tireLoad;
 
             //////////////////////////////////////////////////////////////////////////
             // Damage
@@ -1085,18 +1085,18 @@ namespace R3E
 
             // The current state of various parts of the car
             // Note: Not valid for AI or remote players
-            public CarDamage CarDamage;
+            public CarDamage carDamage;
 
             //////////////////////////////////////////////////////////////////////////
             // Driver Info
             //////////////////////////////////////////////////////////////////////////
 
             // Number of cars (including the player) in the race
-            public Int32 NumCars;
+            public Int32 numCars;
 
             // Contains name and basic vehicle info for all drivers in place order
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
-            public DriverData[] DriverData;
+            public DriverData[] driverData;
         }
     }
 }

@@ -10,6 +10,9 @@
 
     <link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
 
+    @* Needed for the tooltip info symbol *@
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet"> 
+
     <script src="~/dist/settings-bundle.js" asp-append-version="true"></script>
 </head>
 
@@ -20,38 +23,23 @@
 </div>
 
 <div id="general-tab" class="tabcontent active">
-    <div class="setting choices" id="speed-units-setting" data-key="speedUnits">
+    <choice-setting key="speedUnits" value="kmh">
         <label>Speed Units</label>
-        <button id="speed-units-kmh" value="kmh" class="choice selected">km/h</button>
-        <button id="speed-units-mph" value="mph" class="choice">mp/h</button>
-    </div>
+        <button value="kmh">km/h</button>
+        <button value="mph">mp/h</button>
+    </choice-setting>
 
-    <div class="setting choices" id="pressure-units-setting" data-key="pressureUnits">
+    <choice-setting key="pressureUnits" value="kPa">
         <label>Pressure Units</label>
-        <button id="pressure-units-kpa" value="kPa" class="selected">kPa</button>
-        <button id="pressure-units-psi" value=psi>psi</button>
-    </div>
+        <button value="kPa">kPa</button>
+        <button value=psi>psi</button>
+    </choice-setting>
 
+    <slider-setting key="radarRange" min="0" max="30" step="1" value="12">Radar Range (m)</slider-setting>
+    <slider-setting key="radarBeepVolume" min="0" max="3" step="0.01" value="1">Radar Beep Volume</slider-setting>
 
-    <div class="setting slider-setting" id="radar-range-setting" data-key="radarRange">
-        <label>Radar Range (m)</label>
-        <input type="range" min="0" max="30" value="12" step="1" class="slider" id="radar-range">
-        <input type="number" min="0" max="30" value="12" step="1" id="radar-range-text">
-    </div>
-
-    <div class="setting slider-setting" id="radar-beep-setting" data-key="radarBeepVolume">
-        <label>Radar Beep Volume</label>
-        <input type="range" min="0" max="3" value="1" step="0.01" class="slider" id="radar-beep-volume">
-        <input type="number" min="0" max="3" value="1" step="0.01" id="radar-beep-volume-text">
-    </div>
-
-    <div class="setting toggle" id="check-for-updates-setting" data-key="check-for-updates">
-        <label>Check for Updates</label>
-        <div class="switch">
-            <input type="checkbox" id="check-for-updates" class="switch__input" checked>
-            <label for="check-for-updates" class="switch__label"></label>
-        </div>
-    </div>
+    <toggle-setting key="relativeSafeMode" tooltip="Enabling this option will mean that the relative will only work with saved best lap data, and will not save new ones.">Relative Safe Mode</toggle-setting>
+    <toggle-setting key="check-for-updates">Check for Updates<toggle-setting>
 </div>
 
 <div id="layout-tab" class="tabcontent">

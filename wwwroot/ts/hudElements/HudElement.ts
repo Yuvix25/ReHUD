@@ -1,6 +1,6 @@
-import Hud from "./Hud";
-import Action from "./Action.js";
-import {IExtendedShared} from "./consts.js";
+import Hud from "../Hud";
+import Action from "../Action.js";
+import {IExtendedShared} from "../consts.js";
 
 export type HUDElementOptions = {
     hud?: Hud;

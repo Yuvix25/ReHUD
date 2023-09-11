@@ -1,4 +1,4 @@
-import HudElement from "../HudElement.js";
+import HudElement from "./HudElement.js";
 import {valueIsValid} from "../consts.js";
 
 export default class Revs extends HudElement {
@@ -7,8 +7,6 @@ export default class Revs extends HudElement {
     protected override render(current: number, max: number, upshift: number, pitLimiter: number, id: string): null {
         if (!valueIsValid(current) || !valueIsValid(max))
             return null;
-        if (upshift == undefined)
-            upshift = max;
 
         try {
             // @ts-ignore

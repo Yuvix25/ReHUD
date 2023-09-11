@@ -247,6 +247,7 @@ public class Startup
 
     private async void InitSettingsWindow()
     {
+        Electron.IpcMain.Send(mainWindow, "settings", settings.Serialize());
         Electron.IpcMain.Send(settingsWindow, "settings", settings.Serialize());
         Electron.IpcMain.Send(settingsWindow, "version", await AppVersion());
     }
@@ -280,19 +281,7 @@ public class Startup
 
         await Electron.IpcMain.On("check-for-updates", async (data) =>
         {
-            Tuple<string, string>? newVersion = await CheckForUpdates();
-            if (newVersion != null)
-            {
-                string versionUrl = newVersion.Item1;
-                string newVersionText = newVersion.Item2;
-                await ShowMessageBox("A new version is available: " + newVersionText, "Update available", MessageBoxType.info, new string[] { "Show me", "Cancel" }).ContinueWith((t) =>
-                {
-                    if (t.Result.Response == 0)
-                    {
-                        Electron.Shell.OpenExternalAsync(versionUrl);
-                    }
-                });
-            }
+            await CheckForUpdates();
         });
 
         await Electron.IpcMain.On("lock-overlay", (data) =>
@@ -368,7 +357,7 @@ public class Startup
         return appVersion ??= await Electron.App.GetVersionAsync();
     }
 
-    private async Task<Tuple<string, string>?> CheckForUpdates()
+    private async Task CheckForUpdates()
     {
         string currentVersion = await AppVersion();
         logger.Info("Checking for updates (current version: v" + currentVersion + ")");
@@ -376,7 +365,7 @@ public class Startup
         if (remoteUrl == null)
         {
             logger.Error("Could not get remote URL for checking updates");
-            return null;
+            return;
         }
 
         string remoteVersionText = remoteUrl.Split('/').Last();
@@ -389,10 +378,18 @@ public class Startup
         if (current < remote)
         {
             logger.Info("Update available: " + remoteVersion);
-            return Tuple.Create(remoteUrl, remoteVersionText);
+
+            await ShowMessageBox("A new version is available: " + remoteVersionText, "Update available", MessageBoxType.info, new string[] { "Show me", "Cancel" }).ContinueWith((t) =>
+            {
+                if (t.Result.Response == 0)
+                {
+                    Electron.Shell.OpenExternalAsync(remoteUrl);
+                }
+            });
+
+            return;
         }
         logger.Info("No updates available");
-        return null;
     }
 
     public static async Task<string?> GetRedirectedUrl(string url)
@@ -500,35 +497,35 @@ public class Startup
             int iter = 0;
             ExtraData extraData = new ExtraData
             {
-                ForceUpdateAll = false
+                forceUpdateAll = false
             };
             Thread thread = new Thread(() => memory.Run((data) =>
             {
-                if (data.FuelUseActive != 1 && !userDataClearedForMultiplier)
+                if (data.fuelUseActive != 1 && !userDataClearedForMultiplier)
                 {
                     userDataClearedForMultiplier = true;
                     fuelData.Save();
                     fuelData.Clear();
                 }
-                else if (data.FuelUseActive == 1 && userDataClearedForMultiplier)
+                else if (data.fuelUseActive == 1 && userDataClearedForMultiplier)
                 {
                     userDataClearedForMultiplier = false;
                     fuelData.Clear();
                     fuelData.Load();
                 }
 
-                extraData.RawData = data;
-                extraData.RawData.DriverData = extraData.RawData.DriverData.Take(data.NumCars).ToArray();
-                if (data.LayoutId != -1 && data.VehicleInfo.ModelId != -1 && iter % (1000 / SharedMemory.timeInterval.Milliseconds) * 10 == 0)
+                extraData.rawData = data;
+                extraData.rawData.driverData = extraData.rawData.driverData.Take(data.numCars).ToArray();
+                if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % (1000 / SharedMemory.timeInterval.Milliseconds) * 10 == 0)
                 {
-                    FuelCombination combination = fuelData.GetCombination(data.LayoutId, data.VehicleInfo.ModelId);
-                    extraData.FuelPerLap = combination.GetAverageFuelUsage();
-                    extraData.FuelLastLap = combination.GetLastLapFuelUsage();
-                    extraData.AverageLapTime = combination.GetAverageLapTime();
-                    extraData.BestLapTime = combination.GetBestLapTime();
+                    FuelCombination combination = fuelData.GetCombination(data.layoutId, data.vehicleInfo.modelId);
+                    extraData.fuelPerLap = combination.GetAverageFuelUsage();
+                    extraData.fuelLastLap = combination.GetLastLapFuelUsage();
+                    extraData.averageLapTime = combination.GetAverageLapTime();
+                    extraData.bestLapTime = combination.GetBestLapTime();
                     Tuple<int, double> lapData = Utilities.GetEstimatedLapCount(data, combination);
-                    extraData.EstimatedRaceLapCount = lapData.Item1;
-                    extraData.LapsUntilFinish = lapData.Item2;
+                    extraData.estimatedRaceLapCount = lapData.Item1;
+                    extraData.lapsUntilFinish = lapData.Item2;
                     iter = 0;
                 }
                 iter++;
@@ -542,18 +539,18 @@ public class Startup
                     logger.Error("Error saving data", e);
                 }
 
-                lastLap = data.CompletedLaps;
-                bool notDriving = data.GameInMenus == 1 || (data.GamePaused == 1 && data.GameInReplay == 0) || data.SessionType == -1;
+                lastLap = data.completedLaps;
+                bool notDriving = data.gameInMenus == 1 || (data.gamePaused == 1 && data.gameInReplay == 0) || data.sessionType == -1;
                 if (enteredEditMode)
                 {
-                    extraData.ForceUpdateAll = true;
-                    Electron.IpcMain.Send(window, "data", extraData);
-                    extraData.ForceUpdateAll = false;
+                    extraData.forceUpdateAll = true;
+                    Electron.IpcMain.Send(window, "data", JsonConvert.SerializeObject(extraData));
+                    extraData.forceUpdateAll = false;
                     enteredEditMode = false;
                 }
                 else
                 {
-                    Electron.IpcMain.Send(window, "data", extraData);
+                    Electron.IpcMain.Send(window, "data", JsonConvert.SerializeObject(extraData));
                 }
 
                 if (notDriving)
@@ -566,7 +563,7 @@ public class Startup
 
                     recordingData = false;
 
-                    if (data.SessionType == -1)
+                    if (data.sessionType == -1)
                     {
                         lastLap = -1;
                         lastFuel = -1;
@@ -589,31 +586,31 @@ public class Startup
     private int lastLap = -1;
     private void SaveData(R3E.Data.Shared data)
     {
-        if (lastLap == -1 || lastLap == data.CompletedLaps || fuelData == null)
+        if (lastLap == -1 || lastLap == data.completedLaps || fuelData == null)
             return;
 
         if (!recordingData)
         {
             recordingData = true;
-            lastFuel = data.FuelLeft;
+            lastFuel = data.fuelLeft;
             return;
         }
 
-        int modelId = data.VehicleInfo.ModelId;
-        int layoutId = data.LayoutId;
+        int modelId = data.vehicleInfo.modelId;
+        int layoutId = data.layoutId;
         FuelCombination combo = fuelData.GetCombination(layoutId, modelId);
 
-        if (data.LapTimePreviousSelf > 0)
-            combo.AddLapTime(data.LapTimePreviousSelf);
+        if (data.lapTimePreviousSelf > 0)
+            combo.AddLapTime(data.lapTimePreviousSelf);
 
-        if (data.FuelUseActive >= 1 && lastFuel != -1)
+        if (data.fuelUseActive >= 1 && lastFuel != -1)
         {
-            combo.AddFuelUsage(lastFuel - data.FuelLeft, data.LapTimePreviousSelf > 0);
+            combo.AddFuelUsage(lastFuel - data.fuelLeft, data.lapTimePreviousSelf > 0);
         }
 
-        if (data.FuelUseActive <= 1)
+        if (data.fuelUseActive <= 1)
             fuelData.Save();
 
-        lastFuel = data.FuelLeft;
+        lastFuel = data.fuelLeft;
     }
 }

@@ -1,4 +1,8 @@
 import {TransformableId, CHECK_FOR_UPDATES, SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, RADAR_BEEP_VOLUME, HUD_LAYOUT, TRANSFORMABLES} from "./consts.js";
+import ChoiceSetting from "./settingComponents/ChoiceSetting.js";
+import SettingComponent from "./settingComponents/SettingComponent.js";
+import SliderSetting from "./settingComponents/SliderSetting.js";
+import ToggleSetting from "./settingComponents/ToggleSetting.js";
 import {enableLogging} from "./utils.js";
 import {ipcRenderer} from 'electron';
 
@@ -38,112 +42,17 @@ const valueChangeCallbacks: {[key: string] : (value: any) => void} = {
 };
 
 
-function choiceValue(choiceSetting: HTMLDivElement, save: boolean = true) {
-  const key = choiceSetting.dataset.key;
 
-  const callback = valueChangeCallbacks[key];
 
-  const buttons: NodeListOf<HTMLButtonElement> = choiceSetting.querySelectorAll('button');
+customElements.define(SliderSetting.elementName, SliderSetting)
+customElements.define(ChoiceSetting.elementName, ChoiceSetting)
+customElements.define(ToggleSetting.elementName, ToggleSetting)
 
-  return (val: string) => {
-    save && setSetting([key, val]);
-
-    buttons.forEach((button) => {
-      if (button.value === val) {
-        button.classList.add('selected');
-      } else {
-        button.classList.remove('selected');
-      }
-    });
-
-    if (typeof callback === 'function') {
-      callback(val);
-    }
-  };
-}
-
-function sliderValue(sliderSetting: HTMLDivElement) {
-  const key = sliderSetting.dataset.key;
-
-  const callback = valueChangeCallbacks[key];
-  
-  const sliderInput: HTMLInputElement = sliderSetting.querySelector('input[type=range]');
-  const numberInput: HTMLInputElement = sliderSetting.querySelector('input[type=number]');
-
-  const min = parseFloat(sliderInput.min);
-  const max = parseFloat(sliderInput.max);
-
-  let lastVal = sliderInput.value;
-
-  return (val: string) => {
-    if (val === lastVal) return;
-  
-    if (parseFloat(val) < min) val = min.toString();
-    if (parseFloat(val) > max) val = max.toString();
-
-    lastVal = val;
-
-    setSetting([key, val]);
-
-    sliderInput.value = val;
-    numberInput.value = val;
-
-    if (typeof callback === 'function') {
-      callback(val);
-    }
-  };
-}
-
-function toggleValue(toggleSetting: HTMLDivElement) {
-  const key = toggleSetting.dataset.key;
-
-  const callback = valueChangeCallbacks[key];
-
-  const toggleInput: HTMLInputElement = toggleSetting.querySelector('input[type=checkbox]');
-
-  return (val: boolean) => {
-    toggleInput.checked = val;
-    setSetting([key, val]);
-
-    if (typeof callback === 'function') {
-      callback(val);
-    }
-  };
-}
 
 let domContentLoaded = false;
 document.addEventListener('DOMContentLoaded', () => {
   domContentLoaded = true;
-
-  const choices: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .choices');
-  choices.forEach((choice) => {
-    const buttons: NodeListOf<HTMLButtonElement> = choice.querySelectorAll('button');
-
-    const choiceFunc = choiceValue(choice);
-    buttons.forEach((button) => {
-      button.addEventListener('click', () => choiceFunc(button.value));
-    });
-  });
-
-  const sliders: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .slider-setting');
-  sliders.forEach((slider) => {
-    const sliderInput: HTMLInputElement = slider.querySelector('input[type=range]');
-    const numberInput: HTMLInputElement = slider.querySelector('input[type=number]');
-
-    const sliderFunc = sliderValue(slider);
-    sliderInput.addEventListener('input', () => sliderFunc(sliderInput.value));
-    numberInput.addEventListener('input', () => sliderFunc(numberInput.value));
-  });
-
-  const toggles: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .toggle');
-  toggles.forEach((toggle) => {
-    const toggleInput: HTMLInputElement = toggle.querySelector('input[type=checkbox]');
-
-    const toggleFunc = toggleValue(toggle);
-    toggleInput.addEventListener('input', () => toggleFunc(toggleInput.checked));
-  });
 });
-
 
 function loadSettings(newSettings: Settings = null) {
   if (newSettings === null) {
@@ -162,51 +71,7 @@ function loadSettings(newSettings: Settings = null) {
       }
     }
 
-    const choices: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .choices');
-    choices.forEach((choice) => {
-      const choiceFunc = choiceValue(choice);
-
-      const key = choice.dataset.key;
-      if (key in settings) {
-        const val = (settings as any)[key];
-        choiceFunc(val);
-      } else {
-        const defaultButton: HTMLButtonElement = choice.querySelector('button.selected');
-        if (defaultButton) {
-          choiceFunc(defaultButton.value);
-        }
-      }
-    });
-
-    const sliders: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .slider-setting');
-    sliders.forEach((slider) => {
-      const sliderInput: HTMLInputElement = slider.querySelector('input[type=range]');
-
-      const sliderFunc = sliderValue(slider);
-
-      const key = slider.dataset.key;
-      if (key in settings) {
-        const val = (settings as any)[key];
-        sliderFunc(val);
-      } else {
-        sliderFunc(sliderInput.value);
-      }
-    });
-
-    const toggles: NodeListOf<HTMLDivElement> = document.querySelectorAll('div .toggle');
-    toggles.forEach((toggle) => {
-      const toggleInput: HTMLInputElement = toggle.querySelector('input[type=checkbox]');
-
-      const toggleFunc = toggleValue(toggle);
-
-      const key = toggle.dataset.key;
-      if (key in settings) {
-        const val = (settings as any)[key];
-        toggleFunc(val);
-      } else {
-        toggleFunc(toggleInput.checked);
-      }
-    });
+    SettingComponent.initialize(settings, valueChangeCallbacks);
   }
 
   if (domContentLoaded) {
@@ -366,8 +231,3 @@ function processHudLayout(hudLayout: HudLayout) {
     }
   }
 }
-
-function setSetting(arg: [string, any]) {
-  ipcRenderer.send('set-setting', arg);
-}
-

@@ -78,12 +78,11 @@ namespace R3E
         {
             try
             {
-                _file = MemoryMappedFile.OpenExisting(Constant.SharedMemoryName);
+                _file = MemoryMappedFile.OpenExisting(Constant.sharedMemoryName);
                 return true;
             }
-            catch (FileNotFoundException e)
+            catch
             {
-                // ReHUD.Startup.logger.Error("Error mapping shared memory", e);
                 return false;
             }
         }

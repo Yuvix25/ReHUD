@@ -62,8 +62,8 @@
   --suspension-damage-color: white;
 
 
-  --relative-view-height: 236px;
-
+  --relative-view-height: 237px;
+  --relative-view-row-height: 27px;
 
   --delta-positive: rgb(255, 0, 0);
   --delta-negative: rgb(0, 255, 0);
@@ -71,9 +71,9 @@
   --delta-color: var(--delta-neutral);
 
 
-  --sector-time-gray: rgb(127, 127, 127);
-  --sector-time-green: rgb(0, 255, 0);
-  --sector-time-purple: rgb(202, 0, 202);
+  --time-gray: rgb(157, 157, 157);
+  --time-green: rgb(0, 255, 0);
+  --time-purple: rgb(202, 0, 202);
 }
 
 
@@ -310,7 +310,6 @@ he#basic td {
 .wheel .brake-temp div {
   width: 10px;
   height: 40px;
-  margin-left: -1px;
   border: 1px solid black;
   border-radius: 5px;
 }
@@ -613,10 +612,14 @@ progress#revs::-webkit-progress-value {
 
 #relative-viewer table {
   table-layout: fixed;
-  height: 237px;
+  height: var(--relative-view-height);
   border-spacing: 0 2px;
   border-collapse: separate;
   min-width: 400px;
+}
+
+#relative-viewer tr:not(.last-row) {
+  height: var(--relative-view-row-height);
 }
 
 #relative-viewer td {
@@ -646,6 +649,16 @@ progress#revs::-webkit-progress-value {
 #relative-viewer td.car-name span {
   color: gray;
   font-weight: 300;
+}
+
+#relative-viewer td.ranked span {
+  border-radius: 5px;
+  background-color: white;
+  color: black;
+  text-shadow: none;
+  padding-right: 3px;
+  padding-left: 3px;
+  font-weight: 500;
 }
 
 #relative-viewer td.time-delta span {
@@ -790,7 +803,7 @@ progress#revs::-webkit-progress-value {
 
 #sector-times span {
   font-size: 20px;
-  background-color: var(--sector-time-gray);
+  background-color: var(--time-gray);
   width: 80px !important;
   height: 100%;
   text-align: center;
@@ -799,4 +812,42 @@ progress#revs::-webkit-progress-value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+
+
+
+
+#position-bar {
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px;
+
+  height: 90px;
+  background-color: rgba(35, 35, 35, 0.45);
+}
+
+#position-bar .position-bar-driver {
+  flex: 1 1 0px;
+
+  height: 100%;
+
+  justify-content: space-between;
+  align-items: center;
+}
+
+#position-bar .position-bar-driver div.col {
+  justify-content: space-between;
+  align-items: center;
+  height: calc(100% - 10px);
+  width: 150px;
+}
+
+.position-bar-driver-position {
+  background-color: rgba(0, 0, 0, 0.4);
+  line-height: 90px;
+  padding-left: 7px;
+  padding-right: 7px;
+  margin: 0 !important;
+  width: 18px !important; /* 18px + 2 * 7px = 32px */
 }

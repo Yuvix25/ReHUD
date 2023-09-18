@@ -196,7 +196,7 @@ export function validOrDefault(val: any, defaultVal: any) {
 }
 
 export function valueIsValid(val: number) {
-    return val != -1;
+    return val != -1 && val != null;
 }
 
 export function allValuesAreValid(...values: number[]) {

@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "electron": "^25.2.0",
+    "electron": ">=25.8.1",
     "fs": "^0.0.1-security"
   },
   "devDependencies": {

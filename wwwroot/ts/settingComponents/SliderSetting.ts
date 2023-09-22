@@ -50,6 +50,8 @@ export default class SliderSetting extends SettingComponent {
             this.appendChild(label);
             this.appendChild(this.slider);
             this.appendChild(this.numberInput);
+
+            this.initializationDone();
         });
     }
 

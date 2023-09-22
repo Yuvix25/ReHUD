@@ -39,18 +39,8 @@ public class LapPointsCombination
         }
     }
 
-    public string Serialize(string? uid)
+    public string Serialize()
     {
-        if (uid != null)
-        {
-            return JsonConvert.SerializeObject(new
-            {
-                bestLapTime,
-                lapPoints,
-                pointsPerMeter,
-                uid
-            });
-        }
         return JsonConvert.SerializeObject(new
         {
             bestLapTime,

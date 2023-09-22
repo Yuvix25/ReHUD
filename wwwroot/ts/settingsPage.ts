@@ -11,6 +11,9 @@ enableLogging(ipcRenderer, 'settingsPage.js');
 
 type Writeable<T> = {-readonly [P in keyof T]: T[P]};
 
+/**
+ * format: [left, top, scale, shown]
+ */
 export type HudLayout = {
   [key in Writeable<TransformableId>]?: [number, number, number, boolean];
 };

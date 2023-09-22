@@ -26,18 +26,14 @@ namespace R3E
         /// </summary>
         internal static Tuple<int, double> GetEstimatedLapCount(Data.Shared data, FuelCombination combination)
         {
-            double fraction = data.lapDistanceFraction == -1 ? 0 : data.lapDistanceFraction;
+            double fraction = data.lapDistanceFraction;
 
-            double leaderFraction;
-            int leaderCompletedLaps;
+            double leaderFraction = fraction;
+            double leaderCurrentLaptime = data.lapTimeCurrentSelf;
+            int leaderCompletedLaps = data.completedLaps;
 
             Data.DriverData? leader_ = GetLeader(data);
-            if (leader_ == null)
-            {
-                leaderFraction = fraction;
-                leaderCompletedLaps = data.completedLaps;
-            }
-            else
+            if (leader_ != null)
             {
                 Data.DriverData leader = leader_.Value;
                 if (leader.finishStatus == 1)
@@ -45,16 +41,21 @@ namespace R3E
                     return new Tuple<int, double>(data.completedLaps + 1, 1 - fraction);
                 }
 
-                leaderFraction = leader.lapDistance == -1 ? fraction : leader.lapDistance / data.layoutLength;
-                leaderCompletedLaps = GetLeader(data)?.completedLaps ?? 0;
-                if (leaderCompletedLaps == -1)
+                if (leader.completedLaps != -1)
                 {
-                    leaderCompletedLaps = data.completedLaps;
+                    leaderCompletedLaps = leader.completedLaps;
+                }
+
+                leaderCurrentLaptime = leader.lapTimeCurrentSelf;
+                leaderFraction = -1;
+                if (leader.lapDistance != -1 && data.layoutLength != -1)
+                {
+                    leaderFraction = leader.lapDistance / data.layoutLength;
                 }
             }
 
 
-            if (leaderFraction == -1 || leaderCompletedLaps == -1)
+            if (leaderCompletedLaps == -1 || (leaderCompletedLaps == -1 && leaderFraction == -1))
             {
                 return new Tuple<int, double>(-1, -1);
             }
@@ -85,7 +86,14 @@ namespace R3E
                     }
                 }
 
-                res = (int)Math.Ceiling(sessionTime / referenceLap + leaderFraction);
+                if (leaderCurrentLaptime != -1)
+                {
+                    res = (int)Math.Ceiling((sessionTime + leaderCurrentLaptime) / referenceLap);
+                }
+                else
+                {
+                    res = (int)Math.Ceiling(sessionTime / referenceLap + leaderFraction);
+                }
             }
             else
             {

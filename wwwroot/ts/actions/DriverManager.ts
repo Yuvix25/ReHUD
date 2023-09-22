@@ -9,17 +9,13 @@ export default class DriverManager extends Action {
 
     public drivers: {[uid: string]: Driver} = {};
 
-    constructor(executeEvery: number = null) {
-        super(executeEvery);
+    constructor() {
+        super(0);
 
         ipcRenderer.on('load-best-lap', (_e, data: any) => {
             data = JSON.parse(data);
 
-            const uid = data.uid;
-            const driver = this.drivers[uid];
-            if (driver != undefined) {
-                driver.loadBestLap(data.bestLapTime, data.lapPoints, data.pointsPerMeter);
-            }
+            Driver.loadBestLap(data.bestLapTime, data.lapPoints, data.pointsPerMeter);
         });
     }
 
@@ -92,11 +88,11 @@ export default class DriverManager extends Action {
         if (allDrivers == null || place == null || allDrivers.length === 0)
             return;
 
-        const existingUids: Set<String> = new Set();
+        const existingUids: Set<string> = new Set();
         const classes: number[] = [];
 
-        for (let i = 0; i < allDrivers.length; i++) {
-            const driver = allDrivers[i];
+        for (const element of allDrivers) {
+            const driver = element;
 
             const classIndex = driver.driverInfo.classPerformanceIndex;
             if (!classes.includes(classIndex))
@@ -115,16 +111,15 @@ export default class DriverManager extends Action {
                 const shouldLoad = this.drivers[uid].setAsMainDriver();
                 
                 if (shouldLoad) {
-                    ipcRenderer.send('load-best-lap', [uid, data.layoutId, driver.driverInfo.classId]);
+                    ipcRenderer.send('load-best-lap', [data.layoutId, driver.driverInfo.classId]);
                 }
             }
 
-            if (driver.inPitlane) {
+            if (driver.inPitlane)
                 this.drivers[uid].clearTempData();
-            } else {
-                if (!driver.currentLapValid)
-                    this.drivers[uid].setLapInvalid();
-            }
+            else if (!driver.currentLapValid)
+                this.drivers[uid].setLapInvalid();
+
             this.drivers[uid].addDeltaPoint(driver.lapDistance, driver.completedLaps);
         }
 

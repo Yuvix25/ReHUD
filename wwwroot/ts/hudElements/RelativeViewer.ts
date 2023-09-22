@@ -1,4 +1,4 @@
-import HudElement, {HUDElementOptions, Hide} from "./HudElement.js";
+import HudElement, {Hide} from "./HudElement.js";
 import {ESessionPhase} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
 import {RELATIVE_LENGTH, halfLengthTop, halfLengthBottom, insertCell, NA, nameFormat, getClassColors} from "../consts.js";
@@ -12,13 +12,9 @@ export default class RelativeViewer extends HudElement {
     private driverManager: DriverManager = null;
     private rankedData: RankedData = null;
 
-    constructor(options: HUDElementOptions) {
-        super(options);
-    }
-
     protected override onHud(): void {
-        this.driverManager = this.hud.namedActions['driverManager'] as DriverManager;
-        this.rankedData = this.hud.namedEventListeners['rankedData'] as RankedData;
+        this.driverManager = this.hud.driverManagerService;
+        this.rankedData = this.hud.rankedDataService;
     }
 
     protected override render(allDrivers: IExtendedDriverData[], place: number, phase: ESessionPhase): null | Hide {
@@ -38,19 +34,14 @@ export default class RelativeViewer extends HudElement {
 
         relative.style.display = 'block';
 
-        const existingUids = new Set();
         const classColors = getClassColors(allDrivers);
 
         let myUid: string = null;
         let mySharedMemory: IExtendedDriverData = null;
         let myDriver: Driver = null;
-        for (let i = 0; i < allDrivers.length; i++) {
-            const driver = allDrivers[i];
-
+        for (const driver of allDrivers) {
             const uid = getUid(driver.driverInfo);
             driver.driverInfo.uid = uid;
-
-            existingUids.add(uid);
 
             if (!(uid in this.driverManager.drivers)) {
                 continue;
@@ -66,34 +57,29 @@ export default class RelativeViewer extends HudElement {
         if (myUid == null || mySharedMemory == null || myDriver == null)
             return this.hide();
 
-        if (driverCount <= 5)
-            this.root.style.setProperty('--relative-view-row-height', '40px');
-        else
-            this.root.style.setProperty('--relative-view-row-height', 'auto');
-
         const deltasFront: Array<[IExtendedDriverData, number, Driver?]> = [];
         const deltasBehind: Array<[IExtendedDriverData, number, Driver]> = [];
-        for (let i = 0; i < allDrivers.length; i++) {
-            if (allDrivers[i] === mySharedMemory || allDrivers[i].inPitlane)
+        for (const driver of allDrivers) {
+            if (driver === mySharedMemory)
                 continue;
 
-            const uid = allDrivers[i].driverInfo.uid;
+            const uid = driver.driverInfo.uid;
 
             const deltaAhead = myDriver.getDeltaToDriverAhead(this.driverManager.drivers[uid]);
             const deltaBehind = myDriver.getDeltaToDriverBehind(this.driverManager.drivers[uid]);
             if (deltaAhead == null && deltaBehind == null) {
                 if (myDriver.getDistanceToDriverAhead(this.driverManager.drivers[uid]) < myDriver.getDistanceToDriverBehind(this.driverManager.drivers[uid]))
-                    deltasFront.push([allDrivers[i], null, this.driverManager.drivers[uid]]);
+                    deltasFront.push([driver, null, this.driverManager.drivers[uid]]);
                 else
-                    deltasBehind.push([allDrivers[i], null, this.driverManager.drivers[uid]]);
+                    deltasBehind.push([driver, null, this.driverManager.drivers[uid]]);
             } else if (deltaAhead == null)
-                deltasBehind.push([allDrivers[i], deltaBehind, this.driverManager.drivers[uid]]);
+                deltasBehind.push([driver, deltaBehind, this.driverManager.drivers[uid]]);
             else if (deltaBehind == null)
-                deltasFront.push([allDrivers[i], -deltaAhead, this.driverManager.drivers[uid]]);
+                deltasFront.push([driver, -deltaAhead, this.driverManager.drivers[uid]]);
             else if (deltaAhead < deltaBehind)
-                deltasFront.push([allDrivers[i], -deltaAhead, this.driverManager.drivers[uid]]);
+                deltasFront.push([driver, -deltaAhead, this.driverManager.drivers[uid]]);
             else
-                deltasBehind.push([allDrivers[i], deltaBehind, this.driverManager.drivers[uid]]);
+                deltasBehind.push([driver, deltaBehind, this.driverManager.drivers[uid]]);
         }
 
         deltasFront.sort((a, b) => {
@@ -104,8 +90,6 @@ export default class RelativeViewer extends HudElement {
         });
 
         deltasFront.push([mySharedMemory, 0]);
-
-        driverCount = deltasFront.length + deltasBehind.length;
 
         let start = 0, end = RELATIVE_LENGTH;
         if (deltasFront.length - 1 >= halfLengthTop && deltasBehind.length >= halfLengthBottom) {
@@ -120,6 +104,12 @@ export default class RelativeViewer extends HudElement {
         }
 
         const mergedDeltas = [...deltasFront, ...deltasBehind];
+
+        if (mergedDeltas.length <= 5)
+            this.root.style.setProperty('--relative-view-row-height', '40px');
+        else
+            this.root.style.setProperty('--relative-view-row-height', 'auto');
+
         for (let i = start; i < end; i++) {
             if (mergedDeltas[i] == undefined)
                 break;

@@ -33,8 +33,7 @@ export default class SectorTimes extends HudElement {
         }
 
         if (selfCurrent == null || !selfCurrent.some(valueIsValid)) {
-            for (let i = 0; i < sectorElements.length; i++) {
-                const sectorElement = sectorElements[i];
+            for (const sectorElement of sectorElements) {
                 if (!(sectorElement instanceof HTMLElement))
                     continue;
 

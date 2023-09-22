@@ -36,17 +36,12 @@ import Delta from './hudElements/Delta.js';
 import SettingsValue from './SettingsValue.js';
 import {ELEMENT_SCALE_POWER, IExtendedShared, TRANSFORMABLES, TransformableId} from './consts.js';
 import TractionControl from './hudElements/TractionControl.js';
-import DriverManager from './actions/DriverManager.js';
 import PositionBar from './hudElements/PositionBar.js';
-import RankedData from './actions/RankedData.js';
+import CurrentLaptime from './hudElements/CurrentLaptime.js';
 
 enableLogging(ipcRenderer, 'index.js');
 
-const hud = new Hud({
-    rankedData: new RankedData(),
-}, {
-    driverManager: new DriverManager(0),
-}, [
+const hud = new Hud([
     new CarSpeed({elementId: 'speed', renderEvery: 80}),
     new Gear({elementId: 'gear', renderEvery: 50}),
     new Assists({elementId: 'assist', renderEvery: 0}),
@@ -77,6 +72,7 @@ const hud = new Hud({
     new SessionLastLap({elementId: 'last-lap-session', renderEvery: 200}),
     new SessionBestLap({elementId: 'best-lap-session', renderEvery: 200}),
     new Position({containerId: 'position-container', elementId: 'position', renderEvery: 100}),
+    new CurrentLaptime({elementId: 'current-laptime', renderEvery: 50}),
     new IncidentPoints({containerId: 'incident-points-container', elementId: 'incident-points', renderEvery: 100}),
 
     new Radar({elementId: 'radar', renderEvery: 0}),
@@ -88,7 +84,6 @@ const hud = new Hud({
 
 
 let layoutLoaded = false;
-// {id: [left, top, scale, shown]}
 let LAYOUT: HudLayout = {};
 
 
@@ -125,7 +120,7 @@ function elementToggled(elementId: TransformableId, shown: boolean) {
         return;
     }
 
-    if (shown && LAYOUT[elementId]?.[3] == false) {
+    if (shown && LAYOUT[elementId]?.[3] === false) {
         delete LAYOUT[elementId];
     } else {
         if (LAYOUT[elementId] == undefined)

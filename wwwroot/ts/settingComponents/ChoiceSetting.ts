@@ -25,6 +25,8 @@ export default class ChoiceSetting extends SettingComponent {
     override connected() {
         requestAnimationFrame(() => {
             this.loadChoices();
+
+            this.initializationDone();
         });
     }
 

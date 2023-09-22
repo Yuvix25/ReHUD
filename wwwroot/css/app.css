@@ -120,7 +120,6 @@ table {
   overflow: hidden;
 
   justify-content: space-between;
-  height: max-content;
 }
 
 he {
@@ -589,6 +588,7 @@ progress#revs::-webkit-progress-value {
 
 #damage progress {
   height: 13px;
+  filter: drop-shadow(0 0 5px black);
 }
 
 #engine-damage progress::-webkit-progress-value {

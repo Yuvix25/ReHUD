@@ -35,31 +35,36 @@
 
         <div id="top-group" class="row sb">
             <div id="top-left-group" class="row">
-                <div class="container hud-element" id="position-container">
+                <div class="container" id="position-container">
                     <span id="position" class="value"></span>
                     <span class="label">Position</span>
                 </div>
 
-                <div class="container hud-element" id="estimated-laps-left-container">
+                <div class="container" id="estimated-laps-left-container">
                     <span id="estimated-laps-left" class="value"></span>
                     <span class="label">Estimated Laps Left</span>
+                </div>
+
+                <div class="container" id="current-laptime-container">
+                    <span id="current-laptime" class="value"></span>
+                    <span class="label">Current Laptime</span>
                 </div>
             </div>
 
             <div id="top-right-group" class="row">
-                <div class="container hud-element" id="last-lap-session-container">
+                <div class="container" id="last-lap-session-container">
                     <span id="last-lap-session" class="value"></span>
                     <span class="label">Last Lap</span>
                 </div>
-                <div class="container hud-element" id="best-lap-session-container">
+                <div class="container" id="best-lap-session-container">
                     <span id="best-lap-session" class="value"></span>
                     <span class="label">Best Lap</span>
                 </div>
-                <div class="container hud-element" id="incident-points-container">
+                <div class="container" id="incident-points-container">
                     <span id="incident-points" class="value"></span>
                     <span class="label">Incident Points</span>
                 </div>
-                <div class="container hud-element" id="time-left-container">
+                <div class="container" id="time-left-container">
                     <div class="row" id="time-left">
                         <span id="time-left-hours" class="value"></span>
                         <span id="time-left-minutes" class="value"></span>
@@ -184,7 +189,7 @@
                 </tr>
             </table>
 
-            <div class="row hud-element" id="fuel-data">
+            <div class="row" id="fuel-data">
                 <he class="col sb">
                     <span></span>
                     <span id="fuel-left"></span>
@@ -241,7 +246,7 @@
                 </table>
             </he>
 
-            <he id="driver-inputs" class="col hud-element">
+            <he id="driver-inputs" class="col">
                 <table>
                     <tr id="input-numbers">
                         <td><span id="clutch-input"></span></td>
@@ -261,7 +266,7 @@
             </he>
 
 
-            <he class="col hud-element" id="basic">
+            <he class="col" id="basic">
                 <table>
                     <tr>
                         <td><span id="engine-map"></span></td>
@@ -284,14 +289,14 @@
     </div>
 </div>
 
-<div id="delta" class="col center-items hud-element">
+<div id="delta" class="col center-items">
     <span id="delta-number"></span>
     <div id="delta-bar-container">
         <div id="delta-bar"></div>
     </div>
 </div>
 
-<div id="sector-times" class="row hud-element">
+<div id="sector-times" class="row">
     <span id="sector-1"></span>
     <span id="sector-2"></span>
     <span id="sector-3"></span>

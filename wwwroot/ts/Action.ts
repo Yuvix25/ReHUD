@@ -22,4 +22,8 @@ export default abstract class Action extends EventListener {
     }
 
     abstract execute(data: IExtendedShared): void;
+
+    public override toString(): string {
+        return this.constructor.name;
+    }
 }

@@ -104,6 +104,8 @@ export const TRANSFORMABLES = {
     'position-container': 'Position',
     'estimated-laps-left-container': 'Estimated Laps Left',
 
+    'current-laptime-container': 'Current Laptime',
+
     'last-lap-session-container': 'Last Laptime',
     'best-lap-session-container': 'Best Laptime',
     'incident-points-container': 'Incident Points',

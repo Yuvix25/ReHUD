@@ -122,7 +122,7 @@ export default abstract class HudElement extends Action {
     private getInputs(data: any): any[] {
         const values = [];
         for (const valueName of this.inputKeys) {
-            if (valueName[0] === '+') {
+            if (valueName.startsWith('+')) {
                 values.push(data[valueName.slice(1)]);
                 continue;
             }

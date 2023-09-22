@@ -21,7 +21,7 @@ export default class DriverInputs extends HudElement {
         tRaw = DriverInputs.rawOrReal(tRaw, t);
         bRaw = DriverInputs.rawOrReal(bRaw, b);
         cRaw = DriverInputs.rawOrReal(cRaw, c);
-        sRaw = sRaw != undefined ? sRaw : 0;
+        sRaw = sRaw ?? 0;
         sRange = valueIsValid(sRange) ? sRange : 360;
 
         throttle.innerText = `${Math.round(tRaw * 100)}`;

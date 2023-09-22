@@ -64,6 +64,7 @@ export class Driver {
   static positionJumpThreshold = 150; // meters
 
   static mainDriver: Driver = null;
+  static onMainDriverQeue: Array<(driver: Driver) => void> = [];
 
   userId: string;
   trackLength: number;
@@ -101,16 +102,32 @@ export class Driver {
 
   /**
    * Sets the main driver (the one currently being viewed)
-   * @return Whether an attempt should be made to load a saved lap
    */
   static setMainDriver(driver: Driver) {
     Driver.mainDriver = driver;
+
+    for (const callback of Driver.onMainDriverQeue) {
+      try {
+        callback(driver);
+      } catch (e) {
+        console.error('Error while executing onMainDriver callback', e);
+      }
+    }
+    Driver.onMainDriverQeue = [];
 
     if (!driver.attemptedLoadingBestLap && (driver.bestLap == null || !driver.bestLapTimeValid)) {
       driver.attemptedLoadingBestLap = true;
       return true;
     }
     return false;
+  }
+
+  static onMainDriver(callback: (driver: Driver) => void) {
+    if (Driver.mainDriver != null) {
+      callback(Driver.mainDriver);
+      return;
+    }
+    Driver.onMainDriverQeue.push(callback);
   }
 
   /**
@@ -120,23 +137,25 @@ export class Driver {
     return Driver.setMainDriver(this);
   }
 
-  loadBestLap(bestLapTime: number, points: number[], pointsPerMeter: number) {
-    let newPoints = this.newPointArray();
-    if (pointsPerMeter > Driver.pointsPerMeter) {
-      for (let i = 0; i < newPoints.length; i++) {
-        newPoints[i] = points[Math.floor(i / pointsPerMeter * Driver.pointsPerMeter)];
+  static loadBestLap(bestLapTime: number, points: number[], pointsPerMeter: number) {
+    this.onMainDriver((driver) => {
+      let newPoints = driver.newPointArray();
+      if (pointsPerMeter > Driver.pointsPerMeter) {
+        for (let i = 0; i < newPoints.length; i++) {
+          newPoints[i] = points[Math.floor(i / pointsPerMeter * Driver.pointsPerMeter)];
+        }
+      } else {
+        for (let i = 0; i < points.length; i++) {
+          newPoints[Math.floor(i / Driver.pointsPerMeter * pointsPerMeter)] = points[i];
+        }
       }
-    } else {
-      for (let i = 0; i < points.length; i++) {
-        newPoints[Math.floor(i / Driver.pointsPerMeter * pointsPerMeter)] = points[i];
-      }
-    }
 
-    this.bestLapTime = bestLapTime;
-    this.bestLap = newPoints;
-    this.bestLapTimeValid = true;
+      driver.bestLapTime = bestLapTime;
+      driver.bestLap = newPoints;
+      driver.bestLapTimeValid = true;
 
-    console.log(`Loaded saved best: ${this.bestLapTime}`);
+      console.log(`Loaded saved best: ${driver.bestLapTime}`);
+    });
   }
 
   /**
@@ -394,36 +413,6 @@ export function getUid(driverInfo: IDriverInfo): string {
     engineType: driverInfo.engineType,
   };
   return JSON.stringify(obj);
-}
-
-/**
- * Calculates the standard deviation of the given values.
- */
-export function standardDeviation(values: number[]): number {
-  var avg = average(values);
-
-  var squareDiffs = values.map(function (value) {
-    var diff = value - avg;
-    var sqrDiff = diff * diff;
-    return sqrDiff;
-  });
-
-  var avgSquareDiff = average(squareDiffs);
-
-  var stdDev = Math.sqrt(avgSquareDiff);
-  return stdDev;
-}
-
-/**
- * Average of the given values.
- */
-function average(data: number[]): number {
-  var sum = data.reduce(function (sum, value) {
-    return sum + value;
-  }, 0);
-
-  var avg = sum / data.length;
-  return avg;
 }
 
 

@@ -13,7 +13,7 @@ namespace ReHUD;
 
 public class Startup
 {
-    public static ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
+    public static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     FileAppender? rootAppender;
     string? logFilePath;
 
@@ -96,7 +96,7 @@ public class Startup
     private readonly LapPointsData lapPointsData = new();
     private readonly Settings settings = new();
 
-    private async Task<BrowserWindow> CreateWindowAsync(BrowserWindowOptions options, string loadUrl = "/")
+    private static async Task<BrowserWindow> CreateWindowAsync(BrowserWindowOptions options, string loadUrl = "/")
     {
         loadUrl = "http://localhost:" + BridgeSettings.WebPort + loadUrl;
         return await Electron.WindowManager.CreateWindowAsync(options, loadUrl);
@@ -215,16 +215,13 @@ public class Startup
         await Electron.IpcMain.On("load-best-lap", (args) =>
         {
             Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)args;
-            string? uid = (string?)array[0];
-            if (uid == null)
-                return;
-            int layoutId = (int)array[1];
-            int classId = (int)array[2];
+            int layoutId = (int)array[0];
+            int classId = (int)array[1];
 
             LapPointsCombination? combination = lapPointsData.GetCombination(layoutId, classId, false);
             if (combination == null)
                 return;
-            Electron.IpcMain.Send(mainWindow, "load-best-lap", combination.Serialize(uid));
+            Electron.IpcMain.Send(mainWindow, "load-best-lap", combination.Serialize());
         });
 
         RunLoop(mainWindow, env);
@@ -372,8 +369,8 @@ public class Startup
         string remoteVersion = remoteVersionText.Split('v').Last().Split('-').First();
         currentVersion = currentVersion.Split('-').First();
 
-        Version current = new Version(currentVersion);
-        Version remote = new Version(remoteVersion);
+        Version current = new(currentVersion);
+        Version remote = new(remoteVersion);
 
         if (current < remote)
         {
@@ -401,7 +398,7 @@ public class Startup
         };
         string? redirectedUrl = null;
 
-        using (HttpClient client = new HttpClient(handler))
+        using (HttpClient client = new(handler))
         using (HttpResponseMessage response = await client.GetAsync(url))
         using (HttpContent content = response.Content)
         {
@@ -420,19 +417,19 @@ public class Startup
     }
 
 
-    private async Task<MessageBoxResult> ShowMessageBox(BrowserWindow window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
+    private static async Task<MessageBoxResult> ShowMessageBox(BrowserWindow window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
     {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
         return await Electron.Dialog.ShowMessageBoxAsync(window, options);
     }
 
-    private async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
+    private static async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
     {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
         return await Electron.Dialog.ShowMessageBoxAsync(options);
     }
 
-    private async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error, string[]? buttons = null)
+    private static async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error, string[]? buttons = null)
     {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
         if (buttons != null)
@@ -440,11 +437,13 @@ public class Startup
         return await Electron.Dialog.ShowMessageBoxAsync(options);
     }
 
-    private MessageBoxOptions PrepareMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
+    private static MessageBoxOptions PrepareMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
     {
-        MessageBoxOptions options = new MessageBoxOptions(message);
-        options.Type = type;
-        options.Title = title;
+        MessageBoxOptions options = new(message)
+        {
+            Type = type,
+            Title = title
+        };
 
         switch (type)
         {
@@ -488,96 +487,96 @@ public class Startup
     {
         fuelData.Load();
 
-        using (var memory = new SharedMemory())
+        using var memory = new SharedMemory();
+
+
+        Thread.Sleep(1000);
+        if (env.IsDevelopment())
+            Electron.IpcMain.Send(window, "show");
+
+        int iter = 0;
+        ExtraData extraData = new()
         {
-            Thread.Sleep(1000);
-            if (env.IsDevelopment())
+            forceUpdateAll = false
+        };
+        Thread thread = new(() => memory.Run((data) =>
+        {
+            if (data.fuelUseActive != 1 && !userDataClearedForMultiplier)
+            {
+                userDataClearedForMultiplier = true;
+                fuelData.Save();
+                fuelData.Clear();
+            }
+            else if (data.fuelUseActive == 1 && userDataClearedForMultiplier)
+            {
+                userDataClearedForMultiplier = false;
+                fuelData.Clear();
+                fuelData.Load();
+            }
+
+            extraData.rawData = data;
+            extraData.rawData.driverData = extraData.rawData.driverData.Take(data.numCars).ToArray();
+            if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % (1000 / SharedMemory.timeInterval.Milliseconds) * 10 == 0)
+            {
+                FuelCombination combination = fuelData.GetCombination(data.layoutId, data.vehicleInfo.modelId);
+                extraData.fuelPerLap = combination.GetAverageFuelUsage();
+                extraData.fuelLastLap = combination.GetLastLapFuelUsage();
+                extraData.averageLapTime = combination.GetAverageLapTime();
+                extraData.bestLapTime = combination.GetBestLapTime();
+                Tuple<int, double> lapData = Utilities.GetEstimatedLapCount(data, combination);
+                extraData.estimatedRaceLapCount = lapData.Item1;
+                extraData.lapsUntilFinish = lapData.Item2;
+                iter = 0;
+            }
+            iter++;
+
+            try
+            {
+                SaveData(data);
+            }
+            catch (Exception e)
+            {
+                logger.Error("Error saving data", e);
+            }
+
+            lastLap = data.completedLaps;
+            bool notDriving = data.gameInMenus == 1 || (data.gamePaused == 1 && data.gameInReplay == 0) || data.sessionType == -1;
+            if (enteredEditMode)
+            {
+                extraData.forceUpdateAll = true;
+                Electron.IpcMain.Send(window, "data", JsonConvert.SerializeObject(extraData));
+                extraData.forceUpdateAll = false;
+                enteredEditMode = false;
+            }
+            else
+            {
+                Electron.IpcMain.Send(window, "data", JsonConvert.SerializeObject(extraData));
+            }
+
+            if (notDriving)
+            {
+                if (!env.IsDevelopment() && window != null && (isShown ?? true))
+                {
+                    Electron.IpcMain.Send(window, "hide");
+                    isShown = false;
+                }
+
+                recordingData = false;
+
+                if (data.sessionType == -1)
+                {
+                    lastLap = -1;
+                    lastFuel = -1;
+                }
+            }
+            else if (window != null && !(isShown ?? false))
+            {
                 Electron.IpcMain.Send(window, "show");
-
-            int iter = 0;
-            ExtraData extraData = new ExtraData
-            {
-                forceUpdateAll = false
-            };
-            Thread thread = new Thread(() => memory.Run((data) =>
-            {
-                if (data.fuelUseActive != 1 && !userDataClearedForMultiplier)
-                {
-                    userDataClearedForMultiplier = true;
-                    fuelData.Save();
-                    fuelData.Clear();
-                }
-                else if (data.fuelUseActive == 1 && userDataClearedForMultiplier)
-                {
-                    userDataClearedForMultiplier = false;
-                    fuelData.Clear();
-                    fuelData.Load();
-                }
-
-                extraData.rawData = data;
-                extraData.rawData.driverData = extraData.rawData.driverData.Take(data.numCars).ToArray();
-                if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % (1000 / SharedMemory.timeInterval.Milliseconds) * 10 == 0)
-                {
-                    FuelCombination combination = fuelData.GetCombination(data.layoutId, data.vehicleInfo.modelId);
-                    extraData.fuelPerLap = combination.GetAverageFuelUsage();
-                    extraData.fuelLastLap = combination.GetLastLapFuelUsage();
-                    extraData.averageLapTime = combination.GetAverageLapTime();
-                    extraData.bestLapTime = combination.GetBestLapTime();
-                    Tuple<int, double> lapData = Utilities.GetEstimatedLapCount(data, combination);
-                    extraData.estimatedRaceLapCount = lapData.Item1;
-                    extraData.lapsUntilFinish = lapData.Item2;
-                    iter = 0;
-                }
-                iter++;
-
-                try
-                {
-                    SaveData(data);
-                }
-                catch (Exception e)
-                {
-                    logger.Error("Error saving data", e);
-                }
-
-                lastLap = data.completedLaps;
-                bool notDriving = data.gameInMenus == 1 || (data.gamePaused == 1 && data.gameInReplay == 0) || data.sessionType == -1;
-                if (enteredEditMode)
-                {
-                    extraData.forceUpdateAll = true;
-                    Electron.IpcMain.Send(window, "data", JsonConvert.SerializeObject(extraData));
-                    extraData.forceUpdateAll = false;
-                    enteredEditMode = false;
-                }
-                else
-                {
-                    Electron.IpcMain.Send(window, "data", JsonConvert.SerializeObject(extraData));
-                }
-
-                if (notDriving)
-                {
-                    if (!env.IsDevelopment() && window != null && (isShown ?? true))
-                    {
-                        Electron.IpcMain.Send(window, "hide");
-                        isShown = false;
-                    }
-
-                    recordingData = false;
-
-                    if (data.sessionType == -1)
-                    {
-                        lastLap = -1;
-                        lastFuel = -1;
-                    }
-                }
-                else if (window != null && !(isShown ?? false))
-                {
-                    Electron.IpcMain.Send(window, "show");
-                    window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
-                    isShown = true;
-                }
-            }));
-            thread.Start();
-        }
+                window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
+                isShown = true;
+            }
+        }));
+        thread.Start();
     }
 
 

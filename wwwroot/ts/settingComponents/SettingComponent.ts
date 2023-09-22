@@ -5,6 +5,25 @@ export default abstract class SettingComponent extends HTMLElement {
     protected key: string;
     protected value: any;
 
+    private isInitialized = false;
+    private initializationQueue: [(...args: any[]) => void, any[]][] = [];
+
+    protected initializationDone() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+
+        this.initializationQueue.forEach((callback) => callback[0](...callback[1]));
+        this.initializationQueue = [];
+    }
+
+    protected onInitialization(callback: (...args: any[]) => void, ...args: any[]) {
+        if (this.isInitialized) {
+            callback(...args);
+        } else {
+            this.initializationQueue.push([callback, args]);
+        }
+    }
+
     private static readonly instances: SettingComponent[] = [];
 
     protected callback: (value: any) => void;
@@ -25,8 +44,8 @@ export default abstract class SettingComponent extends HTMLElement {
             if (value === undefined) {
                 value = instance.value;
             }
-            instance.valueChange(value);
-            instance.callback && instance.callback(value);
+            instance.onInitialization(instance.valueChange.bind(instance), value);
+            if (typeof instance.callback === 'function') instance.callback(value);
         });
     }
 
@@ -63,8 +82,10 @@ export default abstract class SettingComponent extends HTMLElement {
     protected abstract valueChange(value: any): void;
 
     protected onValueChange(value: any) {
-        this.valueChange(value);
-        this.saveValue();
-        this.callback && this.callback(value);
+        this.onInitialization((value) => {
+            this.valueChange(value);
+            this.saveValue();
+            if (typeof this.callback === 'function') this.callback(value);
+        }, value);
     }
 }

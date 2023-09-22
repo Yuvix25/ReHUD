@@ -1,6 +1,6 @@
 import HudElement, {Hide} from "./HudElement.js";
 import {POSITION_BAR_SIZE, laptimeFormat, valueIsValid, validNumberOrDefault, nameFormat, getClassColors} from "../consts.js";
-import {ESession, IDriverData, ISectors} from "../r3eTypes.js";
+import {EFinishStatus, ESession, IDriverData, ISectors} from "../r3eTypes.js";
 import {Driver, getUid} from "../utils.js";
 
 export default class PositionBar extends HudElement {
@@ -96,10 +96,13 @@ export default class PositionBar extends HudElement {
                 const myTime = validNumberOrDefault(me.sectorTimeBestSelf.sector3, null);
 
                 let timeColor = 'gray';
+                let deltaColor = 'white';
 
                 let time = null;
                 let deltaNumber: number = null;
                 let deltaString: string = null;
+
+                let showDeltaForMainDriver = false;
                 switch (sessionType) {
                     case ESession.Race:
                         time = driver.sectorTimePreviousSelf.sector3;
@@ -110,7 +113,26 @@ export default class PositionBar extends HudElement {
                                 timeColor = 'green';
                             }
                         }
-                        deltaString = raceDeltas[driverIndex];
+                        if (driver.finishStatus === EFinishStatus.None || driver.finishStatus === EFinishStatus.Unavailable) {
+                            deltaString = raceDeltas[driverIndex];
+                        } else {
+                            deltaString = EFinishStatus[driver.finishStatus];
+                        }
+
+                        switch (driver.finishStatus) {
+                            case EFinishStatus.DNF:
+                            case EFinishStatus.DQ:
+                            case EFinishStatus.DNS:
+                            case EFinishStatus.DNQ:
+                                deltaColor = 'red';
+                                showDeltaForMainDriver = true;
+                                break;
+                            case EFinishStatus.Finished:
+                                deltaColor = 'rgb(255,215,0)'; // gold
+                                showDeltaForMainDriver = true;
+                                break;
+                        }
+
                         break;
                     case ESession.Qualify:
                     case ESession.Practice:
@@ -130,7 +152,7 @@ export default class PositionBar extends HudElement {
                     timeElement.textContent = '';
                 }
 
-                if (deltaString != null && Driver.mainDriver.userId !== uid) {
+                if (deltaString != null && (Driver.mainDriver.userId !== uid || showDeltaForMainDriver)) {
                     if (deltaNumber != null) deltaString = deltaNumber > 0 ? `+${deltaString}` : deltaString;
 
                     deltaElement.textContent = deltaString;
@@ -139,6 +161,7 @@ export default class PositionBar extends HudElement {
                     } else {
                         deltaElement.style.marginRight = null;
                     }
+                    deltaElement.style.color = deltaColor;
                 } else {
                     deltaElement.textContent = '';
                 }

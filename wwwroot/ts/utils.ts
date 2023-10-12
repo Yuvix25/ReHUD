@@ -1,6 +1,7 @@
 import SettingsValue from './SettingsValue.js';
 import {RELATIVE_SAFE_MODE, base64EncodedUint8ArrayToString, valueIsValid} from './consts.js';
 import {IDriverData, IDriverInfo} from './r3eTypes.js';
+import {RawSourceMap, SourceMapConsumer} from 'source-map-js';
 
 export class DeltaManager {
   static DELTA_WINDOW: number = 10; // seconds
@@ -29,8 +30,8 @@ export class DeltaManager {
   static getDeltaOfDeltas(): number {
     if (DeltaManager.deltaWindow.length == 0)
       return 0;
-    
-    
+
+
     const lastDelta = this.getLastDelta()[1]
     const lastTime = this.getLastDelta()[0];
 
@@ -199,7 +200,7 @@ export class Driver {
         }
       }
     }
-    
+
 
     this.previousDistance = distance;
     this.completedLaps = completedLaps;
@@ -296,7 +297,7 @@ export class Driver {
       res = driver.deltaBetweenPoints(otherLapDistance, thisLapDistance, false);
       if (res != null)
         return res;
-      
+
       if (estimatedLapTime == null)
         return null;
 
@@ -483,7 +484,7 @@ export class AudioController {
   playbackRateMultiplier: number;
   volumeMultiplier: number;
 
-  constructor({ minPlaybackRate = 0.1, maxPlaybackRate = 10, playbackRateMultiplier = 2, volumeMultiplier = 1 } = {}) {
+  constructor({minPlaybackRate = 0.1, maxPlaybackRate = 10, playbackRateMultiplier = 2, volumeMultiplier = 1} = {}) {
     this.minPlaybackRate = minPlaybackRate;
     this.maxPlaybackRate = maxPlaybackRate;
     this.playbackRateMultiplier = playbackRateMultiplier;
@@ -528,29 +529,94 @@ enum LogLevel {
 }
 
 function writeToLog(ipc: import('electron').IpcRenderer, message: string, level: LogLevel = LogLevel.INFO) {
-  ipc.send('log', { message, level });
+  ipc.send('log', {message, level});
 }
 
+const realConsoleError = console.error;
+
+const sourceMaps: {[key: string] : RawSourceMap} = {};
+async function getSourceMapFromUri(uri: string) {
+  if (sourceMaps[uri] != undefined) {
+    return sourceMaps[uri];
+  }
+  const uriQuery = new URL(uri).search;
+  const currentScriptContent = await (await fetch(uri)).text();
+
+  let mapUri = RegExp(/\/\/# sourceMappingURL=(.*)/).exec(currentScriptContent)[1];
+  mapUri = new URL(mapUri, uri).href + uriQuery;
+
+  const map = await (await fetch(mapUri)).json();
+
+  sourceMaps[uri] = map;
+
+  return map;
+}
+
+async function mapStackTrace(stack: string) {
+  const stackLines = stack.split('\n');
+  const mappedStack = [];
+
+  for (const line of stackLines) {
+    const match = RegExp(/(.*)(http:\/\/.*):(\d+):(\d+)/).exec(line);
+    if (match == null) {
+      mappedStack.push(line);
+      continue;
+    }
+
+    const uri = match[2];
+    const consumer = new SourceMapConsumer(await getSourceMapFromUri(uri));
+
+    const originalPosition = consumer.originalPositionFor({
+      line: parseInt(match[3]),
+      column: parseInt(match[4])
+    });
+
+    if (originalPosition.source == null || originalPosition.line == null || originalPosition.column == null) {
+      mappedStack.push(line);
+      continue;
+    }
+
+    mappedStack.push(`${originalPosition.source}:${originalPosition.line}:${originalPosition.column + 1}`);
+  }
+
+  return mappedStack.join('\n');
+}
+
+async function mapStackTraceAsync(stack: string): Promise<string> {
+  try {
+    return await mapStackTrace(stack);
+  } catch (e) {
+    realConsoleError(e);
+    return stack;
+  }
+}
 
 export function enableLogging(ipc: import('electron').IpcRenderer, filename: string) {
   function proxy(ipc: import('electron').IpcRenderer, f: (...args: any[]) => void, level: LogLevel) {
     return function (...args: any[]) {
       f(...args);
-      function getErrorObject(){
-        try { throw Error('') } catch(err) { return err; }
-      }
-      
-      let origin = null;
-      try {
-        const err = getErrorObject();
-        const caller_line = err.stack.split("\n")[3];
-        const index = caller_line.indexOf("at ");
-        origin = caller_line.slice(index+2, caller_line.length);
-      } catch (e) {
-        origin = filename;
+      async function getStackTrace(): Promise<string> {
+        try {
+          throw Error('')
+        } catch (err) {
+          return await mapStackTraceAsync(err.stack);
+        }
       }
 
-      writeToLog(ipc, `${origin}: ${args.map(x => JSON.stringify(x)).join(' ')}`, level);
+      getStackTrace().then((stack) => {
+        try {
+          const caller_line = stack.split("\n")[8];
+          if (caller_line == undefined) {
+            throw new Error('stack too short');
+          }
+          const index = caller_line.indexOf("at ");
+          origin = caller_line.slice(index + 1, caller_line.length);
+        } catch (e) {
+          origin = filename;
+        }
+
+        writeToLog(ipc, `${origin}: ${args.map(x => JSON.stringify(x)).join(' ')}`, level);
+      });
     }
   }
   const originalLog = console.log;
@@ -561,9 +627,10 @@ export function enableLogging(ipc: import('electron').IpcRenderer, filename: str
   console.error = proxy(ipc, originalError, LogLevel.ERROR);
 
 
-  window.onerror = (_message, _file, _line, _column, errorObj) => {
-    if (errorObj !== undefined) //so it won't blow up in the rest of the browsers
-      console.error(errorObj.stack);
+  window.onerror = async (_message, _file, _line, _column, errorObj) => {
+    if (errorObj?.stack !== undefined) {
+      console.error(await mapStackTraceAsync(errorObj.stack));
+    }
 
     return false;
   };

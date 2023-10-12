@@ -1,4 +1,5 @@
 import EventListener from "../EventListener.js";
+import {IDriverData} from "../r3eTypes.js";
 
 export type RankedDataEntry = {
     UserId: number,
@@ -47,5 +48,9 @@ export default class RankedData extends EventListener {
         }
 
         return this.rankedData[uid.toString()];
+    }
+
+    public getRankedDataForDriver(driver: IDriverData): RankedDataEntry {
+        return this.getRankedData(driver.driverInfo.userId);
     }
 }

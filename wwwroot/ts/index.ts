@@ -38,6 +38,7 @@ import {ELEMENT_SCALE_POWER, IExtendedShared, TRANSFORMABLES, TransformableId} f
 import TractionControl from './hudElements/TractionControl.js';
 import PositionBar from './hudElements/PositionBar.js';
 import CurrentLaptime from './hudElements/CurrentLaptime.js';
+import StrengthOfField from './hudElements/StrengthOfField.js';
 
 enableLogging(ipcRenderer, 'index.js');
 
@@ -69,6 +70,7 @@ const hud = new Hud([
 
     new TimeLeft({containerId: 'time-left-container', elementId: 'time-laps-left', renderEvery: 80}),
     new EstimatedLapsLeft({containerId: 'estimated-laps-left-container', elementId: 'estimated-laps-left', renderEvery: 100}),
+    new StrengthOfField({elementId: 'strength-of-field', renderEvery: 1000}),
     new SessionLastLap({elementId: 'last-lap-session', renderEvery: 200}),
     new SessionBestLap({elementId: 'best-lap-session', renderEvery: 200}),
     new Position({containerId: 'position-container', elementId: 'position', renderEvery: 100}),
@@ -81,7 +83,7 @@ const hud = new Hud([
     new SectorTimes({containerId: 'sector-times', renderEvery: 50}),
 ]);
 
-
+(window as any).hud = hud;
 
 let layoutLoaded = false;
 let LAYOUT: HudLayout = {};
@@ -126,7 +128,7 @@ function elementToggled(elementId: TransformableId, shown: boolean) {
         if (LAYOUT[elementId] == undefined)
             LAYOUT[elementId] = [0, 0, 1, true];
 
-        LAYOUT[elementId][3] = false;
+        LAYOUT[elementId][3] = shown;
     }
 
     const element = document.getElementById(elementId);
@@ -135,10 +137,7 @@ function elementToggled(elementId: TransformableId, shown: boolean) {
         return;
     }
 
-    element.classList.remove('hidden');
-    if (!shown) {
-        element.classList.add('hidden');
-    }
+    loadLayout();
 }
 
 function saveLayout() {
@@ -152,7 +151,9 @@ ipcRenderer.on('toggle-element', (event, arg) => {
     elementToggled(arg[0], arg[1]);
 });
 
-function loadLayout(layout: HudLayout) {
+function loadLayout(layout?: HudLayout) {
+    if (layout == undefined)
+        layout = LAYOUT;
     const prevLayout = LAYOUT;
     LAYOUT = layout;
     for (const id of Object.keys(TRANSFORMABLES) as TransformableId[]) {

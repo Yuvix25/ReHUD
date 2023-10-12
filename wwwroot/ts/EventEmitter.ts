@@ -41,7 +41,9 @@ export default class EventEmitter {
      * Emit an event.
      */
     static emit(eventName: string, data: any, ...args: any[]) {
-        console.log('Emitting ' + eventName + ' event.');
+        if (args.length >= 2 && args[1] === true) {
+            console.log('Emitting ' + eventName + ' event.');
+        }
 
         const events = this.events[eventName];
         if (events) {

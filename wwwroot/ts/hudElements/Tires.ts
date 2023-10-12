@@ -14,6 +14,8 @@ export default class Tires extends HudElement {
             'rearRight': 'rear-right',
         } as const;
 
+        const averageWear = this.hud?.tireManagerService?.getAverageWear();
+
         for (const tire of Object.keys(nameMap) as (keyof typeof nameMap)[]) {
             const name = nameMap[tire];
 
@@ -43,6 +45,12 @@ export default class Tires extends HudElement {
                     span.setAttribute('data-before', '');
                 else
                     span.setAttribute('data-before', pressure + SettingsValue.get(PRESSURE_UNITS));
+                
+                if (averageWear != null) {
+                    span.setAttribute('data-after', `${(averageWear[tire] * 100).toFixed(1)}pL`);
+                } else {
+                    span.setAttribute('data-after', '');
+                }
 
                 const temp = tireTemp?.[tire]?.currentTemp?.[side];
 

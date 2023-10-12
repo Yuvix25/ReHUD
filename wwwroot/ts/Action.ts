@@ -21,7 +21,12 @@ export default abstract class Action extends EventListener {
         return this.executeEvery == null || this.lastExecution + this.executeEvery <= now;
     }
 
-    abstract execute(data: IExtendedShared): void;
+    protected abstract execute(data: IExtendedShared): void;
+
+    public _execute(data: IExtendedShared): void {
+        this.lastExecution = new Date().getTime();
+        this.execute(data);
+    }
 
     public override toString(): string {
         return this.constructor.name;

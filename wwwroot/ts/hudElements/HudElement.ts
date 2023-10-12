@@ -76,8 +76,6 @@ export default abstract class HudElement extends Action {
     protected abstract render(...values: any[]): string | Style | null | Hide;
 
     public execute(data: IExtendedShared) {
-        this.lastExecution = new Date().getTime();
-
         this.root = document.querySelector(':root');
 
         const res = this.render(...this.getInputs(data), this.elementId ?? this.containerId);

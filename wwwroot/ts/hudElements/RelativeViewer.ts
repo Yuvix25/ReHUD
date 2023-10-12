@@ -110,6 +110,7 @@ export default class RelativeViewer extends HudElement {
         else
             this.root.style.setProperty('--relative-view-row-height', 'auto');
 
+        let zeroDeltaCount = 0;
         for (let i = start; i < end; i++) {
             if (mergedDeltas[i] == undefined)
                 break;
@@ -171,8 +172,13 @@ export default class RelativeViewer extends HudElement {
             insertCell(row, rating + '/' + reputation, 'ranked');
 
             const deltaRaw = mergedDeltas[i][1];
+            if (typeof deltaRaw === 'number' && deltaRaw.toFixed(1) === '0.0')
+                zeroDeltaCount++;
             const delta = driver.place == place ? '' : (deltaRaw == null ? NA : deltaRaw.toFixed(1));
             insertCell(row, delta, 'time-delta');
+        }
+        if (zeroDeltaCount >= 3) {
+            console.warn('relative 0.0 bug detected');
         }
 
         while (relativeTable.children.length > end - start) {

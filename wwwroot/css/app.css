@@ -649,6 +649,10 @@ progress#revs::-webkit-progress-value {
 #relative-viewer td.car-name span {
   color: gray;
   font-weight: 300;
+  width: 165px !important;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #relative-viewer td.ranked span {

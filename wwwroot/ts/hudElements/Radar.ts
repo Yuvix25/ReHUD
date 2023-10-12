@@ -110,6 +110,22 @@ export default class Radar extends HudElement {
         if (closest === null)
             return this.hide();
 
+
+        this.lastShown = Date.now();
         return null;
+    }
+
+    private lastShown = -1;
+    private static readonly hideDelay = 1000;
+
+    protected override hide(alt?: string): string | Hide {
+        if (this.hud.isInEditMode) {
+            return alt;
+        }
+
+        if (this.lastShown != -1 && Date.now() - this.lastShown < Radar.hideDelay)
+            return alt;
+        
+        return super.hide(alt);
     }
 }

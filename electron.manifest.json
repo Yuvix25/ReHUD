@@ -11,7 +11,7 @@
     "appId": "com.yuvix.rehud",
     "productName": "ReHUD",
     "copyright": "Copyright © 2023",
-    "buildVersion": "0.7.1-beta",
+    "buildVersion": "0.7.2-beta",
     "win": {
       "icon": "../../../wwwroot/ReHUD.png"
     },

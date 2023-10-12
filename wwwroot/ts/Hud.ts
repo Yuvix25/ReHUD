@@ -2,6 +2,7 @@ import Action from "./Action";
 import SettingsValue from "./SettingsValue.js";
 import DriverManager from "./actions/DriverManager.js";
 import RankedData from "./actions/RankedData.js";
+import TireManager from './actions/TireManager.js';
 import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE} from "./consts.js";
 import {AudioController} from "./utils.js";
 
@@ -10,14 +11,20 @@ export default class Hud {
     public actionServices: Action[] = [];
     public rankedDataService: RankedData = new RankedData();
     public driverManagerService: DriverManager = new DriverManager();
+    public tireManagerService: TireManager = new TireManager();
 
     private normalActions: Array<Action> = new Array<Action>();
     private alwaysExecuteActions: Array<Action> = new Array<Action>();
     public readonly r3eData: any;
     public readonly radarAudioController = new AudioController({volumeMultiplier: 1});
 
+    private registerService(action: Action): void {
+        this.actionServices.push(action);
+    }
+
     constructor(positionalActions: Action[]) {
-        this.actionServices.push(this.driverManagerService);
+        this.registerService(this.driverManagerService);
+        this.registerService(this.tireManagerService);
 
         for (const action of positionalActions.concat(this.actionServices)) {
             action.setHud(this);
@@ -46,7 +53,7 @@ export default class Hud {
 
     private static executeAction(action: Action, data: IExtendedShared): void {
         try {
-            action.execute(data);
+            action._execute(data);
         } catch (e) {
             console.error('Error while executing action', action.toString(), e.toString());
         }

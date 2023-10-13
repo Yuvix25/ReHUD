@@ -48,11 +48,12 @@ Note: If you're updating from a previous version, you can simply run the new ins
 ## Usage
 Once you've installed the app, you will find a desktop shortcut to it, or you can manually find it by searching for "ReHUD" in the windows search menu. Run it with either of the above options, and you're good to go. The overlay is now running and will show up whenever you enter a session in RaceRoom.  
 
-To change the position and scale of hud elements, first click on the "Edit" button near "HUD Layout" in the settings window. Now you will be able to move elements by dragging them with your mouse, and scale them by scrolling over them. Once you're done with your changes, choose "Save" to apply them or "Cancel" to undo them.
+To change the position and scale of hud elements, go to the "Layout" tab in the settings window and choose "Edit". Now you will be able to move elements by dragging them with your mouse, and scale them by scrolling over them. After entering edit mode, a list of HUD elements with checkboxes will be activated. Enabling/disabling each HUD element will show/hide it and reset its position.  
+Once you're done with your changes, choose "Save" to apply them or "Cancel" to undo.
 
-It is recommended to set the "In Game Overlays" setting of RaceRoom under Settings->GAMEPLAY->HUD to "Essentials only" as I am currently not planning to re-implement RaceRoom's essentials.
+It is recommended to set the "In Game Overlays" setting of RaceRoom under Settings->GAMEPLAY->HUD to "Essentials only", as I currently do not plan to re-implement RaceRoom's essentials.
 
-**Please note that you must run RaceRoom in borderless-windowed or windowed mode, as the HUD cannot appear on top of fullscreen apps.**
+**Please note that you must run RaceRoom in borderless-windowed or windowed mode as the HUD cannot appear on top of fullscreen apps.**
 
 ## Screenshots
 <img src="https://user-images.githubusercontent.com/58216719/232799762-dbd964cc-e461-4545-9b21-749b71d136d4.png" style="max-height: 500px">

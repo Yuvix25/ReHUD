@@ -1,17 +1,28 @@
 import HudElement, {Hide, Style} from "./HudElement.js";
-import {valueIsValid} from "../consts.js";
+import {DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, valueIsValid} from "../consts.js";
 import IShared, {IDriverData} from "../r3eTypes.js";
-import {DeltaManager} from "../utils.js";
+import {DeltaManager, Driver} from "../utils.js";
+import SettingsValue from "../SettingsValue.js";
 
 export default class Delta extends HudElement {
-    override inputKeys: string[] = ['timeDeltaBestSelf', 'currentLapValid'];
+    override inputKeys: string[] = ['timeDeltaBestSelf', 'currentLapValid', 'lapDistance'];
 
     protected override onNewLap(_data: IShared, driver: IDriverData, isMainDriver: boolean): void {
         if (isMainDriver)
             DeltaManager.clear();
     }
 
-    protected override render(timeDeltaBestSelf: number, currentLapValid: number, elementId: string): Hide | Style {
+    protected override render(timeDeltaBestSelf: number, currentLapValid: number, lapDistance: number, elementId: string): Hide | Style {
+        if (SettingsValue.get(DELTA_MODE) === 'alltime') {
+            if (Driver.mainDriver != null && Driver.mainDriver.bestLap != null) {
+                timeDeltaBestSelf = Driver.mainDriver.getDeltaToLap(Driver.mainDriver.bestLap, lapDistance);
+            }
+        } else if (SettingsValue.get(DELTA_MODE) === 'session' && SettingsValue.get(SHOW_DELTA_ON_INVALID_LAPS) && (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000)) {
+            if (Driver.mainDriver != null && Driver.mainDriver.sessionBestLap != null) {
+                timeDeltaBestSelf = Driver.mainDriver.getDeltaToLap(Driver.mainDriver.sessionBestLap, lapDistance);
+            }
+        }
+
         if (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000 || !valueIsValid(currentLapValid) || currentLapValid === 0) {
             DeltaManager.clear();
             return this.hide('0.000');

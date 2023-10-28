@@ -22,6 +22,9 @@ export const PRESSURE_UNITS = 'pressureUnits';
 export const RADAR_RANGE = 'radarRange';
 export const RADAR_BEEP_VOLUME = 'radarBeepVolume';
 export const RELATIVE_SAFE_MODE = 'relativeSafeMode';
+export const POSITION_BAR_CELL_COUNT = 'positionBarCellCount';
+export const DELTA_MODE = 'deltaMode';
+export const SHOW_DELTA_ON_INVALID_LAPS = 'showDeltaOnInvalidLaps';
 export const HUD_LAYOUT = 'hudLayout';
 
 export const DEFAULT_RENDER_CYCLE = 30;
@@ -35,8 +38,6 @@ export const RADAR_BEEP_MIN_SPEED = 15; // km/h
 export const LAST_LAP_SECTORS_TIME_ON_SCREEN = 6; // seconds
 
 export const ELEMENT_SCALE_POWER = 2;
-
-export const POSITION_BAR_SIZE = 13;
 
 export const RELATIVE_LENGTH = 8;
 export const halfLengthTop = Math.ceil((RELATIVE_LENGTH - 1) / 2);
@@ -105,17 +106,17 @@ export const TRANSFORMABLES = {
   'incident-points-container': 'Incident Points',
   'time-left-container': 'Time Left',
 
-  tires: 'Tires',
-  damage: 'Damage',
+  'tires': 'Tires',
+  'damage': 'Damage',
   'fuel-data': 'Fuel Data',
 
-  radar: 'Radar',
-  delta: 'Delta',
+  'radar': 'Radar',
+  'delta': 'Delta',
   'sector-times': 'Sector Times',
 
   'relative-viewer': 'Relative',
   'driver-inputs': 'Inputs',
-  basic: 'MoTeC',
+  'basic': 'MoTeC',
 } as const;
 
 export type TransformableId = keyof typeof TRANSFORMABLES;
@@ -270,9 +271,8 @@ export function laptimeFormat(time: number, minimize = false): string {
   const seconds = Math.floor(time % 60);
   const milliseconds = Math.floor((time - Math.floor(time)) * 1000);
 
-  const withoutMinutes = `${
-    minutes === 0 ? seconds.toString() : seconds.toString().padStart(2, '0')
-  }.${milliseconds.toString().padStart(3, '0')}`;
+  const withoutMinutes = `${minutes === 0 ? seconds.toString() : seconds.toString().padStart(2, '0')
+    }.${milliseconds.toString().padStart(3, '0')}`;
   if (minimize && minutes === 0) return prefix + withoutMinutes;
 
   return `${prefix}${minutes}:${withoutMinutes}`;

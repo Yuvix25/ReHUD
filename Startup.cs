@@ -90,7 +90,7 @@ public class Startup
     private const string githubUrl = "https://github.com/Yuvix25/ReHUD";
     private const string githubReleasesUrl = "releases/latest";
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
-    private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file name 'ReHUD.log' in C:\\Users\\<username>\\AppData\\Local\\Programs\\rehud\\resources\\bin";
+    private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file named 'ReHUD.log' in C:\\Users\\<username>\\AppData\\Local\\Programs\\rehud\\resources\\bin";
 
     private readonly FuelData fuelData = new();
     private readonly LapPointsData lapPointsData = new();

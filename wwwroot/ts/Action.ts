@@ -5,15 +5,16 @@ export default abstract class Action extends EventListener {
     protected lastExecution: number = -1;
     protected readonly executeEvery: number;
 
-    protected readonly executeWhileHidden: boolean = false;
+    private readonly executeWhileHidden: boolean = false;
 
     public shouldExecuteWhileHidden() {
         return this.executeWhileHidden;
     }
     
-    constructor(executeEvery: number = null) {
-        super();
+    constructor(name: string, executeEvery: number = null, executeWhileHidden: boolean = false) {
+        super(name);
         this.executeEvery = executeEvery;
+        this.executeWhileHidden = executeWhileHidden;
     }
 
     shouldExecute(): boolean {
@@ -24,11 +25,7 @@ export default abstract class Action extends EventListener {
     protected abstract execute(data: IExtendedShared): void;
 
     public _execute(data: IExtendedShared): void {
-        this.lastExecution = new Date().getTime();
+        this.lastExecution = Date.now();
         this.execute(data);
-    }
-
-    public override toString(): string {
-        return this.constructor.name;
     }
 }

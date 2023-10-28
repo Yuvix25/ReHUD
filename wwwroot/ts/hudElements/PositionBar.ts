@@ -1,7 +1,8 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {POSITION_BAR_SIZE, laptimeFormat, valueIsValid, validNumberOrDefault, nameFormat, getClassColors} from "../consts.js";
+import {laptimeFormat, valueIsValid, validNumberOrDefault, nameFormat, getClassColors, POSITION_BAR_CELL_COUNT} from "../consts.js";
 import {EFinishStatus, ESession, IDriverData, ISectors} from "../r3eTypes.js";
 import {Driver, getUid} from "../utils.js";
+import SettingsValue from "../SettingsValue.js";
 
 export default class PositionBar extends HudElement {
     override inputKeys: string[] = ['driverData', 'position', 'sessionType', 'sectorTimesSessionBestLap'];
@@ -50,7 +51,64 @@ export default class PositionBar extends HudElement {
         return deltas;
     }
 
-    protected override render(driverData: IDriverData[], position: number, sessionType: ESession, sessionBestSectors: ISectors): Hide | null {
+    protected override render(driverData: IDriverData[], position: number, sessionType: ESession, sessionBestSectors: ISectors, elementId: string): Hide | null {
+        const positionBar = document.getElementById(elementId);
+
+        const POSITION_BAR_SIZE = SettingsValue.get(POSITION_BAR_CELL_COUNT);
+
+        let changeFront = true;
+        if (POSITION_BAR_SIZE < positionBar.children.length) {
+            for (let i = 0; i < positionBar.children.length - POSITION_BAR_SIZE; i++) {
+                let toRemove;
+                if (changeFront) {
+                    toRemove = positionBar.firstChild;
+                } else {
+                    toRemove = positionBar.lastChild;
+                }
+                toRemove.remove();
+
+                changeFront = !changeFront;
+            }
+        } else if (POSITION_BAR_SIZE > positionBar.children.length) {
+            for (let i = 0; i < POSITION_BAR_SIZE - positionBar.children.length; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('position-bar-driver');
+                cell.classList.add('row');
+
+                const pos = document.createElement('span');
+                pos.classList.add('position-bar-driver-position');
+
+                const col = document.createElement('div');
+                col.classList.add('col');
+
+                const name = document.createElement('span');
+                name.classList.add('position-bar-driver-name');
+
+                const delta = document.createElement('span');
+                delta.classList.add('position-bar-driver-delta');
+
+                const time = document.createElement('span');
+                time.classList.add('position-bar-driver-time');
+
+
+                cell.appendChild(pos);
+                
+                col.appendChild(name);
+                col.appendChild(delta);
+                col.appendChild(time);
+
+                cell.appendChild(col);
+                
+                if (changeFront) {
+                    positionBar.insertBefore(cell, positionBar.firstChild);
+                } else {
+                    positionBar.appendChild(cell);
+                }
+
+                changeFront = !changeFront;
+            }
+        }
+
         if (!valueIsValid(position) || Driver.mainDriver == null) {
             return this.hide();
         }
@@ -71,7 +129,7 @@ export default class PositionBar extends HudElement {
 
         let firstCell = start - Math.ceil(position - POSITION_BAR_SIZE / 2);
         for (let i = 0; i < POSITION_BAR_SIZE; i++) {
-            const positionBarCell = document.getElementById(`position-bar-driver-${i}`);
+            const positionBarCell: HTMLDivElement = positionBar.children[i] as HTMLDivElement;
 
             const positionElement: HTMLSpanElement = positionBarCell.querySelector('.position-bar-driver-position');
             const nameElement: HTMLSpanElement = positionBarCell.querySelector('.position-bar-driver-name');

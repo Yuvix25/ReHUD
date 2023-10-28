@@ -2,7 +2,7 @@ import SettingComponent from "./SettingComponent.js";
 
 
 export default class SliderSetting extends SettingComponent {
-    public static readonly elementName = 'slider-setting';
+    public static override readonly elementName = 'slider-setting';
 
     private min: number;
     private max: number;
@@ -12,6 +12,15 @@ export default class SliderSetting extends SettingComponent {
     private numberInput: HTMLInputElement;
 
     private lastValue: string;
+
+    protected override _enable(): void {
+        this.slider.disabled = false;
+        this.numberInput.disabled = false;
+    }
+    protected override _disable(): void {
+        this.slider.disabled = true;
+        this.numberInput.disabled = true;
+    }
 
     override connected() {
         this.min = parseFloat(this.getAttribute('min'));

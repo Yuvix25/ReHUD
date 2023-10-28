@@ -2,9 +2,16 @@ import SettingComponent from "./SettingComponent.js";
 
 
 export default class ToggleSetting extends SettingComponent {
-    public static readonly elementName = 'toggle-setting';
+    public static override readonly elementName = 'toggle-setting';
 
     private checkbox: HTMLInputElement;
+
+    protected override _enable(): void {
+        this.checkbox.disabled = false;
+    }
+    protected override _disable(): void {
+        this.checkbox.disabled = true;
+    }
 
     override connected() {
         requestAnimationFrame(() => {

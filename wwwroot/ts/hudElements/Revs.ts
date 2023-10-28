@@ -20,7 +20,7 @@ export default class Revs extends HudElement {
         document.getElementById(id).max = max;
 
         if (pitLimiter === 1) {
-            const time = new Date().getTime();
+            const time = Date.now();
             current = time % 250 < 125 ? upshift - 0.001 : max;
         }
 

@@ -1,12 +1,47 @@
-import {ipcRenderer} from "electron";
+import { ipcRenderer } from "electron";
 
 export default abstract class SettingComponent extends HTMLElement {
+    public static readonly elementName: string;
+
+    private static readonly instances: SettingComponent[] = [];
+    private static readonly instancesByKey: { [key: string]: SettingComponent } = {};
+
+    public static getInstanceByKey(key: string) {
+        return this.instancesByKey[key];
+    }
+
     protected text: string;
     protected key: string;
     protected value: any;
 
     private isInitialized = false;
     private initializationQueue: [(...args: any[]) => void, any[]][] = [];
+
+    private _isEnabled = true;
+
+    protected abstract _enable(): void;
+    protected abstract _disable(): void;
+
+    public enable() {
+        this._isEnabled = true;
+        requestAnimationFrame(() => {
+            this.style.opacity = '1';
+            this.style.pointerEvents = 'all';
+            this._enable();
+        });
+    }
+    public disable() {
+        this._isEnabled = false;
+        requestAnimationFrame(() => {
+            this.style.opacity = '0.6';
+            this.style.pointerEvents = 'none';
+            this._disable();
+        });
+    }
+
+    public get isEnabled() {
+        return this._isEnabled;
+    }
 
     protected initializationDone() {
         if (this.isInitialized) return;
@@ -24,8 +59,6 @@ export default abstract class SettingComponent extends HTMLElement {
         }
     }
 
-    private static readonly instances: SettingComponent[] = [];
-
     protected callback: (value: any) => void;
 
     constructor() {
@@ -33,7 +66,7 @@ export default abstract class SettingComponent extends HTMLElement {
         SettingComponent.instances.push(this);
     }
 
-    public static initialize(settings: any, valueChangeCallbacks: {[key: string]: (value: any) => void}) {
+    public static initialize(settings: any, valueChangeCallbacks: { [key: string]: (value: any) => void }) {
         SettingComponent.instances.forEach((instance) => {
             const callback = valueChangeCallbacks[instance.key];
             if (callback) {
@@ -55,6 +88,8 @@ export default abstract class SettingComponent extends HTMLElement {
         this.classList.add('setting');
         this.id = this.key;
 
+        SettingComponent.instancesByKey[this.key] = this;
+
         requestAnimationFrame(() => {
             this.text = this.innerText;
         });
@@ -70,12 +105,15 @@ export default abstract class SettingComponent extends HTMLElement {
 
                 this.appendChild(tooltip);
             }
+            if (this.getAttribute('disabled') != null) {
+                this.disable();
+            }
         });
     }
 
     protected abstract connected(): void;
 
-    saveValue() {
+    public saveValue() {
         ipcRenderer.send('set-setting', [this.key, this.value]);
     }
 

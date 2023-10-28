@@ -8,8 +8,6 @@ import {
 import IShared, { ESession, IDriverData, ITireData } from '../r3eTypes.js';
 
 export default class TireManager extends Action {
-  protected override executeWhileHidden = false;
-
   private state = {
     carId: -1,
     layoutId: -1,
@@ -21,6 +19,10 @@ export default class TireManager extends Action {
   private averageWear: ITireData<number> = null;
 
   private lastLapValid: boolean = false;
+
+  constructor() {
+    super('TireManager');
+  }
 
   protected override onNewLap(
     data: IShared,

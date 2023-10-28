@@ -3,8 +3,8 @@ import SettingsValue from "./SettingsValue.js";
 import DriverManager from "./actions/DriverManager.js";
 import RankedData from "./actions/RankedData.js";
 import TireManager from './actions/TireManager.js';
-import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE} from "./consts.js";
-import {AudioController} from "./utils.js";
+import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS} from "./consts.js";
+import {AudioController, mapStackTraceAsync} from "./utils.js";
 
 export default class Hud {
     public isInEditMode: boolean = false;
@@ -45,17 +45,20 @@ export default class Hud {
             this.radarAudioController.setVolume(value);
         });
         new SettingsValue(RELATIVE_SAFE_MODE, false);
+        new SettingsValue(POSITION_BAR_CELL_COUNT, 13);
+        new SettingsValue(DELTA_MODE, 'session');
+        new SettingsValue(SHOW_DELTA_ON_INVALID_LAPS, false);
     }
 
     private async loadR3EData() {
         (this as any).r3eData = await (await fetch('https://raw.githubusercontent.com/sector3studios/r3e-spectator-overlay/master/r3e-data.json')).json();
     }
 
-    private static executeAction(action: Action, data: IExtendedShared): void {
+    private static async executeAction(action: Action, data: IExtendedShared): Promise<void> {
         try {
             action._execute(data);
         } catch (e) {
-            console.error('Error while executing action', action.toString(), e.toString());
+            console.error('Error while executing action \'' + action.toString() + '\':', e.toString(), await mapStackTraceAsync(e.stack));
         }
     }
 

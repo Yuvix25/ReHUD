@@ -5,12 +5,10 @@ import IShared, {ESession, IDriverData} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
 
 export default class DriverManager extends Action {
-    protected override executeWhileHidden: boolean = true;
-
     public drivers: {[uid: string]: Driver} = {};
 
     constructor() {
-        super(0);
+        super('DriverManager', 0, true);
 
         ipcRenderer.on('load-best-lap', (_e, data: any) => {
             data = JSON.parse(data);
@@ -67,7 +65,7 @@ export default class DriverManager extends Action {
     }
 
     execute(extendedData: IExtendedShared): void {
-        const data = extendedData.rawData;        
+        const data = extendedData.rawData;
 
         if (data.gameInReplay)
             this.clearDriversTempData(data);

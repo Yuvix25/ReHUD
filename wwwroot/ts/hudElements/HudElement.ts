@@ -3,6 +3,7 @@ import Action from "../Action.js";
 import {IExtendedShared} from "../consts.js";
 
 export type HUDElementOptions = {
+    name: string,
     hud?: Hud;
     containerId?: string;
     elementId?: string;
@@ -58,7 +59,7 @@ export default abstract class HudElement extends Action {
      *  - `renderEvery` - How often to render the element (in ms)
      */
     constructor(options: HUDElementOptions) {
-        super(options.renderEvery ?? 0)
+        super(options.name, options.renderEvery ?? 0);
         this.hud = options.hud;
         this.containerId = options.containerId;
         this.elementId = options.elementId;

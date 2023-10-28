@@ -40,14 +40,19 @@ export default class EventEmitter {
     /**
      * Emit an event.
      */
-    static emit(eventName: string, data: any, ...args: any[]) {
-        if (args.length >= 2 && args[1] === true) {
+    static emit(eventName: string, isMainDriver: boolean | null, data: any, ...args: any[]) {
+        if (isMainDriver !== false) {
             console.log('Emitting ' + eventName + ' event.');
+
+            if (eventName === EventEmitter.SESSION_CHANGED_EVENT) {
+                console.log(`Session changed: ${ESession[this.previousData.sessionType]} -> ${ESession[data.sessionType]}`)
+            }
         }
+        if (isMainDriver !== null) args.push(isMainDriver);
 
         const events = this.events[eventName];
         if (events) {
-            events.forEach(fn => {
+            events.forEach(fn => {                
                 fn.call(null, data, ...args);
             });
         }
@@ -69,7 +74,7 @@ export default class EventEmitter {
         let emittedNewLapOrPosJumpForMainDriver = false;
         if (this.previousData != null) {
             if (this.previousData.sessionType !== data.sessionType) {
-                this.emit(EventEmitter.SESSION_CHANGED_EVENT, data, this.previousData.sessionType);
+                this.emit(EventEmitter.SESSION_CHANGED_EVENT, null, data, this.previousData.sessionType);
             }
 
             const mainDriverInfo = structuredClone(data.vehicleInfo);
@@ -89,7 +94,7 @@ export default class EventEmitter {
                     if (isMainDriver) {
                         emittedNewLapOrPosJumpForMainDriver = true;
                     }
-                    this.emit(ev, data, driver, isMainDriver);
+                    this.emit(ev, isMainDriver, data, driver);
                 }
 
                 if (driverPrevious.completedLaps !== driver.completedLaps && (driverPrevious.completedLaps == null || driver.completedLaps > driverPrevious.completedLaps)) {
@@ -102,12 +107,12 @@ export default class EventEmitter {
                 }
 
                 if (driverPrevious.inPitlane !== 1 && driver.inPitlane === 1) {
-                    this.emit(EventEmitter.ENTERED_PITLANE_EVENT, data, driver, isMainDriver);
+                    this.emit(EventEmitter.ENTERED_PITLANE_EVENT, isMainDriver, data, driver);
                 }
             }
 
             if (!emittedNewLapOrPosJumpForMainDriver && (data.controlType != null && data.controlType > 0 && this.previousData.controlType != data.controlType)) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
-                this.emit(EventEmitter.POSITION_JUMP_EVENT, data, newDriverMap[mainDriverUid], true);
+                this.emit(EventEmitter.POSITION_JUMP_EVENT, true, data, newDriverMap[mainDriverUid]);
             }
         }
         

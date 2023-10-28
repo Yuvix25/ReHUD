@@ -21,7 +21,7 @@ export default class RankedData extends EventListener {
     private isLoading: boolean = false;
 
     constructor() {
-        super();
+        super('RankedDataService');
 
         this.onSessionChange();
     }
@@ -41,13 +41,23 @@ export default class RankedData extends EventListener {
         this.isLoading = false;
     }
 
-    public getRankedData(uid: string | number): RankedDataEntry {
+    public getRankedData(uid: number): RankedDataEntry {
         if (this.rankedData == null) {
             this.onSessionChange();
             return null;
         }
 
-        return this.rankedData[uid.toString()];
+        return this.rankedData[uid.toString()] ?? {
+            UserId: uid,
+            Username: null,
+            Fullname: null,
+            Rating: 1500,
+            Reputation: 70,
+            ActivityPoints: 0,
+            RacesCompleted: 0,
+            CountryCode: null,
+            Team: null,
+        }
     }
 
     public getRankedDataForDriver(driver: IDriverData): RankedDataEntry {

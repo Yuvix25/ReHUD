@@ -9,7 +9,7 @@ export default class SectorTimes extends HudElement {
 
     protected override onNewLap(_data: IShared, _driver: IDriverData, isMainDriver: boolean): void {
         if (isMainDriver)
-            this.lastCompletedLapTimestamp = new Date().getTime() / 1000;
+            this.lastCompletedLapTimestamp = Date.now() / 1000;
     }
 
     protected override render(sessionBest_: ISectors, selfBest_: ISectors, selfCurrent_: ISectors, selfPrevious_: ISectors, lapDistance: number, sectorPositions: ISectorStarts, elementId: string): Hide | null {
@@ -20,7 +20,7 @@ export default class SectorTimes extends HudElement {
 
         const sectorElements = document.getElementById(elementId).children;
 
-        const now = new Date().getTime() / 1000;
+        const now = Date.now() / 1000;
 
         if (valueIsValid(lapDistance) && valueIsValid(sectorPositions?.sector2) && lapDistance < sectorPositions.sector2) {
             selfCurrent = null;

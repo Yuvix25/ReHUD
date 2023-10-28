@@ -32,11 +32,21 @@
     <choice-setting key="pressureUnits" value="kPa">
         <label>Pressure Units</label>
         <button value="kPa">kPa</button>
-        <button value=psi>psi</button>
+        <button value="psi">psi</button>
     </choice-setting>
 
     <slider-setting key="radarRange" min="0" max="30" step="1" value="12">Radar Range (m)</slider-setting>
     <slider-setting key="radarBeepVolume" min="0" max="3" step="0.01" value="1">Radar Beep Volume</slider-setting>
+
+    <slider-setting key="positionBarCellCount" min="3" max="51" step="2" value="13">Position Bar Cell Count</slider-setting>
+
+    <choice-setting key="deltaMode" value="session" tooltip="'Alltime Best' will give the best lap recorded by ReHUD. If no valid lap was recorded yet, will fallback to the session best provided by RaceRoom.">
+        <label>Show Delta Compared to</label>
+        <button value="session">Session Best</button>
+        <button value="alltime">All-time Best</button>
+    </choice-setting>
+    <toggle-setting key="showDeltaOnInvalidLaps">Show Delta On Invalid Laps</toggle-setting>
+
 
     <toggle-setting key="relativeSafeMode" tooltip="Enabling this option will mean that the relative will only work with saved best lap data, and will not save new ones.">Relative Safe Mode</toggle-setting>
     <toggle-setting key="check-for-updates">Check for Updates<toggle-setting>

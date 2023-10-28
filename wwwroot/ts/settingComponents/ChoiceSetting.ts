@@ -2,7 +2,7 @@ import SettingComponent from "./SettingComponent.js";
 
 
 export default class ChoiceSetting extends SettingComponent {
-    public static readonly elementName = 'choice-setting';
+    public static override readonly elementName = 'choice-setting';
 
     private _choices: NodeListOf<HTMLButtonElement>;
 
@@ -19,6 +19,17 @@ export default class ChoiceSetting extends SettingComponent {
             choice.addEventListener('click', () => {
                 this.onValueChange(choice.value);
             });
+        });
+    }
+
+    protected override _enable(): void {
+        this.choices.forEach((choice) => {
+            choice.disabled = false;
+        });
+    }
+    protected override _disable(): void {
+        this.choices.forEach((choice) => {
+            choice.disabled = true;
         });
     }
 

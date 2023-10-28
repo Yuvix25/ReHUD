@@ -1,6 +1,7 @@
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using R3E.Data;
+using ReHUD;
 
 namespace R3E
 {
@@ -11,7 +12,7 @@ namespace R3E
         private bool found = false;
         private bool Mapped
         {
-            get { return (_file != null); }
+            get { return _file != null; }
         }
 
         private Shared _data;
@@ -29,10 +30,9 @@ namespace R3E
 
         public void Run(SharedMemoryCallback callback)
         {
-            var timeReset = DateTime.UtcNow;
-            var timeLast = timeReset;
+            var timeLast = DateTime.UtcNow;
 
-            ReHUD.Startup.logger.Info("Looking for RRRE.exe...");
+            Startup.logger.Info("Looking for RRRE.exe...");
 
             while (true)
             {
@@ -49,16 +49,15 @@ namespace R3E
                 if (Utilities.IsRaceRoomRunning() && !Mapped)
                 {
                     if (!found)
-                        ReHUD.Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
+                        Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
 
                     found = true;
 
                     if (Map())
                     {
-                        ReHUD.Startup.logger.Info("Memory mapped successfully");
-                        timeReset = DateTime.UtcNow;
+                        Startup.logger.Info("Memory mapped successfully");
 
-                        _buffer = new Byte[Marshal.SizeOf(typeof(Shared))];
+                        _buffer = new byte[Marshal.SizeOf(typeof(Shared))];
                     }
                 }
 
@@ -95,7 +94,7 @@ namespace R3E
             try
             {
                 var _view = _file.CreateViewStream();
-                BinaryReader _stream = new BinaryReader(_view);
+                BinaryReader _stream = new(_view);
                 _buffer = _stream.ReadBytes(Marshal.SizeOf(typeof(Shared)));
                 GCHandle _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
 
@@ -110,7 +109,7 @@ namespace R3E
             }
             catch (Exception e)
             {
-                ReHUD.Startup.logger.Error("Error reading shared memory", e);
+                Startup.logger.Error("Error reading shared memory", e);
                 return false;
             }
         }

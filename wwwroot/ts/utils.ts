@@ -1,7 +1,7 @@
 import SettingsValue from './SettingsValue.js';
-import {RELATIVE_SAFE_MODE, base64EncodedUint8ArrayToString, valueIsValid} from './consts.js';
-import {IDriverData, IDriverInfo} from './r3eTypes.js';
-import {RawSourceMap, SourceMapConsumer} from 'source-map-js';
+import { RELATIVE_SAFE_MODE, base64EncodedUint8ArrayToString, valueIsValid } from './consts.js';
+import { IDriverData, IDriverInfo } from './r3eTypes.js';
+import { RawSourceMap, SourceMapConsumer } from 'source-map-js';
 
 export class DeltaManager {
   static DELTA_WINDOW: number = 10; // seconds
@@ -74,10 +74,12 @@ export class Driver {
   currentLapValid: boolean = true;
   lastLapTime: number = null;
   bestLap: number[] = null;
+  sessionBestLap: number[] = null;
   bestLapTime: number = null;
+  sessionBestLapTime: number = null;
   bestLapTimeValid: boolean = false;
   completedLaps: number;
-  crossedFinishLine: boolean = false;
+  crossedFinishLine: number = null;
   previousDistance: number = -1;
   attemptedLoadingBestLap: boolean = false;
 
@@ -98,7 +100,7 @@ export class Driver {
    * @return Time in seconds
    */
   static getTime(): number {
-    return new Date().getTime() / 1000;
+    return Date.now() / 1000;
   }
 
   /**
@@ -171,7 +173,7 @@ export class Driver {
    * Erases the temporary data of the driver.
    */
   clearTempData() {
-    this.crossedFinishLine = false;
+    this.crossedFinishLine = null;
     this.currentIndex = null;
     this.setLapInvalid();
     this.points = this.newPointArray();
@@ -184,10 +186,6 @@ export class Driver {
    */
   addDeltaPoint(distance: number, completedLaps: number) {
     const time = Driver.getTime();
-
-    if (this.previousDistance != -1 && this.previousDistance - distance > this.trackLength / 2 && this.completedLaps == null) { // TODO: get rid of this when RR decides to fix its CompletedLaps value...
-      this.crossedFinishLine = true;
-    }
 
     const newCurrentIndex = Math.floor(distance * Driver.pointsPerMeter);
     if (this.currentIndex == null) {
@@ -226,7 +224,7 @@ export class Driver {
     }
     this.currentIndex = -1;
 
-    if (this.crossedFinishLine) {
+    if (this.crossedFinishLine != null) {
       if ((!valueIsValid(laptime)) || laptime == null) {
         laptime = time - this.points[0];
       };
@@ -237,19 +235,26 @@ export class Driver {
         if (laptime < Driver.MIN_LAP_TIME) {
           console.log(`Invalid lap time for ${this.userId}: ${laptime}`)
           this.setLapInvalid();
-        } else if (this.bestLapTime == null || (laptime < this.bestLapTime && (this.currentLapValid || !this.bestLapTimeValid))) {
-          if (this.currentLapValid && Driver.mainDriver === this) {
-            shouldSaveBestLap = true;
+        } else {
+          if (this.bestLapTime == null || (laptime < this.bestLapTime && (this.currentLapValid || !this.bestLapTimeValid))) {
+            if (this.currentLapValid && Driver.mainDriver === this) {
+              shouldSaveBestLap = true;
+            }
+            if (shouldSaveBestLap || this.completedLaps >= 0) {
+              this.bestLap = this.points.slice();
+              this.bestLapTime = laptime;
+            }
           }
-          if (shouldSaveBestLap || this.completedLaps >= 0) {
-            this.bestLap = this.points.slice();
-            this.bestLapTime = laptime;
+
+          if (this.currentLapValid && (this.sessionBestLapTime == null || laptime < this.sessionBestLapTime)) {
+            this.sessionBestLap = this.points.slice();
+            this.sessionBestLapTime = laptime;
           }
         }
       }
     }
 
-    this.crossedFinishLine = true;
+    this.crossedFinishLine = Driver.getTime();
     this.currentLapValid = true;
 
     return shouldSaveBestLap;
@@ -349,6 +354,17 @@ export class Driver {
     return Math.abs(point2Time - point1Time);
   }
 
+  getDeltaToLap(lap: number[], distance: number) {
+    if (lap.length === 0 || this.crossedFinishLine == null) return null;
+    let timeInLap = lap[Math.floor(distance * Driver.pointsPerMeter)];
+    if (timeInLap == null) return null;
+
+    timeInLap = timeInLap - lap[0];
+    const currentTime = Driver.getTime() - this.crossedFinishLine;
+
+    return currentTime - timeInLap;
+  }
+
   /**
    * Get the track distance to a driver ahead.
    */
@@ -417,7 +433,7 @@ export function getUid(driverInfo: IDriverInfo): string {
 }
 
 
-export type Vector = {x: number; y: number; z: number;};
+export type Vector = { x: number; y: number; z: number; };
 
 export function vectorSubtract(a: Vector, b: Vector): Vector {
   const res = {
@@ -484,7 +500,7 @@ export class AudioController {
   playbackRateMultiplier: number;
   volumeMultiplier: number;
 
-  constructor({minPlaybackRate = 0.1, maxPlaybackRate = 10, playbackRateMultiplier = 2, volumeMultiplier = 1} = {}) {
+  constructor({ minPlaybackRate = 0.1, maxPlaybackRate = 10, playbackRateMultiplier = 2, volumeMultiplier = 1 } = {}) {
     this.minPlaybackRate = minPlaybackRate;
     this.maxPlaybackRate = maxPlaybackRate;
     this.playbackRateMultiplier = playbackRateMultiplier;
@@ -529,12 +545,12 @@ enum LogLevel {
 }
 
 function writeToLog(ipc: import('electron').IpcRenderer, message: string, level: LogLevel = LogLevel.INFO) {
-  ipc.send('log', {message, level});
+  ipc.send('log', { message, level });
 }
 
 const realConsoleError = console.error;
 
-const sourceMaps: {[key: string] : RawSourceMap} = {};
+const sourceMaps: { [key: string]: RawSourceMap } = {};
 async function getSourceMapFromUri(uri: string) {
   if (sourceMaps[uri] != undefined) {
     return sourceMaps[uri];
@@ -582,7 +598,7 @@ async function mapStackTrace(stack: string) {
   return mappedStack.join('\n');
 }
 
-async function mapStackTraceAsync(stack: string): Promise<string> {
+export async function mapStackTraceAsync(stack: string): Promise<string> {
   try {
     return await mapStackTrace(stack);
   } catch (e) {

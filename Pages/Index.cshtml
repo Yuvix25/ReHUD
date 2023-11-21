@@ -36,13 +36,14 @@
                     <span id="current-laptime" class="value"></span>
                     <span class="label">Current Laptime</span>
                 </div>
-            </div>
 
-            <div id="top-right-group" class="row">
                 <div class="container" id="strength-of-field-container">
                     <span id="strength-of-field" class="value"></span>
                     <span class="label">SoF</span>
                 </div>
+            </div>
+
+            <div id="top-right-group" class="row">
                 <div class="container" id="last-lap-session-container">
                     <span id="last-lap-session" class="value"></span>
                     <span class="label">Last Lap</span>
@@ -50,6 +51,10 @@
                 <div class="container" id="best-lap-session-container">
                     <span id="best-lap-session" class="value"></span>
                     <span class="label">Best Lap</span>
+                </div>
+                <div class="container" id="best-lap-alltime-container">
+                    <span id="best-lap-alltime" class="value"></span>
+                    <span class="label">All-time Best</span>
                 </div>
                 <div class="container" id="incident-points-container">
                     <span id="incident-points" class="value"></span>
@@ -70,7 +75,7 @@
 
     <div id="bottom-group" class="row sb">
         <div id="bottom-left-group" class="row">
-            <table id="tires" class="hud-element">
+            <table id="tires">
                 <tr>
                     <td id="front-left">
                         <div class="row wheel">
@@ -161,22 +166,22 @@
                 </tr>
             </table>
 
-            <table id="damage" class="hud-element">
-                <tr>
+            <table id="damage">
+                <tr id="engine-damage">
                     <td><span>Engine</span></td>
-                    <td id="engine-damage"><progress max="1"></progress></td>
+                    <td><progress max="1"></progress></td>
                 </tr>
-                <tr>
+                <tr id="transmission-damage">
                     <td><span>Transmission</span></td>
-                    <td id="transmission-damage"><progress max="1"></progress></td>
+                    <td><progress max="1"></progress></td>
                 </tr>
-                <tr>
+                <tr id="aerodynamics-damage">
                     <td><span>Aerodynamics</span></td>
-                    <td id="aerodynamics-damage"><progress max="1"></progress></td>
+                    <td><progress max="1"></progress></td>
                 </tr>
-                <tr>
+                <tr id="suspension-damage">
                     <td><span>Suspension</span></td>
-                    <td id="suspension-damage"><progress max="1"></progress></td>
+                    <td><progress max="1"></progress></td>
                 </tr>
             </table>
 
@@ -231,7 +236,7 @@
 
 
         <div id="bottom-right-group" class="row">
-            <he id="relative-viewer" class="hud-element">
+            <he id="relative-viewer">
                 <table>
                     <tbody></tbody>
                 </table>
@@ -293,5 +298,9 @@
     <span id="sector-3"></span>
 </div>
 
-<div id="radar" class="hud-element"></div>
+<div id="radar"></div>
 
+<he id="pit-timer">
+    <span>Pit time left:</span>
+    <span id="pit-time-left">N/A</span>
+</he>

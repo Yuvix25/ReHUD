@@ -5,22 +5,36 @@ import {DeltaManager, Driver} from "../utils.js";
 import SettingsValue from "../SettingsValue.js";
 
 export default class Delta extends HudElement {
-    override inputKeys: string[] = ['timeDeltaBestSelf', 'currentLapValid', 'lapDistance'];
+    override inputKeys: string[] = ['timeDeltaBestSelf', 'lapTimeCurrentSelf', 'currentLapValid', 'lapDistance'];
 
     protected override onNewLap(_data: IShared, driver: IDriverData, isMainDriver: boolean): void {
         if (isMainDriver)
             DeltaManager.clear();
     }
 
-    protected override render(timeDeltaBestSelf: number, currentLapValid: number, lapDistance: number, elementId: string): Hide | Style {
-        if (SettingsValue.get(DELTA_MODE) === 'alltime') {
-            if (Driver.mainDriver != null && Driver.mainDriver.bestLap != null) {
-                timeDeltaBestSelf = Driver.mainDriver.getDeltaToLap(Driver.mainDriver.bestLap, lapDistance);
-            }
-        } else if (SettingsValue.get(DELTA_MODE) === 'session' && SettingsValue.get(SHOW_DELTA_ON_INVALID_LAPS) && (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000)) {
-            if (Driver.mainDriver != null && Driver.mainDriver.sessionBestLap != null) {
-                timeDeltaBestSelf = Driver.mainDriver.getDeltaToLap(Driver.mainDriver.sessionBestLap, lapDistance);
-            }
+    protected override render(timeDeltaBestSelf: number, lapTimeCurrentSelf: number, currentLapValid: number, lapDistance: number, elementId: string): Hide | Style {
+        let usingAlltime = false;
+        switch (SettingsValue.get(DELTA_MODE)) {
+            case 'session':
+            case 'session-fallback-alltime':
+                if (SettingsValue.get(SHOW_DELTA_ON_INVALID_LAPS) && (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000) && Driver.mainDriver?.sessionBestLap != null) {
+                    timeDeltaBestSelf = Driver.mainDriver.getDeltaToLap(Driver.mainDriver.sessionBestLap, lapDistance, lapTimeCurrentSelf);
+                }
+                
+                if (SettingsValue.get(DELTA_MODE) !== 'session-fallback-alltime' || (timeDeltaBestSelf != null && timeDeltaBestSelf != -1000)) break;
+            case 'alltime':
+                if (Driver.mainDriver?.bestLap != null && Driver.mainDriver.bestLapTimeValid && (Driver.mainDriver.bestLapTime != Driver.mainDriver.sessionBestLapTime || timeDeltaBestSelf == -1000 || timeDeltaBestSelf == null)) {
+                    timeDeltaBestSelf = Driver.mainDriver.getDeltaToLap(Driver.mainDriver.bestLap, lapDistance, lapTimeCurrentSelf);
+                    usingAlltime = true;
+                }
+                break;
+
+        }
+
+        if (Driver.mainDriver != null && Driver.mainDriver.crossedFinishLine == null) {
+            currentLapValid = 0;
+        } else if (SettingsValue.get(SHOW_DELTA_ON_INVALID_LAPS)) {
+            currentLapValid = 1;
         }
 
         if (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000 || !valueIsValid(currentLapValid) || currentLapValid === 0) {
@@ -29,7 +43,7 @@ export default class Delta extends HudElement {
         }
 
         DeltaManager.addDelta(timeDeltaBestSelf);
-        const delta = DeltaManager.getDeltaOfDeltas();
+        const delta = DeltaManager.getDeltaOfDeltas(usingAlltime ? 0.5 : null); // much more fluctuation for alltime deltas, smaller multiplier to compensate
 
         const parent = document.getElementById(elementId).parentElement;
         const deltaText = parent?.children?.[0];

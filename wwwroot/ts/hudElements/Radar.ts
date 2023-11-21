@@ -1,4 +1,4 @@
-import HudElement, {Hide} from "./HudElement.js";
+import {Hide, HudElementWithHideDelay} from "./HudElement.js";
 import SettingsValue from "../SettingsValue.js";
 import {RADAR_RANGE, RADAR_BEEP_MIN_SPEED} from "../consts.js";
 import {IDriverData, IPlayerData, IVector3} from "../r3eTypes.js";
@@ -10,7 +10,7 @@ interface IExtendedDriverData extends IDriverData {
     relativeOrientation: IVector3;
 }
 
-export default class Radar extends HudElement {
+export default class Radar extends HudElementWithHideDelay {
     override inputKeys: string[] = ['driverData', 'player', 'position', 'carSpeed'];
 
     protected override render(drivers: IExtendedDriverData[], driver: IPlayerData, myPlace: number, speed: number, radarId: string): Hide | null {
@@ -40,7 +40,7 @@ export default class Radar extends HudElement {
                 d.relativeOrientation = {x: 0, y: 0, z: 0};
             }
         });
-        const close = drivers.filter(d => distanceFromZero(d.relativePosition) < radarRange);
+        const close = drivers.filter(d => distanceFromZero(d.relativePosition) < radarRange + 4);
 
         let closeLeft = 0;
         let closeRight = 0;
@@ -107,25 +107,9 @@ export default class Radar extends HudElement {
         if ((closeLeft === 1 || closeRight === 1) && speed >= RADAR_BEEP_MIN_SPEED && this.hud.radarAudioController != null)
             this.hud.radarAudioController.play(1 - closest / radarRange, closeLeft * -1 + closeRight * 1);
 
-        if (closest === null)
+        if (closest === null || closest > radarRange)
             return this.hide();
 
-
-        this.lastShown = Date.now();
         return null;
-    }
-
-    private lastShown = -1;
-    private static readonly hideDelay = 1000;
-
-    protected override hide(alt?: string): string | Hide {
-        if (this.hud.isInEditMode) {
-            return alt;
-        }
-
-        if (this.lastShown != -1 && Date.now() - this.lastShown < Radar.hideDelay)
-            return alt;
-        
-        return super.hide(alt);
     }
 }

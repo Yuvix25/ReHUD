@@ -1,6 +1,6 @@
 import {ipcRenderer} from "electron";
 import Action from "../Action.js";
-import {IExtendedShared, valueIsValid} from "../consts.js";
+import {IExtendedShared, sessionPhaseNotDriving, valueIsValid} from "../consts.js";
 import IShared, {ESession, IDriverData} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
 
@@ -18,6 +18,7 @@ export default class DriverManager extends Action {
     }
 
     public clearDriversTempData(data?: IShared): void {
+        console.log('Clearing drivers temp data');
         const cleared: Set<string> = new Set();
         for (const driver of data?.driverData ?? []) {
             const uid = getUid(driver.driverInfo);
@@ -27,8 +28,9 @@ export default class DriverManager extends Action {
             }
         }
         for (const uid of Object.keys(this.drivers)) {
-            if (!cleared.has(uid))
+            if (!cleared.has(uid)) {
                 this.drivers[uid].clearTempData();
+            }
         }
     }
 
@@ -49,11 +51,11 @@ export default class DriverManager extends Action {
             const prevSectors = driver.sectorTimePreviousSelf;
             let shouldSaveBestLap = false;
             if (isMainDriver && valueIsValid(data.lapTimePreviousSelf))
-                shouldSaveBestLap = this.drivers[uid].endLap(data.lapTimePreviousSelf);
+                shouldSaveBestLap = this.drivers[uid].endLap(data.lapTimePreviousSelf, data.completedLaps, data.sessionType);
             else if (valueIsValid(prevSectors.sector3))
-                shouldSaveBestLap = this.drivers[uid].endLap(prevSectors.sector3);
+                shouldSaveBestLap = this.drivers[uid].endLap(prevSectors.sector3, driver.completedLaps, data.sessionType);
             else
-                shouldSaveBestLap = this.drivers[uid].endLap(null);
+                shouldSaveBestLap = this.drivers[uid].endLap(null, driver.completedLaps, data.sessionType);
 
             if (shouldSaveBestLap)
                 this.drivers[uid].saveBestLap(data.layoutId, driver.driverInfo.classId, ipcRenderer);
@@ -64,10 +66,16 @@ export default class DriverManager extends Action {
         this.clearDriversTempData(data);
     }
 
+    protected override onSessionPhaseChange(data: IShared, lastSessionPhase: number): void {
+        if (sessionPhaseNotDriving(data.sessionPhase) || sessionPhaseNotDriving(lastSessionPhase)) {
+            this.clearDriversTempData(data);
+        }
+    }
+
     execute(extendedData: IExtendedShared): void {
         const data = extendedData.rawData;
 
-        if (data.gameInReplay)
+        if (data.gameInReplay && !data.gameInMenus)
             this.clearDriversTempData(data);
 
         if (data.gamePaused)

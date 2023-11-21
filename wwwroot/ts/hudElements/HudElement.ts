@@ -11,6 +11,13 @@ export type HUDElementOptions = {
 };
 
 export class Hide { }
+class DelayHide extends Hide {
+    public alt: string;
+    constructor(alt: string) {
+        super();
+        this.alt = alt;
+    }
+}
 
 type WriteableCssProperty = keyof Omit<CSSStyleDeclaration, 'length' | 'parentRule'>;
 type StyleObject = {[key in WriteableCssProperty]?: string};
@@ -76,10 +83,14 @@ export default abstract class HudElement extends Action {
      */
     protected abstract render(...values: any[]): string | Style | null | Hide;
 
-    public execute(data: IExtendedShared) {
+    protected renderWrapper(...values: any[]): string | Style | null | Hide {
         this.root = document.querySelector(':root');
 
-        const res = this.render(...this.getInputs(data), this.elementId ?? this.containerId);
+        return this.render(...values);
+    }
+
+    public execute(data: IExtendedShared) {
+        const res = this.renderWrapper(...this.getInputs(data), this.elementId ?? this.containerId);
 
         let element = document.getElementById(this.elementId);
         const container = this.containerId == null ? null : document.getElementById(this.containerId);
@@ -145,3 +156,32 @@ export default abstract class HudElement extends Action {
         return this._isHidden;
     }
 }
+
+export abstract class HudElementWithHideDelay extends HudElement {
+  private lastShown = -1;
+  protected static readonly hideDelay = 1000;
+
+  protected override renderWrapper(...values: any[]): string | Style | null | Hide {
+    const res = super.renderWrapper(...values);
+
+    if (!(res instanceof Hide)) {
+        this.lastShown = Date.now();
+    }
+    if (res instanceof DelayHide) {
+        return res.alt;
+    }
+    return res;
+  }
+
+  protected override hide(alt?: string): string | Hide {
+    if (this.hud.isInEditMode) {
+      return alt;
+    }
+
+    if (this.lastShown != -1 && Date.now() - this.lastShown < (this.constructor as any).hideDelay)
+      return new DelayHide(alt);
+
+    return super.hide(alt);
+  }
+}
+

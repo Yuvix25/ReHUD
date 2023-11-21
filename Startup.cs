@@ -595,6 +595,8 @@ public class Startup
             return;
         }
 
+        var fuelNow = data.vehicleInfo.engineType == 1 ? data.batterySoC : data.fuelLeft;
+
         int modelId = data.vehicleInfo.modelId;
         int layoutId = data.layoutId;
         FuelCombination combo = fuelData.GetCombination(layoutId, modelId);
@@ -604,12 +606,12 @@ public class Startup
 
         if (data.fuelUseActive >= 1 && lastFuel != -1)
         {
-            combo.AddFuelUsage(lastFuel - data.fuelLeft, data.lapTimePreviousSelf > 0);
+            combo.AddFuelUsage(lastFuel - fuelNow, data.lapTimePreviousSelf > 0);
         }
 
         if (data.fuelUseActive <= 1)
             fuelData.Save();
 
-        lastFuel = data.fuelLeft;
+        lastFuel = fuelNow;
     }
 }

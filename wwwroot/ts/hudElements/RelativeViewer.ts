@@ -146,7 +146,10 @@ export default class RelativeViewer extends HudElement {
                 return this.hide();
             }
 
-            classImg.src = `https://game.raceroom.com/store/image_redirect?id=${classId}&size=thumb`;
+            const newSrc = `https://game.raceroom.com/store/image_redirect?id=${classId}&size=thumb`;
+            if (classImg.src !== newSrc) {
+                classImg.src = newSrc;
+            }
 
             const classColor = classColors.get(driver.driverInfo.classPerformanceIndex);
             const colorCell = insertCell(row, undefined, 'class-color');

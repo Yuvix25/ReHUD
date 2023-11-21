@@ -54,12 +54,17 @@
 
   --damage-color-ok: white;
   --damage-color-partial: rgb(235, 121, 14);
-  --damage-color-full: rgb(255, 0, 0);
+  --damage-color-full: rgb(255, 36, 36);
 
-  --engine-damage-color: white;
-  --aerodynamics-damage-color: white;
-  --transmission-damage-color: white;
-  --suspension-damage-color: white;
+  --engine-damage-color: var(--damage-color-ok);
+  --aerodynamics-damage-color: var(--damage-color-ok);
+  --transmission-damage-color: var(--damage-color-ok);
+  --suspension-damage-color: var(--damage-color-ok);
+
+  --engine-damage-text-color: var(--damage-color-ok);
+  --aerodynamics-damage-text-color: var(--damage-color-ok);
+  --transmission-damage-text-color: var(--damage-color-ok);
+  --suspension-damage-text-color: var(--damage-color-ok);
 
 
   --relative-view-height: 237px;
@@ -320,18 +325,17 @@ he#basic td {
 
 .wheel #front-left-brake div {
   background-color: var(--front-left-brake-color);
-  margin-left: 0px;
 }
 .wheel #front-right-brake div {
   background-color: var(--front-right-brake-color);
+  margin-left: -1px;
 }
 .wheel #rear-left-brake div {
   background-color: var(--rear-left-brake-color);
-
-  margin-left: 0px;
 }
 .wheel #rear-right-brake div {
   background-color: var(--rear-right-brake-color);
+  margin-left: -1px;
 }
 
 
@@ -475,12 +479,18 @@ he#basic td {
   filter: grayscale(var(--tc-grayscale)) brightness(var(--tc-brightness));
 }
 
-span#gear {
+#gear {
   font-size: 130px;
   margin: 0 !important;
   margin-top: -3px !important;
   color: var(--revs-color);
+}
+
+#gear.one-digit {
   width: 69px !important;
+}
+#gear:not(.one-digit) {
+  width: 117px !important;
 }
 
 
@@ -604,6 +614,19 @@ progress#revs::-webkit-progress-value {
   background-color: var(--aerodynamics-damage-color);
 }
 
+#engine-damage span {
+  color: var(--engine-damage-text-color);
+}
+#transmission-damage span {
+  color: var(--transmission-damage-text-color);
+}
+#suspension-damage span {
+  color: var(--suspension-damage-text-color);
+}
+#aerodynamics-damage span {
+  color: var(--aerodynamics-damage-text-color);
+}
+
 
 #relative-viewer {
   padding-left: 2px;
@@ -719,6 +742,10 @@ progress#revs::-webkit-progress-value {
   direction: rtl;
 }
 
+#current-laptime {
+  width: 180px !important;
+}
+
 #time-left span {
   margin: 0 !important;
   margin-right: 1px !important;
@@ -819,16 +846,38 @@ progress#revs::-webkit-progress-value {
 }
 
 
+#pit-timer {
+  position: absolute !important;
+  right: 10px;
+  top: calc(50% + 245px);
+  translate: 0px -50%;
+
+  width: 648px;
+  text-align: center;
+
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#pit-timer span {
+  font-size: 30px;
+}
 
 
 
 #position-bar {
-  justify-content: space-between;
+  width: 100%;
+  justify-content: center;
   align-items: center;
   gap: 5px;
 
+  overflow: visible !important;
+
   height: 90px;
   background-color: rgba(35, 35, 35, 0.45);
+
+  margin-left: 50%;
+  translate: -50%;
 }
 
 #position-bar .position-bar-driver {
@@ -838,6 +887,8 @@ progress#revs::-webkit-progress-value {
 
   justify-content: space-between;
   align-items: center;
+
+  max-width: 230px;
 }
 
 #position-bar .position-bar-driver div.col {

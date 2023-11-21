@@ -40,9 +40,10 @@
 
     <slider-setting key="positionBarCellCount" min="3" max="51" step="2" value="13">Position Bar Cell Count</slider-setting>
 
-    <choice-setting key="deltaMode" value="session" tooltip="'Alltime Best' will give the best lap recorded by ReHUD. If no valid lap was recorded yet, will fallback to the session best provided by RaceRoom.">
+    <choice-setting key="deltaMode" value="session" tooltip="'All-time Best' will give the best lap recorded by ReHUD. If no valid lap was recorded yet, will fallback to the session best provided by RaceRoom.">
         <label>Show Delta Compared to</label>
         <button value="session">Session Best</button>
+        <button value="session-fallback-alltime">Session Best - Fallback to All-time</button>
         <button value="alltime">All-time Best</button>
     </choice-setting>
     <toggle-setting key="showDeltaOnInvalidLaps">Show Delta On Invalid Laps</toggle-setting>

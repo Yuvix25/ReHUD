@@ -31,14 +31,20 @@ export default class RankedData extends EventListener {
             return;
 
         this.isLoading = true;
-        const rankedData: RankedDataEntry[] = await (await fetch(RankedData.URL)).json();
-        this.rankedData = {};
-        for (const driver of rankedData) {
-            this.rankedData[driver.UserId.toString()] = driver;
-        }
+        try {
+            const rankedData: RankedDataEntry[] = await (await fetch(RankedData.URL)).json();
 
-        console.log('Loaded ranked data');
-        this.isLoading = false;
+            this.rankedData = {};
+            for (const driver of rankedData) {
+              this.rankedData[driver.UserId.toString()] = driver;
+            }
+
+            console.log('Loaded ranked data');
+        } catch (e) {
+            console.error('Failed to load ranked data', e);
+        } finally {
+            this.isLoading = false;
+        }
     }
 
     public getRankedData(uid: number): RankedDataEntry {

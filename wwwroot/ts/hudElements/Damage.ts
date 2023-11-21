@@ -15,8 +15,9 @@ export default class Damage extends HudElement {
             if (value == -1)
                 return this.hide();
 
-            element.value = (value === 0 ? 1 : value).toString();
-            this.root.style.setProperty(`--${part}-damage-color`, value == 0 ? 'var(--damage-color-full)' : value == 1 ? 'var(--damage-color-ok)' : 'var(--damage-color-partial)');
+            element.value = value.toString();
+            this.root.style.setProperty(`--${part}-damage-color`, value == 1 ? 'var(--damage-color-ok)' : 'var(--damage-color-partial)');
+            this.root.style.setProperty(`--${part}-damage-text-color`, value == 0 ? 'var(--damage-color-full)' : 'var(--damage-color-ok)');
         }
 
         return null;

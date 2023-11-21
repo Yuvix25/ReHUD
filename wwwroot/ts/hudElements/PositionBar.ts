@@ -56,18 +56,9 @@ export default class PositionBar extends HudElement {
 
         const POSITION_BAR_SIZE = SettingsValue.get(POSITION_BAR_CELL_COUNT);
 
-        let changeFront = true;
         if (POSITION_BAR_SIZE < positionBar.children.length) {
             for (let i = 0; i < positionBar.children.length - POSITION_BAR_SIZE; i++) {
-                let toRemove;
-                if (changeFront) {
-                    toRemove = positionBar.firstChild;
-                } else {
-                    toRemove = positionBar.lastChild;
-                }
-                toRemove.remove();
-
-                changeFront = !changeFront;
+                positionBar.lastChild.remove();
             }
         } else if (POSITION_BAR_SIZE > positionBar.children.length) {
             for (let i = 0; i < POSITION_BAR_SIZE - positionBar.children.length; i++) {
@@ -98,14 +89,8 @@ export default class PositionBar extends HudElement {
                 col.appendChild(time);
 
                 cell.appendChild(col);
-                
-                if (changeFront) {
-                    positionBar.insertBefore(cell, positionBar.firstChild);
-                } else {
-                    positionBar.appendChild(cell);
-                }
 
-                changeFront = !changeFront;
+                positionBar.appendChild(cell);
             }
         }
 
@@ -117,6 +102,11 @@ export default class PositionBar extends HudElement {
 
         position--;
         const me = driverData[position];
+
+        if (me === null) {
+            console.error('PositionBar: me is null', driverData, position);
+            return this.hide();
+        }
 
         const driverCount = driverData.length;
         const start = Math.max(0, Math.ceil(position - POSITION_BAR_SIZE / 2));
@@ -130,6 +120,10 @@ export default class PositionBar extends HudElement {
         let firstCell = start - Math.ceil(position - POSITION_BAR_SIZE / 2);
         for (let i = 0; i < POSITION_BAR_SIZE; i++) {
             const positionBarCell: HTMLDivElement = positionBar.children[i] as HTMLDivElement;
+
+            if (positionBarCell == null) {
+                continue;
+            }
 
             const positionElement: HTMLSpanElement = positionBarCell.querySelector('.position-bar-driver-position');
             const nameElement: HTMLSpanElement = positionBarCell.querySelector('.position-bar-driver-name');
@@ -228,6 +222,7 @@ export default class PositionBar extends HudElement {
                 nameElement.textContent = '';
                 deltaElement.textContent = '';
                 timeElement.textContent = '';
+                positionBarCell.style.backgroundColor = null;
             }
         }
 

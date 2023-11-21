@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "electron": ">=26.2.4",
+    "electron": "^26.2.4",
     "fs": "^0.0.1-security",
     "source-map-js": "^1.0.2"
   },

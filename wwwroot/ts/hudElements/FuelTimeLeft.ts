@@ -1,10 +1,14 @@
 import HudElement from "./HudElement.js";
 import {NA, allValuesAreValid, timeFormat} from "../consts.js";
+import {EEngineType, IDriverInfo} from '../r3eTypes.js';
 
 export default class FuelTimeLeft extends HudElement {
-    override inputKeys: string[] = ['fuelLeft', '+fuelPerLap', '+averageLapTime'];
+    override inputKeys: string[] = ['vehicleInfo', 'fuelLeft', 'batterySoC', '+fuelPerLap', '+averageLapTime'];
 
-    protected override render(fuelLeft: number, fuelPerLap: number, averageLapTime: number): string {        
+    protected override render(vehicleInfo: IDriverInfo, fuelLeft: number, battery: number, fuelPerLap: number, averageLapTime: number): string {
+        if (vehicleInfo.engineType === EEngineType.Electric) {
+            fuelLeft = battery;
+        }
         if (!allValuesAreValid(fuelLeft, fuelPerLap, averageLapTime))
             return NA;
 

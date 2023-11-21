@@ -39,6 +39,8 @@ import TractionControl from './hudElements/TractionControl.js';
 import PositionBar from './hudElements/PositionBar.js';
 import CurrentLaptime from './hudElements/CurrentLaptime.js';
 import StrengthOfField from './hudElements/StrengthOfField.js';
+import AlltimeBestLap from './hudElements/AlltimeBestLap.js';
+import PitTimer from './hudElements/PitTimer.js';
 
 enableLogging(ipcRenderer, 'index.js');
 
@@ -73,6 +75,8 @@ const hud = new Hud([
     new StrengthOfField({name: 'StrengthOfField', elementId: 'strength-of-field', renderEvery: 1000}),
     new SessionLastLap({name: 'SessionLastLaps', elementId: 'last-lap-session', renderEvery: 200}),
     new SessionBestLap({name: 'SessionBestLap', elementId: 'best-lap-session', renderEvery: 200}),
+    new AlltimeBestLap({name: 'AlltimeBestLap', elementId: 'best-lap-alltime', renderEvery: 200}),
+
     new Position({name: 'Position', containerId: 'position-container', elementId: 'position', renderEvery: 100}),
     new CurrentLaptime({name: 'CurrentLaptime', elementId: 'current-laptime', renderEvery: 50}),
     new IncidentPoints({name: 'IncidentPoints', containerId: 'incident-points-container', elementId: 'incident-points', renderEvery: 100}),
@@ -81,6 +85,7 @@ const hud = new Hud([
 
     new Delta({name: 'Delta', containerId: 'delta', elementId: 'delta-number', renderEvery: 50}),
     new SectorTimes({name: 'SectorTimes', containerId: 'sector-times', renderEvery: 50}),
+    new PitTimer({name: 'PitTimer', containerId: 'pit-timer', elementId: 'pit-time-left', renderEvery: 50}),
 ]);
 
 (window as any).hud = hud;
@@ -227,8 +232,10 @@ function showHUD() {
 }
 
 function hideHUD() {
-    isShown = false;
-    document.body.style.display = 'none';
+    if (!hud.isInEditMode) {
+        isShown = false;
+        document.body.style.display = 'none';
+    }
 }
 
 

@@ -1,4 +1,4 @@
-import IShared, {ESession, IDriverData} from "./r3eTypes.js";
+import IShared, {ESession, ESessionPhase, IDriverData} from "./r3eTypes.js";
 import {getUid} from "./utils.js";
 
 export type EventCallbacks = {
@@ -14,11 +14,13 @@ export default class EventEmitter {
     static readonly NEW_LAP_EVENT = 'newLap';
     static readonly POSITION_JUMP_EVENT = 'positionJump';
     static readonly ENTERED_PITLANE_EVENT = 'enteredPitlane';
+    static readonly GAME_PAUSED_EVENT = 'gamePaused';
+    static readonly GAME_RESUMED_EVENT = 'gameResumed';
     static readonly SESSION_CHANGED_EVENT = 'sessionChanged';
+    static readonly SESSION_PHASE_CHANGED_EVENT = 'sessionPhaseChanged';
 
 
-    static CLOSE_THRESHOLD = 100;
-    static FAST_THRESHOLD = 500; // km/h
+    static CLOSE_THRESHOLD = 50; // meters
     static events: {[key: string]: Array<(data: any) => void>} = {};
     static previousData: IShared = null;
     static uidMapPrevious: {[key: string]: IDriverData} = null;
@@ -44,8 +46,17 @@ export default class EventEmitter {
         if (isMainDriver !== false) {
             console.log('Emitting ' + eventName + ' event.');
 
-            if (eventName === EventEmitter.SESSION_CHANGED_EVENT) {
-                console.log(`Session changed: ${ESession[this.previousData.sessionType]} -> ${ESession[data.sessionType]}`)
+            switch (eventName) {
+                case EventEmitter.SESSION_CHANGED_EVENT:
+                    console.log(`Session changed: ${ESession[this.previousData.sessionType]} -> ${ESession[data.sessionType]}`)
+                    break;
+                case EventEmitter.SESSION_PHASE_CHANGED_EVENT:
+                    console.log(
+                      `Session phase changed: ${
+                        ESessionPhase[this.previousData.sessionPhase]
+                      } -> ${ESessionPhase[data.sessionPhase]}`
+                    );
+                    break;
             }
         }
         if (isMainDriver !== null) args.push(isMainDriver);
@@ -71,15 +82,33 @@ export default class EventEmitter {
             newDriverMap[getUid(driver.driverInfo)] = driver;
         }
 
-        let emittedNewLapOrPosJumpForMainDriver = false;
         if (this.previousData != null) {
-            if (this.previousData.sessionType !== data.sessionType) {
-                this.emit(EventEmitter.SESSION_CHANGED_EVENT, null, data, this.previousData.sessionType);
-            }
-
             const mainDriverInfo = structuredClone(data.vehicleInfo);
             mainDriverInfo.name = data.playerName;
             const mainDriverUid = getUid(mainDriverInfo);
+
+            let emittedPositionJump = false;
+
+
+            if (this.previousData.sessionType !== data.sessionType) {
+                this.emit(EventEmitter.SESSION_CHANGED_EVENT, null, data, this.previousData.sessionType);
+            }
+            if (this.previousData.sessionPhase !== data.sessionPhase) {
+                this.emit(EventEmitter.SESSION_PHASE_CHANGED_EVENT, null, data, this.previousData.sessionPhase);
+            }
+
+            if (data.controlType != null && data.controlType > 0 && this.previousData.controlType != data.controlType) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
+                this.emit(EventEmitter.POSITION_JUMP_EVENT, true, data, newDriverMap[mainDriverUid]);
+                emittedPositionJump = true;
+            }
+
+            if (data.gamePaused == 1 && this.previousData.gamePaused != 1) {
+              this.emit(EventEmitter.GAME_PAUSED_EVENT, null, data);
+            }
+            if (data.gamePaused == 0 && this.previousData.gamePaused == 1) {
+              this.emit(EventEmitter.GAME_RESUMED_EVENT, null, data);
+            }
+            
             for (const uid of Object.keys(newDriverMap)) {
                 const driver = newDriverMap[uid];
                 const driverPrevious = this.uidMapPrevious[uid];
@@ -90,29 +119,26 @@ export default class EventEmitter {
 
                 const isMainDriver = uid === mainDriverUid;
 
-                const emitNewLapOrPosJump = (ev: typeof EventEmitter.NEW_LAP_EVENT | typeof EventEmitter.POSITION_JUMP_EVENT) => {
-                    if (isMainDriver) {
-                        emittedNewLapOrPosJumpForMainDriver = true;
-                    }
-                    this.emit(ev, isMainDriver, data, driver);
-                }
+                let toEmit: string = null;
 
-                if (driverPrevious.completedLaps !== driver.completedLaps && (driverPrevious.completedLaps == null || driver.completedLaps > driverPrevious.completedLaps)) {
-                    emitNewLapOrPosJump(EventEmitter.NEW_LAP_EVENT);
-                } else if (driver.completedLaps == 0
+                if ((driverPrevious.completedLaps !== driver.completedLaps && (driverPrevious.completedLaps == null || driver.completedLaps > driverPrevious.completedLaps))
+                    ||
+                    (driver.completedLaps == 0
                     && driverPrevious.lapDistance >= data.layoutLength - EventEmitter.CLOSE_THRESHOLD
                     && driver.lapDistance <= EventEmitter.CLOSE_THRESHOLD
-                    && data.sessionType === ESession.Race) {
-                    emitNewLapOrPosJump(EventEmitter.NEW_LAP_EVENT);
+                    && (data.sessionType === ESession.Race || data.sessionType === ESession.Qualify))) {
+                        toEmit = EventEmitter.NEW_LAP_EVENT;
                 }
 
                 if (driverPrevious.inPitlane !== 1 && driver.inPitlane === 1) {
-                    this.emit(EventEmitter.ENTERED_PITLANE_EVENT, isMainDriver, data, driver);
+                    toEmit = EventEmitter.ENTERED_PITLANE_EVENT;
                 }
-            }
 
-            if (!emittedNewLapOrPosJumpForMainDriver && (data.controlType != null && data.controlType > 0 && this.previousData.controlType != data.controlType)) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
-                this.emit(EventEmitter.POSITION_JUMP_EVENT, true, data, newDriverMap[mainDriverUid]);
+                if (toEmit != null) {
+                    if (!(toEmit === EventEmitter.NEW_LAP_EVENT && isMainDriver) || !emittedPositionJump) {
+                      this.emit(toEmit, isMainDriver, data, driver);
+                    }
+                }
             }
         }
         

@@ -1,6 +1,6 @@
 /* ========================================== Types ========================================== */
 
-import IShared, { IDriverData } from './r3eTypes.js';
+import IShared, { EFinishStatus, ESessionPhase, IDriverData } from './r3eTypes.js';
 
 export interface IExtendedShared {
   rawData: IShared;
@@ -44,6 +44,8 @@ export const halfLengthTop = Math.ceil((RELATIVE_LENGTH - 1) / 2);
 export const halfLengthBottom = Math.floor((RELATIVE_LENGTH - 1) / 2);
 
 export const MAIN_CONTAINER_MARGIN = 7; // note: this value must match the value from app.css
+
+export const TRUCK_CLASS_ID = 9989;
 
 export const NA = 'N/A';
 
@@ -103,6 +105,7 @@ export const TRANSFORMABLES = {
   'strength-of-field-container': 'Strength of Field',
   'last-lap-session-container': 'Last Laptime',
   'best-lap-session-container': 'Best Laptime',
+  'best-lap-alltime-container': 'All-time Best',
   'incident-points-container': 'Incident Points',
   'time-left-container': 'Time Left',
 
@@ -113,6 +116,7 @@ export const TRANSFORMABLES = {
   'radar': 'Radar',
   'delta': 'Delta',
   'sector-times': 'Sector Times',
+  'pit-timer': 'Pit Timer',
 
   'relative-viewer': 'Relative',
   'driver-inputs': 'Inputs',
@@ -162,7 +166,13 @@ export function multiplyObject<T>(
 }
 
 
+export function sessionPhaseNotDriving(sessionPhase: ESessionPhase) {
+  return sessionPhase === ESessionPhase.Gridwalk || sessionPhase === ESessionPhase.Countdown || sessionPhase === ESessionPhase.Formation || sessionPhase ===  ESessionPhase.Garage || sessionPhase === ESessionPhase.Unavailable;
+}
 
+export function finished(finishStatus: EFinishStatus) {
+  return finishStatus === EFinishStatus.DNF || finishStatus === EFinishStatus.DQ || finishStatus === EFinishStatus.Finished;
+}
 
 export function getSessionType(
   sessionType: keyof typeof SESSION_TYPES
@@ -241,7 +251,7 @@ export function allValuesAreValid(...values: number[]) {
  * @return formatted name (for example: 'Kodi Nikola Latkovski' -> 'K. N. Latkovski')
  */
 export function nameFormat(name: string) {
-  const nameSplitted = base64EncodedUint8ArrayToString(name).split(' ');
+  const nameSplitted = base64EncodedUint8ArrayToString(name).split(/(\s+)/).filter( e => e.trim().length > 0);
   let nameFormatted = '';
   if (nameSplitted.length != 0) {
     for (let i = 0; i < nameSplitted.length - 1; i++) {

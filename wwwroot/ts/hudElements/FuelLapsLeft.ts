@@ -1,10 +1,14 @@
 import HudElement from "./HudElement.js";
 import {NA, lerpRGB, valueIsValid} from "../consts.js";
+import {EEngineType, IDriverInfo} from '../r3eTypes.js';
 
 export default class FuelLapsLeft extends HudElement {
-    override inputKeys: string[] = ['fuelLeft', '+fuelPerLap'];
+    override inputKeys: string[] = ['vehicleInfo', 'fuelLeft', 'batterySoC', '+fuelPerLap'];
 
-    protected override render(fuelLeft: number, fuelPerLap: number): string {
+    protected override render(vehicleInfo: IDriverInfo, fuelLeft: number, battery: number, fuelPerLap: number): string {
+        if (vehicleInfo.engineType === EEngineType.Electric) {
+            fuelLeft = battery;
+        }
         if (!valueIsValid(fuelLeft) || !valueIsValid(fuelPerLap)) {
             this.root.style.setProperty('--fuel-left-color', 'rgb(0, 255, 0)')
             return NA;

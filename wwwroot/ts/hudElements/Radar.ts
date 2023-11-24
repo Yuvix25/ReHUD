@@ -70,14 +70,16 @@ export default class Radar extends HudElementWithHideDelay {
             const car_width = driver.driverInfo.carWidth;
             const car_length = driver.driverInfo.carLength;
 
-            if (leftRight < 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= car_length))
-                closeLeft = 1;
-            else if (leftRight > 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= car_length))
-                closeRight = 1;
+            const distance = distanceFromZero(driver.relativePosition);
+
+            if (distance < radarRange) {
+                if (leftRight < 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= car_length))
+                    closeLeft = 1;
+                else if (leftRight > 0 && (Math.abs(frontBack) < Math.abs(leftRight) || Math.abs(frontBack) <= car_length))
+                    closeRight = 1;
+            }
 
             frontBack = -frontBack;
-
-            const distance = distanceFromZero(driver.relativePosition);
 
             const width = car_width / radarRange * radar_size / 2;
             const height = car_length / radarRange * radar_size / 2;

@@ -14,7 +14,6 @@ namespace ReHUD;
 public class Startup
 {
     public static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
-    FileAppender? rootAppender;
     string? logFilePath;
 
     public Startup(IConfiguration configuration)
@@ -33,11 +32,11 @@ public class Startup
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+        logFilePath = Path.Combine(UserData.dataPath, "ReHUD.log");
+        GlobalContext.Properties["LogFilePath"] = logFilePath;
+
         var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
         XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
-
-        rootAppender = ((Hierarchy)logRepository).Root.Appenders.OfType<FileAppender>().FirstOrDefault();
-        logFilePath = rootAppender != null ? rootAppender.File : string.Empty;
 
         lapPointsData.Load();
 
@@ -90,7 +89,7 @@ public class Startup
     private const string githubUrl = "https://github.com/Yuvix25/ReHUD";
     private const string githubReleasesUrl = "releases/latest";
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
-    private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file named 'ReHUD.log' in C:\\Users\\<username>\\AppData\\Local\\Programs\\rehud\\resources\\bin";
+    private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file named 'ReHUD.log' in C:\\Users\\<username>\\Documents\\ReHUD";
 
     private readonly FuelData fuelData = new();
     private readonly LapPointsData lapPointsData = new();
@@ -515,7 +514,8 @@ public class Startup
             }
 
             extraData.rawData = data;
-            extraData.rawData.driverData = extraData.rawData.driverData.Take(data.numCars).ToArray();
+            extraData.rawData.numCars = Math.Max(data.numCars, data.position); // Bug in shared memory, sometimes numCars is updated in delay, this partially fixes it
+            extraData.rawData.driverData = extraData.rawData.driverData.Take(extraData.rawData.numCars).ToArray();
             if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % (1000 / SharedMemory.timeInterval.Milliseconds) * 10 == 0)
             {
                 FuelCombination combination = fuelData.GetCombination(data.layoutId, data.vehicleInfo.modelId);

@@ -3,7 +3,7 @@
 import EventEmitter from './EventEmitter.js';
 import Draggable, {DraggableEvent, TransformableHTMLElement} from './Draggable.js';
 import Hud from './Hud.js';
-import {enableLogging} from './utils.js';
+import {IExtendedDriverInfo, computeUid, enableLogging} from './utils.js';
 import {HudLayout} from './settingsPage.js';
 import CarSpeed from './hudElements/CarSpeed.js';
 import Gear from './hudElements/Gear.js';
@@ -41,6 +41,7 @@ import CurrentLaptime from './hudElements/CurrentLaptime.js';
 import StrengthOfField from './hudElements/StrengthOfField.js';
 import AlltimeBestLap from './hudElements/AlltimeBestLap.js';
 import PitTimer from './hudElements/PitTimer.js';
+import CompletedLaps from './hudElements/CompletedLaps.js';
 
 enableLogging(ipcRenderer, 'index.js');
 
@@ -78,6 +79,7 @@ const hud = new Hud([
     new AlltimeBestLap({name: 'AlltimeBestLap', elementId: 'best-lap-alltime', renderEvery: 200}),
 
     new Position({name: 'Position', containerId: 'position-container', elementId: 'position', renderEvery: 100}),
+    new CompletedLaps({name: 'CompletedLaps', containerId: 'completed-laps-container', elementId: 'completed-laps', renderEvery: 100}),
     new CurrentLaptime({name: 'CurrentLaptime', elementId: 'current-laptime', renderEvery: 50}),
     new IncidentPoints({name: 'IncidentPoints', containerId: 'incident-points-container', elementId: 'incident-points', renderEvery: 100}),
 
@@ -267,6 +269,10 @@ ipcRenderer.on('hud-layout', (e, arg) => {
 
 ipcRenderer.on('data', (event, data_: string) => {
     let data = JSON.parse(data_[0]) as IExtendedShared;
+
+    for (const driver of data.rawData.driverData) {
+        (driver.driverInfo as IExtendedDriverInfo).uid = computeUid(driver.driverInfo);
+    }
 
     EventEmitter.cycle(data.rawData);
     hud.render(data, data.forceUpdateAll, isShown);

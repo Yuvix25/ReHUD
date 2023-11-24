@@ -110,6 +110,12 @@ export class Driver extends EventListener {
    * Sets the main driver (the one currently being viewed)
    */
   static setMainDriver(driver: Driver) {
+    const newMainDriver = driver != Driver.mainDriver;
+
+    if (newMainDriver) {
+      console.log(`Setting main driver to ${driver.userId}`)
+    };
+
     Driver.mainDriver = driver;
 
     for (const callback of Driver.onMainDriverQeue) {
@@ -126,8 +132,10 @@ export class Driver extends EventListener {
       (driver.bestLap == null || !driver.bestLapTimeValid)
     ) {
       driver.attemptedLoadingBestLap = true;
+      if (newMainDriver) console.log(`Requesting best lap for new main driver`);
       return true;
     }
+    if (newMainDriver) console.log(`Not requesting best lap for new main driver`);
     return false;
   }
 
@@ -510,7 +518,7 @@ export interface IExtendedDriverData extends IDriverData {
  * @param driverInfo - DriverData[x].DriverInfo
  * @return Unique ID for the driver (JSON of some fields)
  */
-export function getUid(driverInfo: IDriverInfo): string {
+export function computeUid(driverInfo: IDriverInfo): string {
   if (driverInfo == null)
     return null;
   const obj = {
@@ -525,6 +533,9 @@ export function getUid(driverInfo: IDriverInfo): string {
   return JSON.stringify(obj);
 }
 
+export function getUid(driverInfo: IDriverInfo): string {
+  return (driverInfo as IExtendedDriverInfo)?.uid ?? computeUid(driverInfo);
+}
 
 export type Vector = { x: number; y: number; z: number; };
 
@@ -700,17 +711,56 @@ export async function mapStackTraceAsync(stack: string): Promise<string> {
   }
 }
 
+async function getStackTrace(): Promise<string> {
+  try {
+    throw Error('');
+  } catch (err) {
+    return await mapStackTraceAsync(err.stack);
+  }
+}
+
+const FLOOD_CLEAR_TIME = 15 * 1000;
+
 export function enableLogging(ipc: import('electron').IpcRenderer, filename: string) {
+  let lastMessage = '';
+  let lastMessageFull = '';
+  let floodCount = 0;
+
+  function clearFlood() {
+    writeToLog(
+      ipc,
+      `Message repeated ${floodCount} times: ${lastMessageFull}`,
+      LogLevel.WARN
+    );
+    floodCount = 0;
+  }
+
+  setInterval(() => {
+    if (floodCount > 0) {
+      clearFlood();
+    }
+  }, FLOOD_CLEAR_TIME);
+
   function proxy(ipc: import('electron').IpcRenderer, f: (...args: any[]) => void, level: LogLevel) {
     return function (...args: any[]) {
-      f(...args);
-      async function getStackTrace(): Promise<string> {
-        try {
-          throw Error('')
-        } catch (err) {
-          return await mapStackTraceAsync(err.stack);
-        }
+      const message = args.map((x) => JSON.stringify(x)).join(' ');
+      const fullMessage = `${origin}: ${message}`;
+      const isFlooding = message === lastMessage;
+      
+
+      if (!isFlooding && floodCount > 0) {
+        clearFlood();
       }
+
+      lastMessage = message;
+      lastMessageFull = fullMessage;
+
+      if (isFlooding) {
+        floodCount++;
+        return;
+      }
+
+      f(...args);
 
       getStackTrace().then((stack) => {
         try {
@@ -724,7 +774,8 @@ export function enableLogging(ipc: import('electron').IpcRenderer, filename: str
           origin = filename;
         }
 
-        writeToLog(ipc, `${origin}: ${args.map(x => JSON.stringify(x)).join(' ')}`, level);
+        const fullMessage = `${origin}: ${message}`;
+        writeToLog(ipc, fullMessage, level);
       });
     }
   }

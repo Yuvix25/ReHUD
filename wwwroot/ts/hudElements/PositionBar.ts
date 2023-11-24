@@ -103,8 +103,8 @@ export default class PositionBar extends HudElement {
         position--;
         const me = driverData[position];
 
-        if (me === null) {
-            console.error('PositionBar: me is null', driverData, position);
+        if (me == null) {
+            console.error('PositionBar: me is null', structuredClone((window as any).r3eData));
             return this.hide();
         }
 

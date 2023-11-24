@@ -53,6 +53,8 @@ export default class Gear extends HudElement {
                     map = Gear.normalGearMap;
                 }
                 break;
+            default:
+                return gear.toString();
         }
 
         const res = map.has(gear) ? map.get(gear) : gear.toString();

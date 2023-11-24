@@ -5,7 +5,7 @@ namespace R3E;
 [JsonObject(MemberSerialization.OptIn)]
 public abstract class UserData
 {
-    private static readonly string dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD");
+    public static readonly string dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD");
 
     protected abstract string DataFilePath { get; }
 

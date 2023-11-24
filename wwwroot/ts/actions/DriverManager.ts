@@ -6,6 +6,7 @@ import {Driver, IExtendedDriverData, getUid} from "../utils.js";
 
 export default class DriverManager extends Action {
     public drivers: {[uid: string]: Driver} = {};
+    private removedDrivers: {[uid: string]: [Driver, number]} = {};
 
     constructor() {
         super('DriverManager', 0, true);
@@ -64,6 +65,7 @@ export default class DriverManager extends Action {
 
     protected override onSessionChange(data: IShared, lastSession: ESession): void {
         this.clearDriversTempData(data);
+        this.removedDrivers = {};
     }
 
     protected override onSessionPhaseChange(data: IShared, lastSessionPhase: number): void {
@@ -110,14 +112,33 @@ export default class DriverManager extends Action {
             existingUids.add(uid);
 
             if (!(uid in this.drivers)) {
-                this.drivers[uid] = new Driver(uid, trackLength, driver.completedLaps);
+                if (uid in this.removedDrivers) {
+                    
+                    this.drivers[uid] = this.removedDrivers[uid][0];
+                    const timeDiff = (Date.now() - this.removedDrivers[uid][1]) / 1000;
+                    if (timeDiff > 3) { // 3 second temp data retention
+                        console.log('Restoring driver (clearing temp data):', timeDiff.toFixed(2), uid);
+                        this.drivers[uid].clearTempData();
+                    } else {
+                        console.log('Restoring driver (temp data intact):', timeDiff.toFixed(2), uid);
+                    }
+                    this.drivers[uid].setLapInvalid();
+                    delete this.removedDrivers[uid];
+                } else {
+                    console.log('Adding driver:', uid);
+                    this.drivers[uid] = new Driver(uid, trackLength, driver.completedLaps);
+                }
             }
 
             if (driver.place == place) {
-                const shouldLoad = this.drivers[uid].setAsMainDriver();
-                
-                if (shouldLoad) {
-                    ipcRenderer.send('load-best-lap', [data.layoutId, driver.driverInfo.classId]);
+                if (driver.driverInfo.name === data.playerName) {
+                    const shouldLoad = this.drivers[uid].setAsMainDriver();
+                    
+                    if (shouldLoad) {
+                        ipcRenderer.send('load-best-lap', [data.layoutId, driver.driverInfo.classId]);
+                    }
+                } else {
+                    console.error('DriverManager: driver at position is NOT the main driver! (R3E API bug probably)', structuredClone(data));
                 }
             }
 
@@ -129,10 +150,18 @@ export default class DriverManager extends Action {
             this.drivers[uid].addDeltaPoint(driver.lapDistance, driver.completedLaps);
         }
 
+        const toRemove = [];
+        const now = Date.now();
         for (const uid in this.drivers) {
             if (!existingUids.has(uid)) {
-                delete this.drivers[uid];
+                toRemove.push(uid);
+                this.removedDrivers[uid] = [this.drivers[uid], now];
             }
         }
+
+        if (toRemove.length > 0) console.log('Removing drivers:', toRemove);
+        toRemove.forEach((uid) => {
+            delete this.drivers[uid];
+        });
     }
 }

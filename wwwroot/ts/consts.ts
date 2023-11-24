@@ -98,11 +98,12 @@ export const SESSION_TYPES = {
 export const TRANSFORMABLES = {
   'position-bar': 'Position Bar',
   'position-container': 'Position',
+  'completed-laps-container': 'Completed Laps',
   'estimated-laps-left-container': 'Estimated Laps Left',
+  'strength-of-field-container': 'Strength of Field',
 
   'current-laptime-container': 'Current Laptime',
 
-  'strength-of-field-container': 'Strength of Field',
   'last-lap-session-container': 'Last Laptime',
   'best-lap-session-container': 'Best Laptime',
   'best-lap-alltime-container': 'All-time Best',

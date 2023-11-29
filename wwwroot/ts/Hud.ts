@@ -7,7 +7,7 @@ import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtende
 import {AudioController, mapStackTraceAsync} from "./utils.js";
 
 export default class Hud {
-    public isInEditMode: boolean = false;
+    private _isInEditMode: boolean = false;
     public actionServices: Action[] = [];
     public rankedDataService: RankedData = new RankedData();
     public driverManagerService: DriverManager = new DriverManager();
@@ -17,6 +17,29 @@ export default class Hud {
     private alwaysExecuteActions: Array<Action> = new Array<Action>();
     public readonly r3eData: any;
     public readonly radarAudioController = new AudioController({volumeMultiplier: 1});
+
+
+    public isInEditMode(): boolean {
+        return this._isInEditMode;
+    }
+
+    private onEditModeChangedListeners: Array<(isInEditMode: boolean) => boolean> = [];
+    public setIsInEditMode(isInEditMode: boolean): void {
+        this._isInEditMode = isInEditMode;
+
+        const keep = [];
+        for (const listener of this.onEditModeChangedListeners) {
+            const res = listener(isInEditMode);
+            if (res === true) {
+                keep.push(listener);
+            }
+        }
+        this.onEditModeChangedListeners = keep;
+    }
+
+    public addOnEditModeChangedListener(listener: (isInEditMode: boolean) => boolean): void {
+        this.onEditModeChangedListeners.push(listener);
+    }
 
     private registerService(action: Action): void {
         this.actionServices.push(action);

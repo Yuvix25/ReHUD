@@ -132,10 +132,8 @@ export class Driver extends EventListener {
       (driver.bestLap == null || !driver.bestLapTimeValid)
     ) {
       driver.attemptedLoadingBestLap = true;
-      if (newMainDriver) console.log(`Requesting best lap for new main driver`);
       return true;
     }
-    if (newMainDriver) console.log(`Not requesting best lap for new main driver`);
     return false;
   }
 
@@ -270,6 +268,7 @@ export class Driver extends EventListener {
             if (shouldSaveBestLap || this.completedLaps >= 0) {
               this.bestLap = this.points.slice();
               this.bestLapTime = laptime;
+              this.bestLapTimeValid = this.currentLapValid;
             }
           }
 
@@ -292,6 +291,7 @@ export class Driver extends EventListener {
       // shouldn't reach this, can't end lap when game is paused
       this.gamePauseStart = Driver.getTime();
     }
+    this.gamePauseTimeCurrentLap = 0;
 
     return shouldSaveBestLap;
   }
@@ -441,11 +441,14 @@ export class Driver extends EventListener {
   getCurrentTime(): number {
     if (this.crossedFinishLine == null || this.gamePauseTimeCurrentLap == null)
       return null;
-    return (
-      Driver.getTime() -
-      this.crossedFinishLine -
-      this.getGamePauseTimeCurrentLap()
-    );
+    const currentTime = Driver.getTime() - this.crossedFinishLine - this.getGamePauseTimeCurrentLap();
+    if (currentTime < 0) {
+      console.error(`Current time is negative for ${this.userId}: ${currentTime}`);
+      this.gamePauseTimeCurrentLap = null;
+      return null;
+    }
+    
+    return currentTime;
   }
 
   getGamePauseTimeCurrentLap(): number {
@@ -722,16 +725,21 @@ async function getStackTrace(): Promise<string> {
 const FLOOD_CLEAR_TIME = 15 * 1000;
 
 export function enableLogging(ipc: import('electron').IpcRenderer, filename: string) {
-  let lastMessage = '';
+  let lastMessageIdentifier = '';
   let lastMessageFull = '';
+  let lastLevel = LogLevel.INFO;
   let floodCount = 0;
 
   function clearFlood() {
-    writeToLog(
-      ipc,
-      `Message repeated ${floodCount} times: ${lastMessageFull}`,
-      LogLevel.WARN
-    );
+    if (floodCount == 1) {
+      writeToLog(ipc, lastMessageFull, lastLevel);
+    } else {
+      writeToLog(
+        ipc,
+        `Message repeated ${floodCount} times: ${lastMessageFull}`,
+        lastLevel,
+      );
+    }
     floodCount = 0;
   }
 
@@ -743,34 +751,41 @@ export function enableLogging(ipc: import('electron').IpcRenderer, filename: str
 
   function proxy(ipc: import('electron').IpcRenderer, f: (...args: any[]) => void, level: LogLevel) {
     return function (...args: any[]) {
+      const messageIdentifier = JSON.stringify(args[0]);
       const message = args.map((x) => JSON.stringify(x)).join(' ');
       const fullMessage = `${origin}: ${message}`;
-      const isFlooding = message === lastMessage;
-      
+      const isFlooding = messageIdentifier === lastMessageIdentifier;
+
 
       if (!isFlooding && floodCount > 0) {
         clearFlood();
       }
 
-      lastMessage = message;
+      lastMessageIdentifier = messageIdentifier;
       lastMessageFull = fullMessage;
 
       if (isFlooding) {
         floodCount++;
+        lastLevel = level;
         return;
       }
 
       f(...args);
 
       getStackTrace().then((stack) => {
-        try {
-          const caller_line = stack.split("\n")[8];
-          if (caller_line == undefined) {
-            throw new Error('stack too short');
-          }
-          const index = caller_line.indexOf("at ");
-          origin = caller_line.slice(index + 1, caller_line.length);
-        } catch (e) {
+        let origin = null;
+        if (level === LogLevel.ERROR) {
+          try {
+            const caller_line = stack.split("\n")[8];
+            if (caller_line == undefined) {
+              throw new Error('stack too short');
+            }
+            const index = caller_line.indexOf("at ");
+            origin = caller_line.slice(index + 1, caller_line.length);
+          } catch (e) { }
+        }
+        
+        if (origin == null) {
           origin = filename;
         }
 

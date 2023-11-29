@@ -124,7 +124,7 @@ function elementAdjusted(event: DraggableEvent, position=true) {
 }
 
 function elementToggled(elementId: TransformableId, shown: boolean) {
-    if (!hud.isInEditMode) {
+    if (!hud.isInEditMode()) {
         console.warn('elementToggled called while not in edit mode');
         return;
     }
@@ -148,7 +148,7 @@ function elementToggled(elementId: TransformableId, shown: boolean) {
 }
 
 function saveLayout() {
-    hud.isInEditMode = false;
+    hud.setIsInEditMode(false);
     exitEditMode();
     ipcRenderer.send('set-hud-layout', JSON.stringify(LAYOUT));
 }
@@ -189,7 +189,7 @@ function loadLayout(layout?: HudLayout) {
 
         element.style.left = left == null ? null : left + 'px';
         element.style.top = top == null ? null : top + 'px';
-        element.style.transform = isNaN(scale) ? null : `scale(${Math.pow(parseFloat(scale.toString()), ELEMENT_SCALE_POWER)})`;
+        element.style.scale = isNaN(scale) ? null : Math.pow(parseFloat(scale.toString()), ELEMENT_SCALE_POWER).toString();
         element.dataset.scale = scale.toString();
 
         element.classList.remove('hidden');
@@ -234,19 +234,27 @@ function showHUD() {
 }
 
 function hideHUD() {
-    if (!hud.isInEditMode) {
+    if (!hud.isInEditMode()) {
         isShown = false;
         document.body.style.display = 'none';
+    } else {
+        hud.addOnEditModeChangedListener((isInEditMode) => {
+            if (!isInEditMode) {
+                hideHUD();
+                return false;
+            }
+            return true;
+        });
     }
 }
 
 
 function enterEditMode() {
-    hud.isInEditMode = true;
+    hud.setIsInEditMode(true);
 }
 
 function exitEditMode() {
-    hud.isInEditMode = false;
+    hud.setIsInEditMode(false);
     ipcRenderer.send('request-layout-visibility');
 }
 

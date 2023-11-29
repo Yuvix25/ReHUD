@@ -293,6 +293,18 @@ public class Startup
                 Task.Delay(200).ContinueWith((t) =>
                 {
                     enteredEditMode = true;
+
+                    if (SharedMemory.isRunning)
+                        return;
+
+                    var extraData = new ExtraData
+                    {
+                        forceUpdateAll = true,
+                        rawData = new R3E.Data.Shared{
+                            driverData = Array.Empty<R3E.Data.DriverData>(),
+                        },
+                    };
+                    Electron.IpcMain.Send(mainWindow, "data", JsonConvert.SerializeObject(extraData));
                 });
             }
             else

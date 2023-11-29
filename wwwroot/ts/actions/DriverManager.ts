@@ -131,14 +131,10 @@ export default class DriverManager extends Action {
             }
 
             if (driver.place == place) {
-                if (driver.driverInfo.name === data.playerName) {
-                    const shouldLoad = this.drivers[uid].setAsMainDriver();
-                    
-                    if (shouldLoad) {
-                        ipcRenderer.send('load-best-lap', [data.layoutId, driver.driverInfo.classId]);
-                    }
-                } else {
-                    console.error('DriverManager: driver at position is NOT the main driver! (R3E API bug probably)', structuredClone(data));
+                const shouldLoad = this.drivers[uid].setAsMainDriver();
+                
+                if (shouldLoad) {
+                    ipcRenderer.send('load-best-lap', [data.layoutId, driver.driverInfo.classId]);
                 }
             }
 

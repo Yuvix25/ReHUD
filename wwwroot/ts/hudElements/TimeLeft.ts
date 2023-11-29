@@ -13,7 +13,7 @@ export default class TimeLeft extends HudElement {
         const localHide = () => {
             timeLeftElement.style.display = 'block';
             lapsLeftElement.style.display = 'none';
-            timeLeftElement.children[0].textContent = '24';
+            timeLeftElement.children[0].textContent = '23';
             timeLeftElement.children[1].textContent = '59';
             timeLeftElement.children[2].textContent = '59';
             return this.hide();

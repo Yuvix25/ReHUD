@@ -142,7 +142,7 @@ export default abstract class HudElement extends Action {
     }
 
     protected hide(alt?: string): string | Hide {
-        if (!this.hud.isInEditMode) {
+        if (!this.hud.isInEditMode()) {
             return HudElement.HIDE;
         }
         return alt;
@@ -174,7 +174,7 @@ export abstract class HudElementWithHideDelay extends HudElement {
   }
 
   protected override hide(alt?: string): string | Hide {
-    if (this.hud.isInEditMode) {
+    if (this.hud.isInEditMode()) {
       return alt;
     }
 

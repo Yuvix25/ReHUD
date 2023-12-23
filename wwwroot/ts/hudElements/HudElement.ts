@@ -44,6 +44,10 @@ export class Style {
             element.style[key] = value;
         }
     }
+
+    public equals(other: Style) {
+        return this.value === other.value && this.elementId === other.elementId && JSON.stringify(this.style) === JSON.stringify(other.style);
+    }
 }
 
 export default abstract class HudElement extends Action {
@@ -52,6 +56,7 @@ export default abstract class HudElement extends Action {
 
     protected root: HTMLElement | null = null;
     private _isHidden: boolean = false;
+    private lastRes: string | Style | null | Hide = null;
 
     abstract readonly inputKeys: string[];
 
@@ -91,6 +96,13 @@ export default abstract class HudElement extends Action {
 
     public execute(data: IExtendedShared) {
         const res = this.renderWrapper(...this.getInputs(data), this.elementId ?? this.containerId);
+
+        if ((res instanceof Style && this.lastRes instanceof Style && res.equals(this.lastRes))
+          || res === this.lastRes) {
+            return;
+        }
+        this.lastRes = res;
+
 
         let element = document.getElementById(this.elementId);
         const container = this.containerId == null ? null : document.getElementById(this.containerId);
@@ -149,7 +161,7 @@ export default abstract class HudElement extends Action {
     }
 
     protected style(value: string, style: StyleObject, elementId: string = null) {
-        return new Style(value, style, elementId)
+        return new Style(value, style, elementId);
     };
 
     public isHidden() {

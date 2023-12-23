@@ -46,48 +46,48 @@ import CompletedLaps from './hudElements/CompletedLaps.js';
 enableLogging(ipcRenderer, 'index.js');
 
 const hud = new Hud([
-    new CarSpeed({name: 'CarSpeed', elementId: 'speed', renderEvery: 80}),
-    new Gear({name: 'Gear', elementId: 'gear', renderEvery: 50}),
+    new CarSpeed({name: 'CarSpeed', elementId: 'speed', renderEvery: 0}),
+    new Gear({name: 'Gear', elementId: 'gear', renderEvery: 0}),
     new Assists({name: 'Assists', elementId: 'assist', renderEvery: 0}),
-    new EngineMap({name: 'EngineMap', elementId: 'engine-map', renderEvery: 50}),
-    new EngineBraking({name: 'EngineBraking', elementId: 'engine-brake', renderEvery: 50}),
-    new BrakeBias({name: 'BrakeBias', elementId: 'brake-bias', renderEvery: 50}),
-    new TractionControl({name: 'TractionControl', elementId: 'traction-control', renderEvery: 50}),
+    new EngineMap({name: 'EngineMap', elementId: 'engine-map', renderEvery: 0}),
+    new EngineBraking({name: 'EngineBraking', elementId: 'engine-brake', renderEvery: 500}),
+    new BrakeBias({name: 'BrakeBias', elementId: 'brake-bias', renderEvery: 0}),
+    new TractionControl({name: 'TractionControl', elementId: 'traction-control', renderEvery: 0}),
     new Revs({name: 'Revs', elementId: 'revs', renderEvery: 0}),
     new DriverInputs({name: 'DriverInputs', elementId: 'inputs', renderEvery: 0}),
 
-    new PositionBar({name: 'PositionBar', elementId: 'position-bar', renderEvery: 100}),
+    new PositionBar({name: 'PositionBar', elementId: 'position-bar', renderEvery: 80}),
     new RelativeViewer({name: 'RelativeViewer', elementId: 'relative-viewer', renderEvery: 80}),
 
-    new FuelLeft({name: 'FuelLeft', elementId: 'fuel-left', renderEvery: 500}),
-    new FuelPerLap({name: 'FuelPerLap', elementId: 'fuel-per-lap', renderEvery: 500}),
-    new FuelLapsLeft({name: 'FuelLapsLeft', elementId: 'fuel-laps', renderEvery: 500}),
-    new FuelTimeLeft({name: 'FuelTimeLeft', elementId: 'fuel-time', renderEvery: 500}),
+    new FuelLeft({name: 'FuelLeft', elementId: 'fuel-left', renderEvery: 200}),
+    new FuelPerLap({name: 'FuelPerLap', elementId: 'fuel-per-lap', renderEvery: 200}),
+    new FuelLapsLeft({name: 'FuelLapsLeft', elementId: 'fuel-laps', renderEvery: 200}),
+    new FuelTimeLeft({name: 'FuelTimeLeft', elementId: 'fuel-time', renderEvery: 200}),
     new FuelLastLap({name: 'FuelLastLap', elementId: 'fuel-last-lap', renderEvery: 200}),
-    new FuelToEnd({name: 'FuelToEnd', elementId: 'fuel-to-end', renderEvery: 500}),
-    new FuelToAdd({name: 'FuelToAdd', elementId: 'fuel-to-add', renderEvery: 500}),
-    new FuelElement({name: 'FuelElement', elementId: 'fuel-data', renderEvery: 500}),
+    new FuelToEnd({name: 'FuelToEnd', elementId: 'fuel-to-end', renderEvery: 200}),
+    new FuelToAdd({name: 'FuelToAdd', elementId: 'fuel-to-add', renderEvery: 200}),
+    new FuelElement({name: 'FuelElement', elementId: 'fuel-data', renderEvery: 200}),
 
-    new Tires({name: 'Tires', elementId: 'tires', renderEvery: 50}),
-    new Damage({name: 'Damage', elementId: 'damage', renderEvery: 100}),
+    new Tires({name: 'Tires', elementId: 'tires', renderEvery: 0}),
+    new Damage({name: 'Damage', elementId: 'damage', renderEvery: 0}),
 
     new TimeLeft({name: 'TimeLeft', containerId: 'time-left-container', elementId: 'time-laps-left', renderEvery: 80}),
     new EstimatedLapsLeft({name: 'EstimatedLapsLeft', containerId: 'estimated-laps-left-container', elementId: 'estimated-laps-left', renderEvery: 100}),
-    new StrengthOfField({name: 'StrengthOfField', elementId: 'strength-of-field', renderEvery: 1000}),
+    new StrengthOfField({name: 'StrengthOfField', elementId: 'strength-of-field', renderEvery: 500}),
     new SessionLastLap({name: 'SessionLastLaps', elementId: 'last-lap-session', renderEvery: 200}),
     new SessionBestLap({name: 'SessionBestLap', elementId: 'best-lap-session', renderEvery: 200}),
     new AlltimeBestLap({name: 'AlltimeBestLap', elementId: 'best-lap-alltime', renderEvery: 200}),
 
-    new Position({name: 'Position', containerId: 'position-container', elementId: 'position', renderEvery: 100}),
+    new Position({name: 'Position', containerId: 'position-container', elementId: 'position', renderEvery: 0}),
     new CompletedLaps({name: 'CompletedLaps', containerId: 'completed-laps-container', elementId: 'completed-laps', renderEvery: 100}),
-    new CurrentLaptime({name: 'CurrentLaptime', elementId: 'current-laptime', renderEvery: 50}),
-    new IncidentPoints({name: 'IncidentPoints', containerId: 'incident-points-container', elementId: 'incident-points', renderEvery: 100}),
+    new CurrentLaptime({name: 'CurrentLaptime', elementId: 'current-laptime', renderEvery: 0}),
+    new IncidentPoints({name: 'IncidentPoints', containerId: 'incident-points-container', elementId: 'incident-points', renderEvery: 0}),
 
     new Radar({name: 'Radar', elementId: 'radar', renderEvery: 0}),
 
     new Delta({name: 'Delta', containerId: 'delta', elementId: 'delta-number', renderEvery: 50}),
-    new SectorTimes({name: 'SectorTimes', containerId: 'sector-times', renderEvery: 50}),
-    new PitTimer({name: 'PitTimer', containerId: 'pit-timer', elementId: 'pit-time-left', renderEvery: 50}),
+    new SectorTimes({name: 'SectorTimes', containerId: 'sector-times', renderEvery: 0}),
+    new PitTimer({name: 'PitTimer', containerId: 'pit-timer', elementId: 'pit-time-left', renderEvery: 0}),
 ]);
 
 (window as any).hud = hud;
@@ -220,7 +220,7 @@ function addTransformable(id: TransformableId) {
         let scale = Math.max(0.55, -e.deltaY / 2000 + (parseFloat(element.dataset.scale) || 1));
         element.dataset.scale = scale.toString();
         scale = Math.pow(scale, ELEMENT_SCALE_POWER);
-        element.style.transform = `scale(${scale})`;
+        element.style.scale = scale.toString();
         elementAdjusted({source: element, left: null, top: null}, false);
     });
 

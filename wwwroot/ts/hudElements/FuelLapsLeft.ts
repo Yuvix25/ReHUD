@@ -9,7 +9,7 @@ export default class FuelLapsLeft extends HudElement {
         if (vehicleInfo.engineType === EEngineType.Electric) {
             fuelLeft = battery;
         }
-        if (!valueIsValid(fuelLeft) || !valueIsValid(fuelPerLap)) {
+        if (!valueIsValid(fuelLeft) || !valueIsValid(fuelPerLap) || fuelPerLap === 0) {
             this.root.style.setProperty('--fuel-left-color', 'rgb(0, 255, 0)')
             return NA;
         }

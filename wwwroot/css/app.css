@@ -876,8 +876,10 @@ progress#revs::-webkit-progress-value {
   height: 90px;
   background-color: rgba(35, 35, 35, 0.45);
 
-  margin-left: 50%;
   translate: -50%;
+}
+#position-bar:not(.dragged) {
+  margin-left: 50%;
 }
 
 #position-bar .position-bar-driver {

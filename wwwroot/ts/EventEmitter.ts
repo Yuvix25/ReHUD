@@ -57,6 +57,8 @@ export default class EventEmitter {
                       } -> ${ESessionPhase[data.sessionPhase]}`
                     );
                     break;
+                case EventEmitter.NEW_LAP_EVENT:
+                    console.log(`New lap: ${args[0]?.completedLaps}`);
             }
         }
         if (isMainDriver !== null) args.push(isMainDriver);

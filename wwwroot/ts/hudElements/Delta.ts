@@ -17,7 +17,7 @@ export default class Delta extends HudElement {
         switch (SettingsValue.get(DELTA_MODE)) {
             case 'session':
             case 'session-fallback-alltime':
-                if (SettingsValue.get(SHOW_DELTA_ON_INVALID_LAPS) && (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000) && Driver.mainDriver?.sessionBestLap != null) {
+                if ((timeDeltaBestSelf == null || timeDeltaBestSelf == -1000) && (SettingsValue.get(SHOW_DELTA_ON_INVALID_LAPS) || currentLapValid) && Driver.mainDriver?.sessionBestLap != null) {
                     timeDeltaBestSelf = Driver.mainDriver.getDeltaToLap(Driver.mainDriver.sessionBestLap, lapDistance, lapTimeCurrentSelf);
                 }
                 

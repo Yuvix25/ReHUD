@@ -1,4 +1,5 @@
 import EventListener from './EventListener.js';
+import Hud from './Hud.js';
 import SettingsValue from './SettingsValue.js';
 import { RELATIVE_SAFE_MODE, base64EncodedUint8ArrayToString, valueIsValid } from './consts.js';
 import { ESession, IDriverData, IDriverInfo } from './r3eTypes.js';
@@ -13,7 +14,7 @@ export class DeltaManager {
    * Add a delta to the delta window.
    */
   static addDelta(delta: number) {
-    const time = Driver.getTime();
+    const time = Hud.getGameTimestamp();
     DeltaManager.deltaWindow.push([time, delta]);
     while (DeltaManager.deltaWindow[0][0] < time - DeltaManager.DELTA_WINDOW)
       DeltaManager.deltaWindow.shift();
@@ -81,8 +82,6 @@ export class Driver extends EventListener {
   bestLapTimeValid: boolean = false;
   completedLaps: number = null;
   crossedFinishLine: number = null;
-  private gamePauseTimeCurrentLap: number = 0;
-  private gamePauseStart: number = null;
   previousDistance: number = -1;
   attemptedLoadingBestLap: boolean = false;
 
@@ -96,14 +95,6 @@ export class Driver extends EventListener {
     this.completedLaps = completedLaps;
 
     this.points = this.newPointArray(); // points[distance] = time
-  }
-
-  /**
-   * Get the current time.
-   * @return Time in seconds
-   */
-  static getTime(): number {
-    return Date.now() / 1000;
   }
 
   /**
@@ -193,8 +184,6 @@ export class Driver extends EventListener {
    */
   clearTempData() {
     this.crossedFinishLine = null;
-    this.gamePauseTimeCurrentLap = 0;
-    this.gamePauseStart = null;
     this.currentIndex = null;
     this.setLapInvalid();
     this.points = this.newPointArray();
@@ -205,7 +194,7 @@ export class Driver extends EventListener {
    * MUST BE CALLED AFTER `endLap` IF THE LAP IS COMPLETED.
    */
   addDeltaPoint(distance: number, completedLaps: number) {
-    const time = Driver.getTime();
+    const time = Hud.getGameTimestamp();
 
     const newCurrentIndex = Math.floor(distance * Driver.pointsPerMeter);
     if (this.currentIndex == null) {
@@ -238,7 +227,7 @@ export class Driver extends EventListener {
   endLap(laptime: number, completedLaps: number, sessionType: ESession): boolean {
     let shouldSaveBestLap = false;
 
-    const time = Driver.getTime();
+    const time = Hud.getGameTimestamp();
 
     for (let i = this.currentIndex + 1; i < this.points.length; i++) {
       this.points[i] = this.points[this.currentIndex];
@@ -254,7 +243,7 @@ export class Driver extends EventListener {
 
       if (!SettingsValue.get(RELATIVE_SAFE_MODE)) {
         if (laptime < Driver.MIN_LAP_TIME) {
-          console.log(`Invalid lap time for ${this.userId}: ${laptime}`);
+          console.warn(`Invalid lap time for ${this.userId}: ${laptime}`);
           this.setLapInvalid();
         } else {
           if (
@@ -284,14 +273,8 @@ export class Driver extends EventListener {
       }
     }
 
-    this.crossedFinishLine = Driver.getTime();
+    this.crossedFinishLine = Hud.getGameTimestamp();
     this.currentLapValid = true;
-
-    if (this.gamePauseStart != null) {
-      // shouldn't reach this, can't end lap when game is paused
-      this.gamePauseStart = Driver.getTime();
-    }
-    this.gamePauseTimeCurrentLap = 0;
 
     return shouldSaveBestLap;
   }
@@ -439,36 +422,11 @@ export class Driver extends EventListener {
   }
 
   getCurrentTime(): number {
-    if (this.crossedFinishLine == null || this.gamePauseTimeCurrentLap == null)
-      return null;
-    const currentTime = Driver.getTime() - this.crossedFinishLine - this.getGamePauseTimeCurrentLap();
-    if (currentTime < 0) {
-      console.error(`Current time is negative for ${this.userId}: ${currentTime}`);
-      this.gamePauseTimeCurrentLap = null;
-      return null;
-    }
+    if (this.crossedFinishLine == null) return null;
     
-    return currentTime;
+    return Hud.getGameTimestamp() - this.crossedFinishLine;
   }
 
-  getGamePauseTimeCurrentLap(): number {
-    if (this.gamePauseStart == null) return this.gamePauseTimeCurrentLap;
-
-    return (
-      this.gamePauseTimeCurrentLap + Driver.getTime() - this.gamePauseStart
-    );
-  }
-
-  override onGamePause() {
-    this.gamePauseStart = Driver.getTime();
-  }
-
-  override onGameResume() {
-    if (this.gamePauseStart == null) return;
-
-    this.gamePauseTimeCurrentLap += Driver.getTime() - this.gamePauseStart;
-    this.gamePauseStart = null;
-  }
 
   /**
    * Get the track distance to a driver ahead.
@@ -651,160 +609,292 @@ enum LogLevel {
   ERROR = 'ERROR',
 }
 
-function writeToLog(ipc: import('electron').IpcRenderer, message: string, level: LogLevel = LogLevel.INFO) {
-  ipc.send('log', { message, level });
-}
-
 const realConsoleError = console.error;
-
-const sourceMaps: { [key: string]: RawSourceMap } = {};
-async function getSourceMapFromUri(uri: string) {
-  if (sourceMaps[uri] != undefined) {
-    return sourceMaps[uri];
-  }
-  const uriQuery = new URL(uri).search;
-  const currentScriptContent = await (await fetch(uri)).text();
-
-  let mapUri = RegExp(/\/\/# sourceMappingURL=(.*)/).exec(currentScriptContent)[1];
-  mapUri = new URL(mapUri, uri).href + uriQuery;
-
-  const map = await (await fetch(mapUri)).json();
-
-  sourceMaps[uri] = map;
-
-  return map;
-}
-
-async function mapStackTrace(stack: string) {
-  const stackLines = stack.split('\n');
-  const mappedStack = [];
-
-  for (const line of stackLines) {
-    const match = RegExp(/(.*)(http:\/\/.*):(\d+):(\d+)/).exec(line);
-    if (match == null) {
-      mappedStack.push(line);
-      continue;
-    }
-
-    const uri = match[2];
-    const consumer = new SourceMapConsumer(await getSourceMapFromUri(uri));
-
-    const originalPosition = consumer.originalPositionFor({
-      line: parseInt(match[3]),
-      column: parseInt(match[4])
-    });
-
-    if (originalPosition.source == null || originalPosition.line == null || originalPosition.column == null) {
-      mappedStack.push(line);
-      continue;
-    }
-
-    mappedStack.push(`${originalPosition.source}:${originalPosition.line}:${originalPosition.column + 1}`);
-  }
-
-  return mappedStack.join('\n');
-}
-
-export async function mapStackTraceAsync(stack: string): Promise<string> {
-  try {
-    return await mapStackTrace(stack);
-  } catch (e) {
-    realConsoleError(e);
-    return stack;
-  }
-}
-
-async function getStackTrace(): Promise<string> {
-  try {
-    throw Error('');
-  } catch (err) {
-    return await mapStackTraceAsync(err.stack);
-  }
-}
 
 const FLOOD_CLEAR_TIME = 15 * 1000;
 
-export function enableLogging(ipc: import('electron').IpcRenderer, filename: string) {
-  let lastMessageIdentifier = '';
-  let lastMessageFull = '';
-  let lastLevel = LogLevel.INFO;
-  let floodCount = 0;
 
-  function clearFlood() {
-    if (floodCount == 1) {
-      writeToLog(ipc, lastMessageFull, lastLevel);
-    } else {
-      writeToLog(
-        ipc,
-        `Message repeated ${floodCount} times: ${lastMessageFull}`,
-        lastLevel,
-      );
-    }
-    floodCount = 0;
+class LogMessage {
+  private messageIdentifier: string;
+  private lastFullMessage: string;
+  private floodCount: number;
+  private sameFullMessage: boolean;
+
+  constructor(
+    messageIdentifier: string,
+    fullMessage: string,
+  ) {
+    this.messageIdentifier = messageIdentifier;
+    this.lastFullMessage = fullMessage;
+    this.floodCount = 0;
+    this.sameFullMessage = true;
   }
 
-  setInterval(() => {
-    if (floodCount > 0) {
-      clearFlood();
-    }
-  }, FLOOD_CLEAR_TIME);
+  log(fullMessage: string) {
+    this.sameFullMessage = this.lastFullMessage == null || (this.sameFullMessage && fullMessage === this.lastFullMessage);
+    this.lastFullMessage = fullMessage;
 
-  function proxy(ipc: import('electron').IpcRenderer, f: (...args: any[]) => void, level: LogLevel) {
+    if (this.floodCount++ == 0) {
+      this.lastFullMessage = null;
+      return true;
+    }
+
+    return false;
+  }
+
+  notFlooding() {
+    return this.floodCount == 0;
+  }
+
+  clear() {
+    if (this.notFlooding()) {
+      return null;
+    }
+
+    let message = this.sameFullMessage ? this.lastFullMessage : this.messageIdentifier;
+
+    let res;
+
+    if (this.floodCount == 2) {
+      res = message;
+    } else if (this.floodCount > 2) {
+      res = `Message repeated ${this.floodCount-1} times: ${message}`; // -1 because the first message is already logged);
+    }
+    this.floodCount = 1;
+    this.sameFullMessage = true;
+    this.lastFullMessage = null;
+
+    return res;
+  }
+};
+
+class MessagePool {
+  private readonly logger: Logger;
+  private readonly level: LogLevel;
+  private readonly pool: Map<string, LogMessage> = new Map();
+
+  constructor(logger: Logger, level: LogLevel) {
+    this.logger = logger;
+    this.level = level;
+  }
+
+  getMessage(messageIdentifier: string, fullMessage: string): LogMessage {
+    let message = this.pool.get(messageIdentifier);
+    if (message == undefined) {
+      message = new LogMessage(messageIdentifier, fullMessage);
+      this.pool.set(messageIdentifier, message);
+    }
+    return message;
+  }
+
+  log(messageIdentifier: string, fullMessage: string) {
+    const message = this.getMessage(messageIdentifier, fullMessage);
+    if (message.log(fullMessage)) {
+      this.logger.log(fullMessage, this.level);
+    }
+  }
+
+  isFlooding(messageIdentifier: string) {
+    const message = this.pool.get(messageIdentifier);
+    return message != undefined && !message.notFlooding();
+  }
+
+  clear() {
+    for (const message of this.pool.values()) {
+      const messageToLog = message.clear();
+      if (messageToLog != null) {
+        this.logger.log(messageToLog, this.level);
+      }
+    }
+    this.pool.clear();
+  }
+}
+
+export class Logger {
+  private static readonly instances = new Set<Logger>();
+
+  private readonly ipc: import('electron').IpcRenderer;
+  private readonly filename: string;
+  private readonly messagePools: { [key in LogLevel]?: MessagePool } = {};
+  private readonly callbacks: { [key in LogLevel]?: Array<(...args: any[]) => void> } = {};
+
+  constructor(ipc: import('electron').IpcRenderer, filename: string) {
+    this.ipc = ipc;
+    this.filename = filename;
+
+    if (ipc == null) {
+      throw new Error('Logger error: ipc is null');
+    }
+    if (filename == null) {
+      this.log('Logger error: filename is null', LogLevel.ERROR);
+      throw new Error('Logger error has occured, see log for details'); // don't want to throw the same error message, because the error handler might catch it and also log it, causing a duplicate log
+    }
+
+    Logger.instances.add(this);
+
+    for (const level of Object.values(LogLevel)) {
+      this.messagePools[level] = new MessagePool(this, level);
+    }
+
+    setInterval(() => {
+      this.clear();
+    }, FLOOD_CLEAR_TIME);
+  }
+
+  clear(log: boolean = false) {
+    if (log) this.log(`Clearing log pools for ${this.filename}`, LogLevel.INFO);
+    for (const pool of Object.values(this.messagePools)) {
+      pool.clear();
+    }
+  }
+
+  static clear(log: boolean = false) {
+    for (const instance of this.instances) {
+      instance.clear(log);
+    }
+  }
+
+  log(message: string, level: LogLevel = LogLevel.INFO) {
+    if (this.callbacks[level] != undefined) {
+      for (const callback of this.callbacks[level]) {
+        callback(message);
+      }
+    }
+    this.ipc.send('log', { message, level });
+  }
+
+  logFunction(callback: (...args: any[]) => void, level: LogLevel) {
+    if (this.callbacks[level] == undefined) {
+      this.callbacks[level] = [];
+    }
+    this.callbacks[level].push(callback);
+  
+    const pool = this.messagePools[level];
+    const loggerInstance = this;
+
     return function (...args: any[]) {
+      let origin = loggerInstance.filename;
+
       const messageIdentifier = JSON.stringify(args[0]);
       const message = args.map((x) => JSON.stringify(x)).join(' ');
-      const fullMessage = `${origin}: ${message}`;
-      const isFlooding = messageIdentifier === lastMessageIdentifier;
+      let fullMessage = `${origin}: ${message}`;
 
-
-      if (!isFlooding && floodCount > 0) {
-        clearFlood();
-      }
-
-      lastMessageIdentifier = messageIdentifier;
-      lastMessageFull = fullMessage;
-
-      if (isFlooding) {
-        floodCount++;
-        lastLevel = level;
-        return;
-      }
-
-      f(...args);
-
-      getStackTrace().then((stack) => {
-        let origin = null;
-        if (level === LogLevel.ERROR) {
+      if (pool.isFlooding(messageIdentifier) || level !== LogLevel.ERROR) {
+        pool.log(messageIdentifier, fullMessage);
+      } else {
+        Logger.getStackTrace().then((stack) => {
           try {
-            const caller_line = stack.split("\n")[8];
+            const caller_line = stack.split('\n')[8];
             if (caller_line == undefined) {
               throw new Error('stack too short');
             }
-            const index = caller_line.indexOf("at ");
-            origin = caller_line.slice(index + 1, caller_line.length);
-          } catch (e) { }
-        }
-        
-        if (origin == null) {
-          origin = filename;
-        }
+            const index = caller_line.indexOf('at ');
+            origin = caller_line.slice(index + 1, caller_line.length) ?? origin;
+          } catch (e) {}
 
-        const fullMessage = `${origin}: ${message}`;
-        writeToLog(ipc, fullMessage, level);
+          fullMessage = `${origin}: ${message}`;
+          pool.log(messageIdentifier, fullMessage);
+        });
+      }
+    };
+  }
+
+  private static readonly sourceMaps: { [key: string]: RawSourceMap } = {};
+  private static async getSourceMapFromUri(uri: string) {
+    if (Logger.sourceMaps[uri] != undefined) {
+      return Logger.sourceMaps[uri];
+    }
+    const uriQuery = new URL(uri).search;
+    const currentScriptContent = await (await fetch(uri)).text();
+
+    let mapUri = RegExp(/\/\/# sourceMappingURL=(.*)/).exec(
+      currentScriptContent
+    )[1];
+    mapUri = new URL(mapUri, uri).href + uriQuery;
+
+    const map = await (await fetch(mapUri)).json();
+
+    Logger.sourceMaps[uri] = map;
+
+    return map;
+  }
+
+  private static async mapStackTrace(stack: string) {
+    const stackLines = stack.split('\n');
+    const mappedStack = [];
+
+    for (const line of stackLines) {
+      const match = RegExp(/(.*)(http:\/\/.*):(\d+):(\d+)/).exec(line);
+      if (match == null) {
+        mappedStack.push(line);
+        continue;
+      }
+
+      const uri = match[2];
+      const consumer = new SourceMapConsumer(
+        await Logger.getSourceMapFromUri(uri)
+      );
+
+      const originalPosition = consumer.originalPositionFor({
+        line: parseInt(match[3]),
+        column: parseInt(match[4]),
       });
+
+      if (
+        originalPosition.source == null ||
+        originalPosition.line == null ||
+        originalPosition.column == null
+      ) {
+        mappedStack.push(line);
+        continue;
+      }
+
+      mappedStack.push(
+        `${originalPosition.source}:${originalPosition.line}:${
+          originalPosition.column + 1
+        }`
+      );
+    }
+
+    return mappedStack.join('\n');
+  }
+
+  static async mapStackTraceAsync(stack: string): Promise<string> {
+    try {
+      return await Logger.mapStackTrace(stack);
+    } catch (e) {
+      realConsoleError(e);
+      return stack;
     }
   }
+
+  private static async getStackTrace(): Promise<string> {
+    try {
+      throw Error('');
+    } catch (err) {
+      return await Logger.mapStackTraceAsync(err.stack);
+    }
+  }
+}
+
+export function enableLogging(ipc: import('electron').IpcRenderer, filename: string) {
+  const logger = new Logger(ipc, filename);
+
+  ipc.on('quit', () => {
+    Logger.clear(true);
+  });
+
   const originalLog = console.log;
   const originalWarn = console.warn;
   const originalError = console.error;
-  console.log = proxy(ipc, originalLog, LogLevel.INFO);
-  console.warn = proxy(ipc, originalWarn, LogLevel.WARN);
-  console.error = proxy(ipc, originalError, LogLevel.ERROR);
+  console.log = logger.logFunction(originalLog, LogLevel.INFO);
+  console.warn = logger.logFunction(originalWarn, LogLevel.WARN);
+  console.error = logger.logFunction(originalError, LogLevel.ERROR);
 
 
   window.onerror = async (_message, _file, _line, _column, errorObj) => {
     if (errorObj?.stack !== undefined) {
-      console.error(await mapStackTraceAsync(errorObj.stack));
+      console.error(await Logger.mapStackTraceAsync(errorObj.stack));
     }
 
     return false;

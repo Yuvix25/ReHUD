@@ -2,8 +2,6 @@ using ElectronNET.API;
 using ElectronNET.API.Entities;
 using Newtonsoft.Json;
 using log4net;
-using log4net.Appender;
-using log4net.Repository.Hierarchy;
 using log4net.Config;
 using System.Reflection;
 using System.Net.Http.Headers;
@@ -225,6 +223,14 @@ public class Startup
 
         RunLoop(mainWindow, env);
 
+        Electron.App.BeforeQuit += async (QuitEventArgs args) => {
+            args.PreventDefault();
+            Electron.IpcMain.Send(mainWindow, "quit");
+            Electron.IpcMain.Send(settingsWindow, "quit");
+            await Task.Delay(300);
+            logger.Info("Exiting...");
+            Electron.App.Exit(0);
+        };
         mainWindow.OnClosed += () => Electron.App.Quit();
     }
 

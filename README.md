@@ -4,7 +4,7 @@
 <h1 style="font-weight: bold">ReHUD</h1>
 
 ![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Yuvix25/ReHUD?include_prereleases&label=Release)
-![GitHub all releases](https://img.shields.io/github/downloads/Yuvix25/ReHUD/total?color=#1ced1c&label=Downloads)
+![GitHub all releases](https://img.shields.io/github/downloads/Yuvix25/ReHUD/total?label=Downloads)
 
 </div>
 

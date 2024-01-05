@@ -498,6 +498,19 @@ export function getUid(driverInfo: IDriverInfo): string {
   return (driverInfo as IExtendedDriverInfo)?.uid ?? computeUid(driverInfo);
 }
 
+export function getRadarPointerRotation(d: number, x: number, z: number): number {
+  const angle = Math.acos(Math.abs(z) / d);
+  if(x > 0 && z > 0) {
+    return angle;
+  } else if (x > 0 && z < 0) {
+    return (-angle);
+  } else if (x < 0 && z > 0) {
+    return (-angle);
+  } else {
+    return angle;
+  }
+}
+
 export type Vector = { x: number; y: number; z: number; };
 
 export function vectorSubtract(a: Vector, b: Vector): Vector {
@@ -564,17 +577,19 @@ export class AudioController {
   maxPlaybackRate: number;
   playbackRateMultiplier: number;
   volumeMultiplier: number;
+  soundFileName: string;
 
-  constructor({ minPlaybackRate = 0.1, maxPlaybackRate = 10, playbackRateMultiplier = 2, volumeMultiplier = 1 } = {}) {
+  constructor({ minPlaybackRate = 0.1, maxPlaybackRate = 10, playbackRateMultiplier = 2, volumeMultiplier = 1, soundFileName = '' } = {}) {
     this.minPlaybackRate = minPlaybackRate;
     this.maxPlaybackRate = maxPlaybackRate;
     this.playbackRateMultiplier = playbackRateMultiplier;
     this.volumeMultiplier = volumeMultiplier;
+    this.soundFileName = soundFileName;
 
     this.mediaSource.connect(this.stereoPanner);
     this.stereoPanner.connect(this.audioContext.destination);
 
-    this.audio.src = '/sounds/beep.wav';
+    this.audio.src = `/sounds/${this.soundFileName}`;
 
     this.audio.onplaying = () => {
       this.audioIsPlaying = true;

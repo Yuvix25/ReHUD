@@ -18,6 +18,9 @@ export default class EventEmitter {
     static readonly GAME_RESUMED_EVENT = 'gameResumed';
     static readonly SESSION_CHANGED_EVENT = 'sessionChanged';
     static readonly SESSION_PHASE_CHANGED_EVENT = 'sessionPhaseChanged';
+    static readonly P2P_DEACTIVATION_EVENT = 'p2pDeactivation';
+    static readonly P2P_ACTIVATION_EVENT = 'p2pActivation';
+    static readonly P2P_READY_EVENT = 'p2pReady';
 
 
     static CLOSE_THRESHOLD = 50; // meters
@@ -110,7 +113,19 @@ export default class EventEmitter {
             if (data.gamePaused == 0 && this.previousData.gamePaused == 1) {
               this.emit(EventEmitter.GAME_RESUMED_EVENT, null, data);
             }
+
+            if(data.pushToPass.waitTimeLeft > 0 && this.previousData.pushToPass.waitTimeLeft == 0) {
+                this.emit(EventEmitter.P2P_DEACTIVATION_EVENT, null, data)
+            }
+
+            if(data.pushToPass.engagedTimeLeft > 0 && this.previousData.pushToPass.engagedTimeLeft == 0) {
+                this.emit(EventEmitter.P2P_ACTIVATION_EVENT, null, data)
+            }
             
+            if(data.pushToPass.waitTimeLeft == 0 && this.previousData.pushToPass.waitTimeLeft > 0 && data.gameInMenus != 1 || data.pushToPass.amountLeft > 0 && this.previousData.pushToPass.amountLeft == 0) {
+                this.emit(EventEmitter.P2P_READY_EVENT, null, data)
+            }
+
             for (const uid of Object.keys(newDriverMap)) {
                 const driver = newDriverMap[uid];
                 const driverPrevious = this.uidMapPrevious[uid];

@@ -42,6 +42,9 @@ import StrengthOfField from './hudElements/StrengthOfField.js';
 import AlltimeBestLap from './hudElements/AlltimeBestLap.js';
 import PitTimer from './hudElements/PitTimer.js';
 import CompletedLaps from './hudElements/CompletedLaps.js';
+import Rake from './hudElements/Rake.js';
+import DRS from './hudElements/Drs.js';
+import P2P from './hudElements/PushToPass.js';
 
 enableLogging(ipcRenderer, 'index.js');
 
@@ -88,6 +91,11 @@ const hud = new Hud([
     new Delta({name: 'Delta', containerId: 'delta', elementId: 'delta-number', renderEvery: 50}),
     new SectorTimes({name: 'SectorTimes', containerId: 'sector-times', renderEvery: 0}),
     new PitTimer({name: 'PitTimer', containerId: 'pit-timer', elementId: 'pit-time-left', renderEvery: 0}),
+
+    new Rake({name: 'Rake',containerId:'rake', elementId: 'rake-bar-number', renderEvery: 100}),
+
+    new DRS({name: 'DRS', containerId: 'drs', elementId: 'drs-left', renderEvery: 50}),
+    new P2P({name: 'P2P', containerId: 'p2p', elementId: 'p2p-left', renderEvery: 50}),
 ]);
 
 (window as any).hud = hud;

@@ -262,7 +262,7 @@
                 </table>
 
                 <div id="steering-wheel-container">
-                    <img src="~/icons/steering-wheel.png" id="steering-wheel">
+                    <img src="~/icons/steering-wheel.png" id="steering-wheel" alt="">
                 </div>
             </he>
 
@@ -279,9 +279,9 @@
                     </tr>
                 </table>
                 <div class="row sb" id="gear-and-assists">
-                    <img src="~/icons/tc.png" id="tc-icon" class="assist-icon">
+                    <img src="~/icons/tc.png" id="tc-icon" class="assist-icon" alt="">
                     <span id="gear"></span>
-                    <img src="~/icons/abs.png" id="abs-icon" class="assist-icon">
+                    <img src="~/icons/abs.png" id="abs-icon" class="assist-icon" alt="">
                 </div>
                 <span id="speed"></span>
                 <progress id="revs" max="100" value="0"></progress>
@@ -309,3 +309,23 @@
     <span>Pit time left:</span>
     <span id="pit-time-left">N/A</span>
 </he>
+
+<div id="rake">
+    <div><img src="~/icons/car-side.svg" alt="car-side" id="car-side"></div>
+    <span id="rake-bar-number">-</span>
+        <div><img src="~/icons/rake-bar.svg" alt="rake-bar" id="rake-bar">
+            <div id="rake-bar-pointer"></div>
+        </div>
+</div>
+
+<div id="drs">
+    <span id="drs-left">DRS left: N/A</span>
+    <div id="drs-symbol"></div>
+</div>
+
+<div id="p2p">
+    <span id="p2p-left">P2P left: N/A</span>
+    <div id="p2p-bar"></div>
+    <div id="p2p-container"></div>
+    <span id="p2p-text"></span>
+</div>

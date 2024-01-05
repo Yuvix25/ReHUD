@@ -19,13 +19,18 @@ export interface IExtendedShared {
 export const CHECK_FOR_UPDATES = 'check-for-updates';
 export const SPEED_UNITS = 'speedUnits';
 export const PRESSURE_UNITS = 'pressureUnits';
+export const RADAR_LOW_DETAIL = 'radarLowDetail';
+export const RADAR_OPACITY = 'radarOpacity';
 export const RADAR_RANGE = 'radarRange';
 export const RADAR_BEEP_VOLUME = 'radarBeepVolume';
+export const RADAR_POINTER = 'radarPointer';
+export const RADAR_FADE_RANGE ='radarFadeRange';
 export const RELATIVE_SAFE_MODE = 'relativeSafeMode';
 export const POSITION_BAR_CELL_COUNT = 'positionBarCellCount';
 export const DELTA_MODE = 'deltaMode';
 export const SHOW_DELTA_ON_INVALID_LAPS = 'showDeltaOnInvalidLaps';
 export const HUD_LAYOUT = 'hudLayout';
+export const P2P_READY_VOLUME = 'p2pReadyVolume';
 
 export const DEFAULT_RENDER_CYCLE = 30;
 export const ITERATION_CYCLE = 1000;
@@ -122,6 +127,9 @@ export const TRANSFORMABLES = {
   'relative-viewer': 'Relative',
   'driver-inputs': 'Inputs',
   'basic': 'MoTeC',
+  'rake': 'Rake',
+  'drs': 'DRS',
+  'p2p': 'P2P',
 } as const;
 
 export type TransformableId = keyof typeof TRANSFORMABLES;

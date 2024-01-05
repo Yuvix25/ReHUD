@@ -79,6 +79,8 @@
   --time-gray: rgb(157, 157, 157);
   --time-green: rgb(0, 255, 0);
   --time-purple: rgb(202, 0, 202);
+
+  --rake-scale: 1;
 }
 
 
@@ -774,7 +776,6 @@ progress#revs::-webkit-progress-value {
   left: calc(50% - 150px);
   overflow: hidden;
   background-size: contain;
-  opacity: 0.8;
 }
 
 #radar .radar-car {
@@ -786,7 +787,6 @@ progress#revs::-webkit-progress-value {
 #radar .radar-car-self {
   background-color: white;
 }
-
 
 
 #delta {
@@ -907,4 +907,99 @@ progress#revs::-webkit-progress-value {
   padding-right: 7px;
   margin: 0 !important;
   width: 18px !important; /* 18px + 2 * 7px = 32px */
+}
+
+#rake {
+  position: absolute !important;
+  left: 10px;
+  bottom: 180px;
+  translate: 0% -50%;
+
+  width: calc( var(--rake-scale) * 150px);
+  height: calc( var(--rake-scale) * 90px); /*keep ratio (10/6) AND scale #rake-bar-number: font-size */
+}
+#car-side {
+  position: absolute;
+  top: 18.3%;
+  width: 80% !important;
+  left: 10%;
+  filter: drop-shadow(0 0 2px black);
+}
+#rake-bar {
+  position: absolute;
+  top: 58.3%;
+  width: 100% !important;
+  filter: drop-shadow(0 0 2px black);
+}
+#rake-bar-number {
+  position: absolute;
+  translate: -50% 0%;
+  bottom: -18%;
+  left: 50%;
+  font-size: calc( var(--rake-scale) * 30px) !important;
+}
+#rake-bar-pointer {
+  position: absolute;
+  top: 58.3%;
+  width: 3%;
+  transform: none;
+  translate: -50% 0%;
+  height: 25%;
+  background-color: white; 
+}
+
+#drs {
+  right: 15px !important;
+}
+
+#p2p, #drs {
+  position: absolute !important;
+  right: 125px;
+  bottom: 260px;
+
+  width: 95px;
+  height: 50px;
+  padding: 5px;
+}
+#drs-symbol {
+  width: 26px;
+  border-radius: 15px;
+  position: absolute;
+  translate: -50% 0%;
+  left: 50%;
+  top: 0px;
+  height: 26px;
+  filter: drop-shadow(0 0 5px black);
+  border: 2px solid white;
+}
+#p2p-text {
+  position: absolute !important;
+  translate: -50% 0% !important;
+  left: 45% !important;
+  z-index: 2;
+  top: 3px;
+}
+#p2p-bar {
+  position: absolute;
+  top: 2px;
+  width: 100%;
+  height: 45%;
+  z-index: 1;
+}
+#p2p-container {
+  position: absolute;
+  translate: -50% 0%;
+  top: 0%;
+  left: 50%;
+  width: 100%;
+  height: 45%;
+  border: 2px solid white;
+  border-radius: 5px;
+  filter: drop-shadow(0 0 5px black);
+}
+#p2p-left, #drs-left {
+  position: absolute;
+  bottom: 5%;
+  translate: -50% 0%;
+  left: 50%;
 }

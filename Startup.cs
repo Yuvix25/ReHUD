@@ -38,15 +38,8 @@ public class Startup
 
         lapPointsData.Load();
 
-        if (env.IsDevelopment())
-        {
-            app.UseDeveloperExceptionPage();
-        }
-        else
-        {
-            app.UseExceptionHandler("/Error");
-            app.UseHsts();
-        }
+        app.UseExceptionHandler("/Error");
+        app.UseHsts();
 
         app.UseHttpsRedirection();
         app.UseStaticFiles();
@@ -128,8 +121,7 @@ public class Startup
 
         mainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
 
-        if (!env.IsDevelopment())
-            mainWindow.SetIgnoreMouseEvents(true);
+        mainWindow.SetIgnoreMouseEvents(true);
 
 
         await Electron.IpcMain.On("log", (args) =>
@@ -273,8 +265,7 @@ public class Startup
 
         settingsWindow.Minimize();
 
-        if (!env.IsDevelopment())
-            settingsWindow.RemoveMenu();
+        settingsWindow.RemoveMenu();
 
         await Electron.IpcMain.On("load-settings", (data) =>
         {
@@ -508,9 +499,6 @@ public class Startup
 
 
         Thread.Sleep(1000);
-        if (env.IsDevelopment())
-            Electron.IpcMain.Send(window, "show");
-
         int iter = 0;
         ExtraData extraData = new()
         {
@@ -573,7 +561,7 @@ public class Startup
 
             if (notDriving)
             {
-                if (!env.IsDevelopment() && window != null && (isShown ?? true))
+                if (window != null && (isShown ?? true))
                 {
                     Electron.IpcMain.Send(window, "hide");
                     isShown = false;

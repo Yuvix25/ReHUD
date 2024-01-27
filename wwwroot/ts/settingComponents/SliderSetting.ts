@@ -11,7 +11,7 @@ export default class SliderSetting extends SettingComponent {
     private slider: HTMLInputElement;
     private numberInput: HTMLInputElement;
 
-    private lastValue: string;
+    private lastValue: number;
 
     protected override _enable(): void {
         this.slider.disabled = false;
@@ -40,6 +40,7 @@ export default class SliderSetting extends SettingComponent {
                 input.max = this.max.toString();
                 input.value = this.value.toString();
                 input.step = this.step.toString();
+                input.onkeydown = () => false;
                 return input;
             };
 
@@ -60,20 +61,21 @@ export default class SliderSetting extends SettingComponent {
             this.appendChild(this.slider);
             this.appendChild(this.numberInput);
 
-            this.initializationDone();
+            this.isDomInitialized = true;
         });
     }
 
     protected valueChange(val: string) {
-        if (val === this.lastValue) return;
+        const valNum = parseFloat(val);
+        if (valNum === this.lastValue) return;
 
-        if (parseFloat(val) < this.min) val = this.min.toString();
-        if (parseFloat(val) > this.max) val = this.max.toString();
+        if (valNum < this.min) val = this.min.toString();
+        if (valNum > this.max) val = this.max.toString();
 
-        this.value = val;
+        this.value = valNum;
         this.slider.value = val;
         this.numberInput.value = val;
 
-        this.lastValue = val;
+        this.lastValue = valNum;
     }
 }

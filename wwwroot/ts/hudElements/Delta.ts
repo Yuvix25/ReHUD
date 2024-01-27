@@ -28,7 +28,6 @@ export default class Delta extends HudElement {
                     usingAlltime = true;
                 }
                 break;
-
         }
 
         if (Driver.mainDriver != null && Driver.mainDriver.crossedFinishLine == null) {

@@ -1,57 +1,96 @@
 using Newtonsoft.Json;
-using R3E;
-using ReHUD;
 
-public class Settings : UserData
+namespace ReHUD;
+
+public class Settings : JsonUserData
 {
     protected override string DataFilePath => "settings.json";
 
-    protected Dictionary<string, object> settings = new();
+    protected SettingsData settings = new();
 
-    public Settings()
+    public SettingsData Data => settings;
+
+    protected override void Load(string? data)
     {
-        Load();
+        if (data == null)
+        {
+            settings = new SettingsData();
+            return;
+        }
+        settings = new SettingsData(data);
     }
 
-    protected override void Load(string data)
+    public override string Serialize()
+    {
+        return settings.Serialize();
+    }
+}
+
+[JsonObject(MemberSerialization.OptIn)]
+public class SettingsData
+{
+    [JsonProperty]
+    private readonly Dictionary<string, object> settings;
+
+    public IEnumerable<KeyValuePair<string, object>> Settings => settings;
+
+    public SettingsData() {
+        settings = new();
+    }
+    public SettingsData(string data)
     {
         settings = JsonConvert.DeserializeObject<Dictionary<string, object>>(data) ?? new();
     }
 
-    protected override UserData NewInstance()
+    public string Serialize()
     {
-        return new Settings();
+        return JsonConvert.SerializeObject(settings);
     }
 
     public void Set(string? key, object value)
     {
         if (key == null)
         {
-            Startup.logger.Warn("Attempted to set null key in settings. Value: " + value.ToString());
+            Startup.logger.Error("Attempted to set null key in settings. Value: " + value.ToString());
             return;
         }
 
         settings[key] = value;
-        Save();
     }
 
     public object? Get(string key)
     {
-        return settings.ContainsKey(key) ? settings[key] : null;
+        return Contains(key) ? settings[key] : null;
     }
 
-    public object Get(string key, object orDefault)
+    public object? Get(string key, object? orDefault)
     {
-        return settings.ContainsKey(key) ? settings[key] : orDefault;
+        return Contains(key) ? settings[key] : orDefault;
+    }
+
+    public object? Remove(string key)
+    {
+        var value = Get(key);
+        settings.Remove(key);
+        return value;
     }
 
     public bool Contains(string key)
     {
         return settings.ContainsKey(key);
     }
+}
 
-    public override string Serialize()
+
+[JsonObject(MemberSerialization.OptOut)]
+public class HudLayoutSettingsEntry
+{
+    public readonly string id;
+    public bool active { get; set; }
+
+    public HudLayoutSettingsEntry(string id, bool active)
     {
-        return JsonConvert.SerializeObject(settings);
+        this.id = id;
+        this.active = active;
     }
 }

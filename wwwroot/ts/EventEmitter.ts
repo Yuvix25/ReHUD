@@ -11,14 +11,32 @@ export type EventCallbacks = {
  * An event emitter for some events regarding data from the Shared Memory API.
  */
 export default class EventEmitter {
-    static readonly NEW_LAP_EVENT = 'newLap';
-    static readonly POSITION_JUMP_EVENT = 'positionJump';
-    static readonly ENTERED_PITLANE_EVENT = 'enteredPitlane';
-    static readonly GAME_PAUSED_EVENT = 'gamePaused';
-    static readonly GAME_RESUMED_EVENT = 'gameResumed';
-    static readonly SESSION_CHANGED_EVENT = 'sessionChanged';
-    static readonly SESSION_PHASE_CHANGED_EVENT = 'sessionPhaseChanged';
+    public static readonly NEW_LAP_EVENT = 'newLap';
+    public static readonly POSITION_JUMP_EVENT = 'positionJump';
+    public static readonly ENTERED_PITLANE_EVENT = 'enteredPitlane';
+    public static readonly GAME_PAUSED_EVENT = 'gamePaused';
+    public static readonly GAME_RESUMED_EVENT = 'gameResumed';
+    public static readonly SESSION_CHANGED_EVENT = 'sessionChanged';
+    public static readonly SESSION_PHASE_CHANGED_EVENT = 'sessionPhaseChanged';
+    public static readonly CAR_CHANGED_EVENT = 'carChanged';
+    public static readonly TRACK_CHANGED_EVENT = 'trackChanged';
+    public static readonly MAIN_DRIVER_CHANGED_EVENT = 'mainDriverChanged'; // emitted by the driver manager
+    public static readonly ENTERED_REPLAY_EVENT = 'enteredReplay';
+    public static readonly LEFT_REPLAY_EVENT = 'leftReplay';
 
+    private static readonly valueListeners: {[value: string]: Array<[string, any?]>} = {
+        'sessionType': [[EventEmitter.SESSION_CHANGED_EVENT, ESession]],
+        'sessionPhase': [[EventEmitter.SESSION_PHASE_CHANGED_EVENT, ESessionPhase]],
+        'vehicleInfo.modelId': [[EventEmitter.CAR_CHANGED_EVENT, null]],
+        'layoutId': [[EventEmitter.TRACK_CHANGED_EVENT, null]],
+    };
+    public static readonly valueListenersReversed: {[key: string]: [string, any]} = Object.entries(EventEmitter.valueListeners).reduce((acc: {[key: string]: [string, string]}, [key, value]) => {
+        for (const event of value) {
+            acc[event[0]] = [key, event[1]];
+
+        }
+        return acc;
+    }, {});
 
     static CLOSE_THRESHOLD = 50; // meters
     static events: {[key: string]: Array<(data: any) => void>} = {};
@@ -27,6 +45,18 @@ export default class EventEmitter {
     static newLapEvent: any;
     static enteredPitlaneEvent: any;
     static positionJumpEvent: any;
+
+    private static getValueByPath(data: IShared, path: string): any {
+        const parts = path.split('.');
+        let value = data;
+        for (const part of parts) {
+            if (value == null) {
+                return null;
+            }
+            value = (value as any)[part];
+        }
+        return value;
+    }
 
     /**
      * Listen for an event.
@@ -46,19 +76,23 @@ export default class EventEmitter {
         if (isMainDriver !== false) {
             console.log('Emitting ' + eventName + ' event.');
 
+            let listenerData: [string, any];
+            let listenerValue;
+            let listenerPrevValue;
+            let listenerValueMap;
             switch (eventName) {
-                case EventEmitter.SESSION_CHANGED_EVENT:
-                    console.log(`Session changed: ${ESession[this.previousData.sessionType]} -> ${ESession[data.sessionType]}`)
-                    break;
-                case EventEmitter.SESSION_PHASE_CHANGED_EVENT:
-                    console.log(
-                      `Session phase changed: ${
-                        ESessionPhase[this.previousData.sessionPhase]
-                      } -> ${ESessionPhase[data.sessionPhase]}`
-                    );
-                    break;
                 case EventEmitter.NEW_LAP_EVENT:
                     console.log(`New lap: ${args[0]?.completedLaps}`);
+                    break;
+                default:
+                    listenerData = EventEmitter.valueListenersReversed[eventName];
+                    if (listenerData != null) {
+                        listenerPrevValue = this.getValueByPath(this.previousData, listenerData[0]);
+                        listenerValue = this.getValueByPath(data, listenerData[0]);
+                        listenerValueMap = (value: any) => listenerData[1] == null ? value : listenerData[1][value];
+                        console.log(`${eventName}: ${listenerValueMap(listenerPrevValue)} -> ${listenerValueMap(listenerValue)}`);
+                    }
+                    break;
             }
         }
         if (isMainDriver !== null) args.push(isMainDriver);
@@ -92,11 +126,21 @@ export default class EventEmitter {
             let emittedPositionJump = false;
 
 
-            if (this.previousData.sessionType !== data.sessionType) {
-                this.emit(EventEmitter.SESSION_CHANGED_EVENT, null, data, this.previousData.sessionType);
+            if (this.previousData.gameInReplay !== 1 && data.gameInReplay === 1) {
+              this.emit(EventEmitter.ENTERED_REPLAY_EVENT, null, data);
             }
-            if (this.previousData.sessionPhase !== data.sessionPhase) {
-                this.emit(EventEmitter.SESSION_PHASE_CHANGED_EVENT, null, data, this.previousData.sessionPhase);
+            if (this.previousData.gameInReplay === 1 && data.gameInReplay !== 1) {
+              this.emit(EventEmitter.LEFT_REPLAY_EVENT, null, data);
+            }
+
+            for (const value of Object.keys(EventEmitter.valueListeners)) {
+                const previousValue = EventEmitter.getValueByPath(this.previousData, value);
+                const currentValue = EventEmitter.getValueByPath(data, value);
+                if (previousValue !== currentValue) {
+                    for (const event of EventEmitter.valueListeners[value]) {
+                        this.emit(event[0], null, data, previousValue);
+                    }
+                }
             }
 
             if (data.controlType != null && data.controlType > 0 && this.previousData.controlType != data.controlType) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
@@ -124,11 +168,11 @@ export default class EventEmitter {
                 let toEmit: string = null;
 
                 if ((driverPrevious.completedLaps !== driver.completedLaps && (driverPrevious.completedLaps == null || driver.completedLaps > driverPrevious.completedLaps))
-                    ||
-                    (driver.completedLaps == 0
-                    && driverPrevious.lapDistance >= data.layoutLength - EventEmitter.CLOSE_THRESHOLD
-                    && driver.lapDistance <= EventEmitter.CLOSE_THRESHOLD
-                    && (data.sessionType === ESession.Race || data.sessionType === ESession.Qualify))) {
+                    || (
+                    driver.completedLaps == 0 &&
+                    driverPrevious.lapDistance >= data.layoutLength - EventEmitter.CLOSE_THRESHOLD &&
+                    driver.lapDistance <= EventEmitter.CLOSE_THRESHOLD &&
+                    (data.sessionType === ESession.Race || data.sessionType === ESession.Qualify))) {
                         toEmit = EventEmitter.NEW_LAP_EVENT;
                 }
 

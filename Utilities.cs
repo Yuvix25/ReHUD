@@ -1,10 +1,8 @@
-using System;
-// using System.Management;
 using System.Diagnostics;
 
 namespace R3E
 {
-    public class Utilities
+    public static class Utilities
     {
         public static Single RpsToRpm(Single rps)
         {
@@ -24,7 +22,7 @@ namespace R3E
         /// <summary>
         /// Returns either the estimated total number of laps and number of laps left, or null if the data is not available. <total, left>
         /// </summary>
-        internal static Tuple<int, double> GetEstimatedLapCount(Data.Shared data, FuelCombination combination)
+        internal static Tuple<int, double> GetEstimatedLapCount(Data.Shared data, ReHUD.FuelCombination combination)
         {
             double fraction = data.lapDistanceFraction;
 
@@ -64,8 +62,8 @@ namespace R3E
             // number of laps left for the leader
             int res;
 
-            double sessionTime = data.sessionTimeRemaining;
-            if (sessionTime != -1)
+            double sessionTimeRemaining = data.sessionTimeRemaining;
+            if (sessionTimeRemaining != -1)
             {
                 double referenceLap;
 
@@ -88,11 +86,11 @@ namespace R3E
 
                 if (leaderCurrentLaptime != -1)
                 {
-                    res = (int)Math.Ceiling((sessionTime + leaderCurrentLaptime) / referenceLap);
+                    res = (int)Math.Ceiling((sessionTimeRemaining + leaderCurrentLaptime) / referenceLap);
                 }
                 else
                 {
-                    res = (int)Math.Ceiling(sessionTime / referenceLap + leaderFraction);
+                    res = (int)Math.Ceiling(sessionTimeRemaining / referenceLap + leaderFraction);
                 }
             }
             else

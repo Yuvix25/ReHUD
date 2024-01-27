@@ -11,4 +11,6 @@ internal struct ExtraData {
     public int estimatedRaceLapCount;
     public double lapsUntilFinish;
     public bool forceUpdateAll;
+
+    public double timestamp;
 }

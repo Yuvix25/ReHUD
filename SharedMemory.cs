@@ -5,7 +5,7 @@ using ReHUD;
 
 namespace R3E
 {
-    internal delegate void SharedMemoryCallback(Shared data);
+    internal delegate Task SharedMemoryCallback(Shared data);
 
     class SharedMemory : IDisposable
     {
@@ -18,7 +18,15 @@ namespace R3E
         private Shared _data;
         private MemoryMappedFile? _file;
         private byte[]? _buffer;
-        public static readonly TimeSpan timeInterval = TimeSpan.FromMilliseconds(17); // ~60fps
+        private static TimeSpan timeInterval = TimeSpan.FromMilliseconds(16.6); // ~60fps
+
+        public static long FrameRate
+        {
+            get { return (long)(1000.0 / timeInterval.TotalMilliseconds); }
+            set {
+                timeInterval = TimeSpan.FromMilliseconds(1000.0 / value);
+            }
+        }
 
         public void Dispose()
         {
@@ -26,9 +34,9 @@ namespace R3E
                 _file.Dispose();
         }
 
-        public static bool isRunning = false;
+        public static bool IsRunning { get; private set; } = false;
 
-        public void Run(SharedMemoryCallback callback)
+        public async Task Run(SharedMemoryCallback callback)
         {
             var timeLast = DateTime.UtcNow;
 
@@ -40,7 +48,7 @@ namespace R3E
 
                 if (timeNow.Subtract(timeLast) < timeInterval)
                 {
-                    Thread.Sleep(1);
+                    await Task.Delay(1);
                     continue;
                 }
 
@@ -63,12 +71,12 @@ namespace R3E
 
                 if (Mapped && Read())
                 {
-                    isRunning = true;
-                    callback(_data);
+                    IsRunning = true;
+                    await callback(_data);
                 }
                 else
                 {
-                    isRunning = false;
+                    IsRunning = false;
                 }
             }
         }

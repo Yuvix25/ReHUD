@@ -11,7 +11,7 @@
     "appId": "com.yuvix.rehud",
     "productName": "ReHUD",
     "copyright": "Copyright © 2023",
-    "buildVersion": "0.7.6-beta",
+    "buildVersion": "0.8.0-beta",
     "win": {
       "icon": "../../../wwwroot/ReHUD.png"
     },
@@ -33,6 +33,11 @@
         "filter": [ "**/*" ]
       },
       "**/*"
-    ]
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true
+    }
   }
 }

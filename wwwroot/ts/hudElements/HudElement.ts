@@ -1,12 +1,13 @@
 import Hud from "../Hud";
 import Action from "../Action.js";
-import {IExtendedShared} from "../consts.js";
+import {IExtendedShared, TransformableId} from "../consts.js";
 
 export type HUDElementOptions = {
     name: string,
     hud?: Hud;
     containerId?: string;
     elementId?: string;
+    transformableId: TransformableId;
     renderEvery?: number;
 };
 
@@ -53,6 +54,7 @@ export class Style {
 export default abstract class HudElement extends Action {
     private readonly containerId: string;
     private readonly elementId: string;
+    private readonly transformableId: TransformableId;
 
     protected root: HTMLElement | null = null;
     private _isHidden: boolean = false;
@@ -75,6 +77,7 @@ export default abstract class HudElement extends Action {
         this.hud = options.hud;
         this.containerId = options.containerId;
         this.elementId = options.elementId;
+        this.transformableId = options.transformableId;
     }
 
     /**
@@ -166,6 +169,20 @@ export default abstract class HudElement extends Action {
 
     public isHidden() {
         return this._isHidden;
+    }
+
+    public isDisabledInLayout() {
+        return this.hud.layoutElements?.[this.transformableId]?.shown === false;
+    }
+
+    override shouldExecute(): boolean {
+        if (!super.shouldExecute())
+            return false;
+        
+        if (!this.shouldExecuteWhileHidden() && this.isDisabledInLayout())
+            return false;
+
+        return true;
     }
 }
 

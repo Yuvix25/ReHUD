@@ -1,68 +1,87 @@
 using Newtonsoft.Json;
 
-namespace R3E;
+namespace ReHUD;
 
-[JsonObject(MemberSerialization.OptIn)]
-public abstract class UserData
-{
+public abstract class UserData {
     public static readonly string dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD");
 
+    public virtual string SubPath { get; } = "";
     protected abstract string DataFilePath { get; }
+    protected virtual string? DEFAULT_WHEN_EMPTY => "";
 
-    protected abstract UserData NewInstance();
+    public abstract string Serialize();
 
-
-    public virtual string Serialize()
-    {
-        return JsonConvert.SerializeObject(this);
-    }
-
+    public bool DidLoad { get; private set; } = false;
 
     public void Load()
     {
+        DidLoad = true;
         Load(ReadDataFile(DataFilePath));
     }
 
-    protected abstract void Load(string data);
+    protected abstract void Load(string? data);
 
-    public void Save()
+    public virtual void Save()
     {
         WriteDataFile(DataFilePath, Serialize());
     }
 
-    private static string ReadDataFile(string name)
-    {
-        try
-        {
-            if (!Directory.Exists(dataPath))
-            {
-                Directory.CreateDirectory(dataPath);
-            }
-            return File.ReadAllText(Path.Combine(dataPath, name));
-        }
-        catch
-        {
-            return "{}";
+    public virtual bool Delete() {
+        try {
+            File.Delete(PathTo(DataFilePath));
+            return true;
+        } catch (Exception e) {
+            Startup.logger.Error($"Failed to delete file {DataFilePath}: {e}");
+            return false;
         }
     }
 
-    private static void WriteDataFile(string name, string data)
+    public string PathTo(string name)
     {
-        File.WriteAllText(Path.Combine(dataPath, name), data);
+        return Path.Combine(dataPath, SubPath, name);
+    }
+
+    private string? ReadDataFile(string name)
+    {
+        try
+        {
+            var path = PathTo(name);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            return File.ReadAllText(path);
+        }
+        catch
+        {
+            return DEFAULT_WHEN_EMPTY;
+        }
+    }
+
+    private void WriteDataFile(string name, string data)
+    {
+        File.WriteAllText(PathTo(name), data);
+    }
+}
+
+[JsonObject(MemberSerialization.OptIn)]
+public abstract class JsonUserData : UserData
+{
+    protected override string DEFAULT_WHEN_EMPTY => "{}";
+    public override string Serialize()
+    {
+        return JsonConvert.SerializeObject(this);
     }
 }
 
 
 [JsonObject(MemberSerialization.OptIn)]
-public abstract class CombinationUserData<C> : UserData
+public abstract class CombinationUserData<C> : JsonUserData
 {
     protected abstract C NewCombinationInstance();
 
     [JsonProperty]
     protected Dictionary<int, Dictionary<int, C>> combinations;
 
-    public CombinationUserData() : this(new Dictionary<int, Dictionary<int, C>>()){  }
-    public CombinationUserData(Dictionary<int, Dictionary<int, C>> combinations)
+    protected CombinationUserData() : this(new Dictionary<int, Dictionary<int, C>>()){  }
+    protected CombinationUserData(Dictionary<int, Dictionary<int, C>> combinations)
     {
         this.combinations = combinations;
     }
@@ -116,8 +135,13 @@ public abstract class CombinationUserData<C> : UserData
         return combination;
     }
 
-    protected override void Load(string data)
+    protected override void Load(string? data)
     {
+        if (data == null)
+        {
+            combinations = new Dictionary<int, Dictionary<int, C>>();
+            return;
+        }
         var method = typeof(JsonConvert).GetMethod("DeserializeObject", 1, new Type[] { typeof(string) })!;
         var genericMethod = method.MakeGenericMethod(GetType());
 

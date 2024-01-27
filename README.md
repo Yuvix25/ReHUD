@@ -24,17 +24,23 @@ I started this project following the recent increase in the number of bugs in Ra
  - Radar
  - Position bar
  - Live delta
+ - Position bar
+ - Session status
+ - Pit timer
  - Live on-track relative display*
- - Session status*
  - Settings window:
     - Element scale and rearrangement*
+    - Layout presets*
     - General settings*
-    - Advanced insights*
 
 _\* work in progress_
 
 ## Planned Features
  - Manual rolling start
+ - Ride height gadget
+ - Input graphs
+ - Fuel calculator
+ - Advanced telemetry
 
 ---
 
@@ -55,6 +61,17 @@ It is recommended to set the "In Game Overlays" setting of RaceRoom under Settin
 
 **Please note that you must run RaceRoom in borderless-windowed or windowed mode as the HUD cannot appear on top of fullscreen apps.**
 
+## Layout Presets
+You can save and load layout presets to easily switch between different layouts. To create a new preset, go to the "Layout" tab in the settings window and click on the "+" button. To rename a preset, choose it, click on the "Edit" button, modify the name and click on "Save". To delete a preset, click on the trash can icon next to it.
+All presets are saved in the `Documents/ReHUD/layoutPresets` folder as `.json` files. You shouldn't modify these files manually, but if you really want to, do it while the app is not running.
+### Replay Preset
+The replay preset is a special preset that is automatically loaded when you enter a replay. To mark a preset as the replay preset, choose it, click on the "Edit" button and toggle the "Replay Preset" toggle. Note that only one preset can be marked as the replay preset at a time, and that the replay preset will be automatically unmarked if you mark another preset as the replay preset.
+### Preset Command Line Argument
+You can also load a preset by passing the `--preset <preset name>` command line argument to the app. This can be useful if you want to create a shortcut to the app that loads a specific preset. For example, if you want to run ReHUD and automatically load the "Race" preset, you can run the following command:
+```sh
+$ ReHUD.exe /args --preset=Race
+```
+
 ## Screenshots
 <img src="https://user-images.githubusercontent.com/58216719/232799762-dbd964cc-e461-4545-9b21-749b71d136d4.png" style="max-height: 500px">
 
@@ -65,6 +82,13 @@ Since [v0.3.1-beta](https://github.com/Yuvix25/ReHUD/releases/tag/v0.3.1-beta), 
 
 ## Contribution
 Any contribution to the project will be highly appreciated! Feel free to open a new [issue](https://github.com/Yuvix25/ReHUD/issues/new/choose) or [pull request](https://github.com/Yuvix25/ReHUD/compare), and I'll do my best to review them and provide my own feedback.
+
+
+## Developer Notes
+This section is only relevant if you want to contribute to the project, or if you want to build the app yourself. If you just want to use the app, you can ignore this section.
+### Electron.NET
+This project is built using Electron.NET, which is a .NET wrapper for Electron. This means that the app is built using C# and .NET, but is run using Electron. This allows for a lot of flexibility and ease of development, as well as the ability to use any npm package in the app. However, Electron.NET is not updated very often - which means that I had to manually add some features to it, such as display names. While I made sure that ReHUD will still work with the [official version of Electron.NET](https://github.com/ElectronNET/Electron.NET), I recommend using my fork of it (and specifically the `ReHUD/main` branch) which can be found [here](https://github.com/Yuvix25/Electron.NET/tree/ReHUD/main) for development.
+
 
 ## Special Thanks
  - [Tobias Naumann](https://twitch.tv/DasBreitschwert) - for being an early tester and providing me with a lot of great feedback.

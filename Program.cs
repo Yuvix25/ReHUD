@@ -2,7 +2,7 @@ using ElectronNET.API;
 
 namespace ReHUD;
 
-public class Program
+public static class Program
 {
     public static void Main(string[] args)
     {

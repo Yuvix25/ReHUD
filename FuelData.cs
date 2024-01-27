@@ -1,17 +1,12 @@
 using Newtonsoft.Json;
 
-namespace R3E;
+namespace ReHUD;
 
 public class FuelData : CombinationUserData<FuelCombination>
 {
     protected override string DataFilePath => "userData.json";
 
     // combinations[trackLayoutId][carId];
-
-    protected override FuelData NewInstance()
-    {
-        return new FuelData();
-    }
 
     protected override FuelCombination NewCombinationInstance()
     {
@@ -63,10 +58,10 @@ public class FuelCombination
             return;
 
         averageLapTime = -1;
-        this.lapTimes.AddLast(lapTime);
-        if (this.lapTimes.Count > MAX_DATA_SIZE)
+        lapTimes.AddLast(lapTime);
+        if (lapTimes.Count > MAX_DATA_SIZE)
         {
-            this.lapTimes.RemoveFirst();
+            lapTimes.RemoveFirst();
         }
 
         if (bestLapTime == -1 || lapTime < bestLapTime)

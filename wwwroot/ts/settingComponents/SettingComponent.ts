@@ -15,6 +15,30 @@ export default abstract class SettingComponent extends HTMLElement {
     protected value: any;
 
     private isInitialized = false;
+
+    private _isStaticInitialized = false;
+    private _isDomIntialized = false;
+
+    protected get isDomInitialized() {
+        return this._isDomIntialized;
+    }
+    protected set isDomInitialized(val: boolean) {
+        this._isDomIntialized = val;
+        if (val) {
+            this.initializationDone();
+        }
+    }
+
+    protected get isStaticInitialized() {
+        return this._isStaticInitialized;
+    }
+    protected set isStaticInitialized(val: boolean) {
+        this._isStaticInitialized = val;
+        if (val) {
+            this.initializationDone();
+        }
+    }
+
     private initializationQueue: [(...args: any[]) => void, any[]][] = [];
 
     private _isEnabled = true;
@@ -44,6 +68,8 @@ export default abstract class SettingComponent extends HTMLElement {
     }
 
     protected initializationDone() {
+        if (!this.isDomInitialized || !this.isStaticInitialized) return;
+
         if (this.isInitialized) return;
         this.isInitialized = true;
 
@@ -59,14 +85,19 @@ export default abstract class SettingComponent extends HTMLElement {
         }
     }
 
-    protected callback: (value: any) => void;
+    protected staticInitializeDone(callback: (...args: any[]) => void, ...args: any[]) {
+        this.isStaticInitialized = true;
+        this.onInitialization(callback, ...args);
+    }
+
+    protected callback: (value: any) => boolean | void;
 
     constructor() {
         super();
         SettingComponent.instances.push(this);
     }
 
-    public static initialize(settings: any, valueChangeCallbacks: { [key: string]: (value: any) => void }) {
+    public static initialize(settings: any, valueChangeCallbacks: { [key: string]: (value: any) => boolean | void }) {
         SettingComponent.instances.forEach((instance) => {
             const callback = valueChangeCallbacks[instance.key];
             if (callback) {
@@ -77,7 +108,7 @@ export default abstract class SettingComponent extends HTMLElement {
             if (value === undefined) {
                 value = instance.value;
             }
-            instance.onInitialization(instance.valueChange.bind(instance), value);
+            instance.staticInitializeDone(instance.valueChange.bind(instance), value);
             if (typeof instance.callback === 'function') instance.callback(value);
         });
     }
@@ -99,9 +130,9 @@ export default abstract class SettingComponent extends HTMLElement {
         requestAnimationFrame(() => {
             if (this.getAttribute('tooltip') != null) {
                 const tooltip = document.createElement('span');
-                tooltip.innerText = 'ⓘ';
+                tooltip.innerText = 'info';
                 tooltip.setAttribute('title', this.getAttribute('tooltip'));
-                tooltip.classList.add('tooltip');
+                tooltip.classList.add('material-symbols-outlined', 'tooltip');
 
                 this.appendChild(tooltip);
             }
@@ -122,8 +153,20 @@ export default abstract class SettingComponent extends HTMLElement {
     protected onValueChange(value: any) {
         this.onInitialization((value) => {
             this.valueChange(value);
+            if (typeof this.callback === 'function') {
+                const res = this.callback(value);
+                if (res === false) return;
+            };
             this.saveValue();
-            if (typeof this.callback === 'function') this.callback(value);
         }, value);
+    }
+
+    public getValue() {
+        return this.value;
+    }
+
+    public setValue(value: any) {
+        this.value = value;
+        this.onValueChange(value);
     }
 }

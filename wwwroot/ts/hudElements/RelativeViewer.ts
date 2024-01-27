@@ -1,13 +1,15 @@
 import HudElement, {Hide} from "./HudElement.js";
 import {ESessionPhase} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
-import {RELATIVE_LENGTH, halfLengthTop, halfLengthBottom, insertCell, NA, nameFormat, getClassColors} from "../consts.js";
+import {RELATIVE_LENGTH, halfLengthTop, halfLengthBottom, insertCell, NA, nameFormat, getClassColors, finishedBadly} from "../consts.js";
 import DriverManager from "../actions/DriverManager.js";
 import RankedData from "../actions/RankedData.js";
 
 
 export default class RelativeViewer extends HudElement {
     override inputKeys: string[] = ['driverData', 'position', 'sessionPhase'];
+
+    public static readonly IMAGE_REDIRECT = 'https://game.raceroom.com/store/image_redirect?id=';
 
     private driverManager: DriverManager = null;
     private rankedData: RankedData = null;
@@ -31,6 +33,11 @@ export default class RelativeViewer extends HudElement {
             return this.hide();
 
         let driverCount = allDrivers.length;
+
+        let classes = new Set<number>();
+        for (const driver of allDrivers) {
+            classes.add(driver.driverInfo.classId);
+        }
 
         relative.style.display = 'block';
 
@@ -60,8 +67,11 @@ export default class RelativeViewer extends HudElement {
         const deltasFront: Array<[IExtendedDriverData, number, Driver?]> = [];
         const deltasBehind: Array<[IExtendedDriverData, number, Driver]> = [];
         for (const driver of allDrivers) {
-            if (driver === mySharedMemory)
+            if (driver === mySharedMemory) continue;
+            if (finishedBadly(driver.finishStatus)) {
+                driverCount--;
                 continue;
+            }
 
             const uid = driver.driverInfo.uid;
 
@@ -115,8 +125,8 @@ export default class RelativeViewer extends HudElement {
             if (mergedDeltas[i] == undefined)
                 break;
             const driver = mergedDeltas[i][0];
-            if (driver.place == -1)
-                break;
+
+            if (driver.place == -1) break;
 
             const row = relativeTable.children.length > i - start ? relativeTable.children[i - start] : relativeTable.insertRow(i - start);
             row.classList.remove('last-row')
@@ -133,6 +143,7 @@ export default class RelativeViewer extends HudElement {
             }
 
             const classId = driver.driverInfo.classId;
+            const manafacturerId = driver.driverInfo.manufacturerId;
             const classImgCell = insertCell(row, undefined, 'class-img');
             let classImg = classImgCell.children?.[0]?.children?.[0];
             if (classImg == null) {
@@ -146,7 +157,7 @@ export default class RelativeViewer extends HudElement {
                 return this.hide();
             }
 
-            const newSrc = `https://game.raceroom.com/store/image_redirect?id=${classId}&size=thumb`;
+            const newSrc = classes.size > 1 ? RelativeViewer.IMAGE_REDIRECT + classId + '&size=thumb' : RelativeViewer.IMAGE_REDIRECT + manafacturerId + '&size=small';
             if (classImg.src !== newSrc) {
                 classImg.src = newSrc;
             }

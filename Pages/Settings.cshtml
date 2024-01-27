@@ -10,19 +10,29 @@
 
     <link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
 
-    @* Needed for the tooltip info symbol *@
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet"> 
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
 
     <script src="~/dist/settings-bundle.js" asp-append-version="true"></script>
 </head>
 
 
 <div class="tab">
-    <button class="tablinks active" id="general-tablink">General</button>
-    <button class="tablinks" id="layout-tablink">Layout</button>
+    <button class="main-tabs tablinks active" id="general-tablink">General</button>
+    <button class="main-tabs tablinks" id="layout-tablink">Layout</button>
 </div>
 
-<div id="general-tab" class="tabcontent active">
+<div id="general-tab" class="main-tabs tabcontent active">
+    <choice-setting key="screenToUse" value="@(Model.Screen)">
+        <label>Screen to use</label>
+        @foreach (var screen in Model.Screens)
+        {
+            <button value="@screen.Item1">@screen.Item2</button>
+        }
+    </choice-setting>
+
+    <slider-setting key="framerate" min="10" max="1000" step="1" value="60">Framerate</slider-setting>
+
     <choice-setting key="speedUnits" value="kmh">
         <label>Speed Units</label>
         <button value="kmh">km/h</button>
@@ -46,18 +56,24 @@
         <button value="session-fallback-alltime">Session Best - Fallback to All-time</button>
         <button value="alltime">All-time Best</button>
     </choice-setting>
-    <toggle-setting key="showDeltaOnInvalidLaps">Show Delta On Invalid Laps</toggle-setting>
+    <toggle-setting key="showDeltaOnInvalidLaps">Show Delta on Invalid Laps</toggle-setting>
 
 
     <toggle-setting key="relativeSafeMode" tooltip="Enabling this option will mean that the relative will only work with saved best lap data, and will not save new ones.">Relative Safe Mode</toggle-setting>
     <toggle-setting key="check-for-updates">Check for Updates<toggle-setting>
 </div>
 
-<div id="layout-tab" class="tabcontent">
+<div id="layout-tab" class="main-tabs tabcontent">
+    <div class="tab" id="layout-preset-tabs">
+        <button id="new-layout-preset"><span class="material-symbols-outlined icon-button">add</span></button>
+    </div>
+
     <div class="setting" id="layout-setting">
         <button id="edit-layout">Edit</button>
         <button id="cancel-reset-layout">Reset</button>
     </div>
+
+    <toggle-setting key="isReplayLayout" disabled>Replay Preset</toggle-setting><span class="material-symbols-outlined tooltip" title="When enabled, this preset will automatically be chosen when you enter a replay. Only one preset can be set as the replay preset.">info</span>
 
     <div id="element-toggles"></div>
 </div>

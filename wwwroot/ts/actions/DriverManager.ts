@@ -3,10 +3,16 @@ import Action from "../Action.js";
 import {IExtendedShared, sessionPhaseNotDriving, valueIsValid} from "../consts.js";
 import IShared, {ESession, IDriverData} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
+import EventEmitter from '../EventEmitter.js';
 
 export default class DriverManager extends Action {
     public drivers: {[uid: string]: Driver} = {};
     private removedDrivers: {[uid: string]: [Driver, number]} = {};
+    private _leaderCrossedSFLineAt0: number = 0;
+
+    public get leaderCrossedSFLineAt0(): number {
+        return this._leaderCrossedSFLineAt0;
+    }
 
     constructor() {
         super('DriverManager', 0, true);
@@ -58,12 +64,21 @@ export default class DriverManager extends Action {
             else
                 shouldSaveBestLap = this.drivers[uid].endLap(null, driver.completedLaps, data.sessionType);
 
-            if (shouldSaveBestLap)
+            if (shouldSaveBestLap && !data.gameInMenus && !data.gameInReplay && !data.gamePaused)
                 this.drivers[uid].saveBestLap(data.layoutId, driver.driverInfo.classId, ipcRenderer);
+        }
+
+        if (driver.place == 1 && (data.sessionTimeRemaining == 0 || this._leaderCrossedSFLineAt0 > 0)) {
+            this._leaderCrossedSFLineAt0++;
         }
     }
 
+
     protected override onSessionChange(data: IShared, lastSession: ESession): void {
+        if (data.sessionType === ESession.Unavailable) {
+            this.drivers = {};
+        }
+        this._leaderCrossedSFLineAt0 = 0;
         this.clearDriversTempData(data);
         this.removedDrivers = {};
     }
@@ -117,20 +132,23 @@ export default class DriverManager extends Action {
                     this.drivers[uid] = this.removedDrivers[uid][0];
                     const timeDiff = (Date.now() - this.removedDrivers[uid][1]) / 1000;
                     if (timeDiff > 3) { // 3 second temp data retention
-                        console.log('Restoring driver (clearing temp data):', timeDiff.toFixed(2), uid);
+                        console.log('Restoring driver (clearing temp data)', timeDiff.toFixed(2), uid);
                         this.drivers[uid].clearTempData();
                     } else {
-                        console.log('Restoring driver (temp data intact):', timeDiff.toFixed(2), uid);
+                        console.log('Restoring driver (temp data intact)', timeDiff.toFixed(2), uid);
                     }
                     this.drivers[uid].setLapInvalid();
                     delete this.removedDrivers[uid];
                 } else {
-                    console.log('Adding driver:', uid);
+                    console.log('Adding driver', uid);
                     this.drivers[uid] = new Driver(uid, trackLength, driver.completedLaps);
                 }
             }
 
             if (driver.place == place) {
+                if (this.drivers[uid] != Driver.mainDriver) {
+                    EventEmitter.emit(EventEmitter.MAIN_DRIVER_CHANGED_EVENT, true, data, driver);
+                }
                 const shouldLoad = this.drivers[uid].setAsMainDriver();
                 
                 if (shouldLoad) {
@@ -155,7 +173,7 @@ export default class DriverManager extends Action {
             }
         }
 
-        if (toRemove.length > 0) console.log('Removing drivers:', toRemove);
+        if (toRemove.length > 0) console.log('Removing drivers', toRemove);
         toRemove.forEach((uid) => {
             delete this.drivers[uid];
         });

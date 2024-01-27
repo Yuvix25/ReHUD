@@ -11,6 +11,7 @@ export interface IExtendedShared {
   estimatedRaceLapCount: number;
   lapsUntilFinish: number;
   forceUpdateAll: boolean;
+  timestamp: number;
 }
 
 /* ========================================== Constants ========================================== */
@@ -25,6 +26,7 @@ export const RELATIVE_SAFE_MODE = 'relativeSafeMode';
 export const POSITION_BAR_CELL_COUNT = 'positionBarCellCount';
 export const DELTA_MODE = 'deltaMode';
 export const SHOW_DELTA_ON_INVALID_LAPS = 'showDeltaOnInvalidLaps';
+export const FRAMERATE = 'framerate';
 export const HUD_LAYOUT = 'hudLayout';
 
 export const DEFAULT_RENDER_CYCLE = 30;
@@ -149,7 +151,7 @@ export function addObjects<T>(
 
   const res: T = {} as T;
   for (const key of Object.keys(obj1) as (keyof T)[]) {
-    res[key] = ((obj1[key] as number) + (obj2[key] as number)) as T[keyof T];
+     res[key] = ((obj1[key] as unknown as number) + (obj2[key] as unknown as number)) as unknown as T[keyof T];
   }
   return res;
 }
@@ -161,7 +163,7 @@ export function multiplyObject<T>(
 
   const res: T = {} as T;
   for (const key of Object.keys(obj1) as (keyof T)[]) {
-    res[key] = ((obj1[key] as number) * by) as T[keyof T];
+    res[key] = ((obj1[key] as unknown as number) * by) as unknown as T[keyof T];
   }
   return res;
 }
@@ -172,7 +174,11 @@ export function sessionPhaseNotDriving(sessionPhase: ESessionPhase) {
 }
 
 export function finished(finishStatus: EFinishStatus) {
-  return finishStatus === EFinishStatus.DNF || finishStatus === EFinishStatus.DQ || finishStatus === EFinishStatus.Finished;
+  return finishedBadly(finishStatus) || finishStatus === EFinishStatus.Finished;
+}
+
+export function finishedBadly(finishStatus: EFinishStatus) {
+  return finishStatus === EFinishStatus.DNF || finishStatus === EFinishStatus.DQ;
 }
 
 export function getSessionType(

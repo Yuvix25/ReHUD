@@ -1,17 +1,12 @@
 using Newtonsoft.Json;
 
-namespace R3E;
+namespace ReHUD;
 
 public class LapPointsData : CombinationUserData<LapPointsCombination>
 {
     protected override string DataFilePath => "lapPointsData.json";
 
     // combinations[trackLayoutId][classId];
-
-    protected override LapPointsData NewInstance()
-    {
-        return new LapPointsData();
-    }
 
     protected override LapPointsCombination NewCombinationInstance()
     {
@@ -35,7 +30,7 @@ public class LapPointsCombination
             this.bestLapTime = bestLapTime;
             this.lapPoints = lapPoints;
             this.pointsPerMeter = pointsPerMeter;
-            ReHUD.Startup.logger.Info($"New best lap time: {bestLapTime}");
+            Startup.logger.Info($"New best lap time: {bestLapTime}");
         }
     }
 

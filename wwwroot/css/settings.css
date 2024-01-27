@@ -2,6 +2,7 @@
     --theme-color-1: #b95600;
     --theme-color-2: #894a14;
     --theme-color-3: #813c00;
+    --theme-color-4: #7b5133;
 }
 
 
@@ -19,7 +20,7 @@ label {
 }
 
 button {
-    border: none !important;
+    border: none;
     outline: none !important;
     background-color: #2c2c2c;
     color: #c1c1c1;
@@ -37,6 +38,10 @@ button:hover {
 
 button.selected {
     background-color: var(--theme-color-3);
+}
+
+input {
+    outline: none !important;
 }
 
 input[type=number]::-webkit-inner-spin-button,
@@ -143,6 +148,14 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 
+.tab button.main-tabs {
+    font-size: 20px;
+}
+
+.tab button.active.layout-preset-tabs span {
+    margin-bottom: -1px;
+}
+
 
 #radar-beep-volume-text {
     width: 45px;
@@ -215,7 +228,82 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 
+.material-symbols-outlined {
+    font-variation-settings:
+        'FILL' 0,
+        'wght' 300,
+        'GRAD' 0,
+        'opsz' 24;
+}
+
 .tooltip {
     color: white;
-    font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
+    vertical-align: middle;
+    margin-bottom: 2px;
+    font-size: 26px !important;
+}
+
+
+#layout-preset-tabs {
+    background: transparent;
+    margin-bottom: 10px;
+}
+
+#layout-preset-tabs > button:not(#new-layout-preset) {
+    padding: 0;
+    padding-bottom: 2px;
+    border: 1px solid #7e7e7e;
+    border-radius: 4px;
+}
+
+#layout-preset-tabs > button:disabled,
+#layout-preset-tabs > button:disabled:not(.active) span {
+    cursor: default !important;
+}
+
+#layout-preset-tabs > button:disabled:not(.active) {
+    opacity: 0.5;
+}
+
+#layout-preset-tabs > button > span.layout-name {
+    outline: none !important;
+    padding: 5px 10px 5px 10px;
+    display: inline-block;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 400;
+    color: #f0f0f0;
+}
+#layout-preset-tabs > button:disabled.active {
+    background-color: #585858;
+}
+#layout-preset-tabs > button > span.layout-name[contenteditable="true"]:hover {
+    cursor: text;
+}
+#layout-preset-tabs > button > span.layout-name[contenteditable="false"]:hover {
+    cursor: pointer;
+}
+
+#new-layout-preset {
+    padding: 0 !important;
+}
+
+span.icon-button {
+    padding: 4px !important;
+    border-radius: 50%;
+    vertical-align: middle;
+    transition: background-color 0.08s ease-out;
+}
+
+span.icon-button:not(.disabled):hover {
+    background-color: #2e2e2e;
+    cursor: pointer;
+    transition: background-color 0s;
+}
+
+#isReplayLayout {
+    display: inline-block;
+    margin-left: 1px;
+}
+#isReplayLayout > div > label::after {
+    transition: all 0.1s;
 }

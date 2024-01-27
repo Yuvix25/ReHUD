@@ -42,7 +42,7 @@ export default class ToggleSetting extends SettingComponent {
             this.appendChild(label);
             this.appendChild(switchContainer);
 
-            this.initializationDone();
+            this.isDomInitialized = true;
         });
     }
 

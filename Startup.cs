@@ -6,6 +6,8 @@ using log4net.Config;
 using System.Reflection;
 using System.Net.Http.Headers;
 using R3E;
+using SignalRChat.Hubs;
+using Newtonsoft.Json.Linq;
 
 namespace ReHUD;
 
@@ -24,19 +26,48 @@ public class Startup
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSignalR();
         services.AddRazorPages();
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        logFilePath = Path.Combine(UserData.dataPath, "ReHUD.log");
+        logFilePath = Path.Combine(JsonUserData.dataPath, "ReHUD.log");
         GlobalContext.Properties["LogFilePath"] = logFilePath;
 
         var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
         XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
-        lapPointsData.Load();
+        version.Load();
+        _ = AppVersion().ContinueWith(async (t) =>
+        {
+            await version.Update(t.Result);
+            lapPointsData.Load();
+            settings.Load();
+            await LoadSettings();
+
+            HudLayout.LoadHudLayouts();
+            
+            try {
+                string preset = await Electron.App.CommandLine.GetSwitchValueAsync("preset");
+                if (preset != null && preset.Length > 0)
+                {
+                    HudLayout? layout = HudLayout.GetHudLayout(preset);
+                    if (layout != null)
+                    {
+                        HudLayout.SetActiveLayout(layout);
+                    }
+                    else
+                    {
+                        logger.Warn("Could not find preset: " + preset);
+                    }
+                }
+            }
+            catch (Exception e) {
+                logger.Error("Error loading preset", e);
+            }
+        });
 
         if (env.IsDevelopment())
         {
@@ -57,6 +88,7 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapHub<ReHUDHub>("/ReHUDHub");
             endpoints.MapRazorPages();
         });
 
@@ -69,8 +101,24 @@ public class Startup
             {
                 try
                 {
-                    await CreateMainWindow(env);
+                    await Electron.IpcMain.On("get-port", (args) =>
+                    {
+                        var windows = new[] { MainWindow, SettingsWindow }.Where(x => x != null);
+
+                        foreach (var window in windows)
+                        {
+                            Electron.IpcMain.Send(window, "port", BridgeSettings.WebPort);
+                        }
+                    });
+
+                    await CreateMainWindow();
                     await CreateSettingsWindow(env);
+
+                    await Task.Delay(1000); // TODO
+                    if (settings.DidLoad)
+                    {
+                        await LoadSettings();
+                    }
                 }
                 catch (Exception e)
                 {
@@ -81,17 +129,18 @@ public class Startup
     }
 
 
-    private BrowserWindow? mainWindow;
-    private BrowserWindow? settingsWindow;
+    public static BrowserWindow? MainWindow { get; private set; }
+    public static BrowserWindow? SettingsWindow { get; private set; }
 
     private const string githubUrl = "https://github.com/Yuvix25/ReHUD";
     private const string githubReleasesUrl = "releases/latest";
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
     private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file named 'ReHUD.log' in C:\\Users\\<username>\\Documents\\ReHUD";
 
-    private readonly FuelData fuelData = new();
-    private readonly LapPointsData lapPointsData = new();
-    private readonly Settings settings = new();
+    internal static readonly ReHUDVersion version = new();
+    internal static readonly FuelData fuelData = new();
+    internal static readonly LapPointsData lapPointsData = new();
+    internal static readonly Settings settings = new();
 
     private static async Task<BrowserWindow> CreateWindowAsync(BrowserWindowOptions options, string loadUrl = "/")
     {
@@ -99,9 +148,9 @@ public class Startup
         return await Electron.WindowManager.CreateWindowAsync(options, loadUrl);
     }
 
-    private async Task CreateMainWindow(IWebHostEnvironment env)
+    private async Task CreateMainWindow()
     {
-        mainWindow = await CreateWindowAsync(new BrowserWindowOptions()
+        MainWindow = await CreateWindowAsync(new BrowserWindowOptions()
         {
             Resizable = false,
             Fullscreen = true,
@@ -121,67 +170,137 @@ public class Startup
         bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => { });
         if (!gotLock)
         {
-            await ShowMessageBox(mainWindow, anotherInstanceMessage, "Error", MessageBoxType.error);
+            await ShowMessageBox(MainWindow, anotherInstanceMessage, "Error", MessageBoxType.error);
             Electron.App.Quit();
             return;
         }
 
-        mainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
-
-        if (!env.IsDevelopment())
-            mainWindow.SetIgnoreMouseEvents(true);
-
-
-        await Electron.IpcMain.On("log", (args) =>
-        {
-            Newtonsoft.Json.Linq.JObject obj = (Newtonsoft.Json.Linq.JObject)args;
-            if (obj == null || obj["level"] == null)
-                return;
-            string message = ((string?)obj["message"] ?? "(unknown)").Trim();
-            string level = ((string?)obj["level"] ?? "INFO").ToUpper();
-
-            switch (level)
-            {
-                case "INFO":
-                    logger.Info(message);
-                    break;
-                case "WARN":
-                    logger.Warn(message);
-                    break;
-                case "ERROR":
-                    logger.Error(message);
-                    break;
-            }
-        });
-
+        MainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
+        MainWindow.SetIgnoreMouseEvents(true);
 
         await Electron.IpcMain.On("get-hud-layout", (args) =>
         {
-            SendHudLayout(mainWindow);
+            SendHudLayout();
         });
 
         await Electron.IpcMain.On("set-hud-layout", (args) =>
         {
-            SetHudLayout(JsonConvert.DeserializeObject<object>(args.ToString() ?? "{}") ?? new Dictionary<string, object>());
+            if (args == null || args.ToString() == null)
+                return;
+
+            string argsString = args.ToString()!;
+
+            HudLayout? layout;
+            if (argsString.Length > 0 && argsString[0] == '{')
+            {
+                try
+                {
+                    Dictionary<string, HudElement>? layoutElements = JsonConvert.DeserializeObject<Dictionary<string, HudElement>>(argsString);
+                    if (layoutElements == null)
+                    {
+                        logger.Error("Invalid HUD layout: " + args);
+                        return;
+                    }
+                    layout = HudLayout.ActiveHudLayout;
+                    if (layout == null)
+                    {
+                        logger.Warn("No active HUD layout, creating a new one");
+                        layout = HudLayout.AddHudLayout(new HudLayout(true));
+                    }
+                    layout.UpdateElements(layoutElements);
+                }
+                catch (Exception e)
+                {
+                    logger.Error("Error deserializing HUD layout", e);
+                    return;
+                }
+            }
+            else
+            {
+                layout = HudLayout.GetHudLayout(argsString);
+                if (layout != null) HudLayout.SetActiveLayout(layout);
+            }
+            if (layout == null)
+            {
+                logger.Error("Invalid HUD layout: " + args);
+                return;
+            }
+            SetHudLayout(layout);
+        });
+
+        await Electron.IpcMain.On("load-replay-preset", (args) => {
+            var layout = HudLayout.LoadReplayLayout();
+            if (layout != null)
+            {
+                SetHudLayout(layout, true, false);
+            }
+        });
+        await Electron.IpcMain.On("unload-replay-preset", (args) =>
+        {
+            var layout = HudLayout.UnloadReplayLayout();
+            if (layout != null)
+            {
+                SetHudLayout(layout, true);
+            }
+        });
+
+        await Electron.IpcMain.On("update-preset-name", async (args) =>
+        {
+            JArray array = (JArray)args;
+            string? oldName = (string?)array[0];
+            string? newName = (string?)array[1];
+
+            if (oldName == null || newName == null)
+                return;
+
+            var layout = HudLayout.GetHudLayout(oldName);
+            if (layout != null)
+            {
+                await RenameLayout(layout, newName);
+            }
+        });
+
+        await Electron.IpcMain.On("update-preset-is-replay", (args) =>
+        {
+            JArray array = (JArray)args;
+            string? name = (string?)array[0];
+            bool isReplay = (bool)array[1];
+
+            if (name == null)
+                return;
+
+            var layout = HudLayout.GetHudLayout(name);
+            if (layout != null)
+            {
+                layout.IsReplayLayout = isReplay;
+                layout.Save();
+
+                SendHudLayout();
+            }
         });
 
         await Electron.IpcMain.On("toggle-element", (args) =>
         {
-            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)args;
+            JArray array = (JArray)args;
             string? elementId = (string?)array[0];
             bool shown = (bool)array[1];
 
             if (elementId == null)
                 return;
 
-            Electron.IpcMain.Send(mainWindow, "toggle-element", elementId, shown);
+            Electron.IpcMain.Send(MainWindow, "toggle-element", elementId, shown);
         });
 
-        await Electron.IpcMain.On("reset-hud-layout", (args) =>
+        await Electron.IpcMain.On("reset-active-layout", (args) =>
         {
             try
             {
-                SendHudLayout(mainWindow, new Dictionary<string, object>());
+                var layout = HudLayout.ActiveHudLayout;
+                if (layout != null)
+                {
+                    layout.Reset();
+                    SendHudLayout();
+                }
             }
             catch (Exception e)
             {
@@ -196,11 +315,11 @@ public class Startup
 
         await Electron.IpcMain.On("save-best-lap", (args) =>
         {
-            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)args;
+            JArray array = (JArray)args;
             int layoutId = (int)array[0];
             int classId = (int)array[1];
             double laptime = (double)array[2];
-            double[] points = ((Newtonsoft.Json.Linq.JArray)array[3]).Select(x => (double)x).ToArray();
+            double[] points = ((JArray)array[3]).Select(x => (double)x).ToArray();
             double pointsPerMeter = (double)array[4];
 
             LapPointsCombination combination = lapPointsData.GetCombination(layoutId, classId);
@@ -211,55 +330,62 @@ public class Startup
 
         await Electron.IpcMain.On("load-best-lap", (args) =>
         {
-            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)args;
+            JArray array = (JArray)args;
             int layoutId = (int)array[0];
             int classId = (int)array[1];
 
             LapPointsCombination? combination = lapPointsData.GetCombination(layoutId, classId, false);
             if (combination == null)
                 return;
-            Electron.IpcMain.Send(mainWindow, "load-best-lap", combination.Serialize());
+            Electron.IpcMain.Send(MainWindow, "load-best-lap", combination.Serialize());
         });
 
-        RunLoop(mainWindow, env);
+        RunLoop(MainWindow);
 
-        Electron.App.BeforeQuit += async (QuitEventArgs args) => {
+        Electron.App.BeforeQuit += async (QuitEventArgs args) =>
+        {
             args.PreventDefault();
-            Electron.IpcMain.Send(mainWindow, "quit");
-            Electron.IpcMain.Send(settingsWindow, "quit");
+            Electron.IpcMain.Send(MainWindow, "quit");
+            Electron.IpcMain.Send(SettingsWindow, "quit");
             await Task.Delay(300);
             logger.Info("Exiting...");
             Electron.App.Exit(0);
         };
-        mainWindow.OnClosed += () => Electron.App.Quit();
+        MainWindow.OnClosed += () => Electron.App.Quit();
     }
 
-    private void SendHudLayout(BrowserWindow window)
+    private static void SendHudLayout()
     {
-        SendHudLayout(window, GetHudLayout());
+        var layout = GetHudLayout();
+        if (layout == null)
+            return;
+        SendHudLayout(layout);
     }
 
-    private void SendHudLayout(BrowserWindow window, object layout)
+    private static void SendHudLayout(HudLayout layout, bool sendToSettings = true)
     {
-        Electron.IpcMain.Send(window, "hud-layout", JsonConvert.SerializeObject(layout));
-        if (settingsWindow != null)
-            Electron.IpcMain.Send(settingsWindow, "hud-layout", JsonConvert.SerializeObject(layout));
+        Electron.IpcMain.Send(MainWindow, "hud-layout", layout.SerializeElements());
+        if (SettingsWindow != null && sendToSettings)
+        {
+            Electron.IpcMain.Send(SettingsWindow, "hud-layouts", HudLayout.SerializeLayouts(true));
+        }
     }
 
 
-    private async void InitSettingsWindow()
+    private async Task InitSettingsWindow()
     {
-        Electron.IpcMain.Send(mainWindow, "settings", settings.Serialize());
-        Electron.IpcMain.Send(settingsWindow, "settings", settings.Serialize());
-        Electron.IpcMain.Send(settingsWindow, "version", await AppVersion());
+        Electron.IpcMain.Send(MainWindow, "settings", settings.Serialize());
+        Electron.IpcMain.Send(SettingsWindow, "settings", settings.Serialize());
+        Electron.IpcMain.Send(SettingsWindow, "version", await AppVersion());
     }
 
 
-    bool enteredEditMode = false;
+    private bool enteredEditMode = false;
+    public static bool IsInEditMode { get; private set; }
 
     private async Task CreateSettingsWindow(IWebHostEnvironment env)
     {
-        settingsWindow = await CreateWindowAsync(new BrowserWindowOptions()
+        SettingsWindow = await CreateWindowAsync(new BrowserWindowOptions()
         {
             Width = 800,
             Height = 600,
@@ -271,14 +397,14 @@ public class Startup
             },
         }, loadUrl: "/Settings");
 
-        settingsWindow.Minimize();
+        SettingsWindow.Minimize();
 
         if (!env.IsDevelopment())
-            settingsWindow.RemoveMenu();
+            SettingsWindow.RemoveMenu();
 
-        await Electron.IpcMain.On("load-settings", (data) =>
+        await Electron.IpcMain.On("load-settings", async (data) =>
         {
-            InitSettingsWindow();
+            await InitSettingsWindow();
         });
 
         await Electron.IpcMain.On("check-for-updates", async (data) =>
@@ -286,66 +412,75 @@ public class Startup
             await CheckForUpdates();
         });
 
-        await Electron.IpcMain.On("lock-overlay", (data) =>
+        await Electron.IpcMain.On("lock-overlay", async (data) =>
         {
-            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)data;
+            JArray array = (JArray)data;
             bool locked = (bool)array[0];
             bool save = (bool)array[1];
 
             if (!locked) // enter edit mode
             {
-                Electron.IpcMain.Send(mainWindow, "edit-mode");
-                //TODO: wait for response instead of using a delay
-                Task.Delay(200).ContinueWith((t) =>
-                {
+                if (MainWindow != null) {
+                    await IpcCommunication.Invoke(MainWindow, "edit-mode");
+
                     enteredEditMode = true;
+                    IsInEditMode = true;
 
-                    if (SharedMemory.isRunning)
-                        return;
-
-                    var extraData = new ExtraData
-                    {
-                        forceUpdateAll = true,
-                        rawData = new R3E.Data.Shared{
-                            driverData = Array.Empty<R3E.Data.DriverData>(),
-                        },
-                    };
-                    Electron.IpcMain.Send(mainWindow, "data", JsonConvert.SerializeObject(extraData));
-                });
+                    if (!SharedMemory.IsRunning) {
+                        var extraData = new ExtraData
+                        {
+                            forceUpdateAll = true,
+                            rawData = new R3E.Data.Shared
+                            {
+                                driverData = Array.Empty<R3E.Data.DriverData>(),
+                            },
+                            timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        };
+                        await IpcCommunication.Invoke(MainWindow, "r3eData", JsonConvert.SerializeObject(extraData));
+                    }
+                }
             }
             else
             {
                 isShown = null;
+                IsInEditMode = false;
 
-                if (!SharedMemory.isRunning)
+                if (!SharedMemory.IsRunning)
                 {
-                    Electron.IpcMain.Send(mainWindow, "hide");
+                    Electron.IpcMain.Send(MainWindow, "hide");
                 }
             }
 
-            if (mainWindow != null)
+            if (MainWindow != null)
             {
-                mainWindow.SetIgnoreMouseEvents(locked);
-                mainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
+                MainWindow.SetIgnoreMouseEvents(locked);
+                MainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
             }
-            settingsWindow.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
+            SettingsWindow.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
 
             if (locked && save) // save
             {
-                Electron.IpcMain.Send(mainWindow, "save-hud-layout");
+                string? newName = array.Count > 2 ? (string?)array[2] : null;
+                if (newName != null && HudLayout.ActiveHudLayout != null && HudLayout.ActiveHudLayout.Name != newName)
+                {
+                    await RenameActiveLayout(newName);
+                }
+                Electron.IpcMain.Send(MainWindow, "save-hud-layout");
             }
-            else if (locked && mainWindow != null) // cancel
+            else if (locked && MainWindow != null) // cancel
             {
-                SendHudLayout(mainWindow);
+                HudLayout.ActiveHudLayout?.Cancel();
+                logger.Info("Canceling HUD layout changes");
+                SendHudLayout();
             }
         });
 
         await Electron.IpcMain.On("set-setting", (arg) =>
         {
-            Electron.IpcMain.Send(mainWindow, "set-setting", arg.ToString());
-            Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)arg;
-            if (array.Count == 2 && array[0] != null && array[0].Type == Newtonsoft.Json.Linq.JTokenType.String)
-                SaveSetting(array[0].ToString(), array[1], false);
+            Electron.IpcMain.Send(MainWindow, "set-setting", arg.ToString());
+            JArray array = (JArray)arg;
+            if (array.Count == 2 && array[0] != null && array[0].Type == JTokenType.String)
+                SaveSetting(array[0].ToString(), ConvertJToken(array[1]), false);
             else
                 logger.Error("Invalid setting when attempting 'set-setting': " + arg);
         });
@@ -355,7 +490,7 @@ public class Startup
         {
             if (logFilePath == null)
             {
-                await ShowMessageBox(settingsWindow, logFilePathWarning, "Warning", MessageBoxType.warning);
+                await ShowMessageBox(SettingsWindow, logFilePathWarning, "Warning", MessageBoxType.warning);
             }
             else
             {
@@ -363,13 +498,50 @@ public class Startup
             }
         });
 
-        settingsWindow.OnClosed += () => Electron.App.Quit();
+        await Electron.IpcMain.On("new-hud-layout", (arg) =>
+        {
+            var layout = HudLayout.AddHudLayout(new HudLayout(true));
+            SendHudLayout(layout);
+        });
+
+        await Electron.IpcMain.On("delete-hud-layout", async (arg) =>
+        {
+            string? name = arg?.ToString();
+            if (name == null)
+                return;
+            var layout = HudLayout.GetHudLayout(name);
+            if (layout != null) {
+                await layout.DeleteLayout();
+                SendHudLayout();
+            }
+        });
+
+        SettingsWindow.OnClosed += () => Electron.App.Quit();
+    }
+
+
+    private static object? ConvertJToken(JToken token)
+    {
+        if (token == null)
+            return null;
+        switch (token.Type)
+        {
+            case JTokenType.Object:
+                return token.Children<JProperty>().ToDictionary(prop => prop.Name, prop => ConvertJToken(prop.Value));
+            case JTokenType.Array:
+                return token.Select(ConvertJToken).ToList();
+            default:
+                return ((JValue)token).Value ?? token;
+        }
     }
 
     private string? appVersion;
-    private async Task<string> AppVersion() {
+    private async Task<string> AppVersion()
+    {
         return appVersion ??= await Electron.App.GetVersionAsync();
     }
+
+
 
     private async Task CheckForUpdates()
     {
@@ -382,18 +554,16 @@ public class Startup
             return;
         }
 
-        string remoteVersionText = remoteUrl.Split('/').Last();
-        string remoteVersion = remoteVersionText.Split('v').Last().Split('-').First();
-        currentVersion = currentVersion.Split('-').First();
+        string remoteVersionText = remoteUrl.Split('/')[^1];
 
-        Version current = new(currentVersion);
-        Version remote = new(remoteVersion);
+        Version current = ReHUDVersion.TrimVersion(currentVersion);
+        Version remote = ReHUDVersion.TrimVersion(remoteVersionText);
 
-        if (current < remote)
+        if (current.CompareTo(remote) < 0)
         {
-            logger.Info("Update available: " + remoteVersion);
+            logger.Info("Update available: " + remoteVersionText);
 
-            await ShowMessageBox("A new version is available: " + remoteVersionText, "Update available", MessageBoxType.info, new string[] { "Show me", "Cancel" }).ContinueWith((t) =>
+            await ShowMessageBox("A new version is available: " + remoteVersionText, new string[] { "Show me", "Cancel" }, "Update available", MessageBoxType.info).ContinueWith((t) =>
             {
                 if (t.Result.Response == 0)
                 {
@@ -434,24 +604,30 @@ public class Startup
     }
 
 
-    private static async Task<MessageBoxResult> ShowMessageBox(BrowserWindow window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
+    public static async Task<MessageBoxResult> ShowMessageBox(BrowserWindow? window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
     {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
+        if (window == null)
+            return await Electron.Dialog.ShowMessageBoxAsync(options);
         return await Electron.Dialog.ShowMessageBoxAsync(window, options);
     }
 
-    private static async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
+    public static async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
     {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
         return await Electron.Dialog.ShowMessageBoxAsync(options);
     }
 
-    private static async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error, string[]? buttons = null)
+    public static async Task<MessageBoxResult> ShowMessageBox(string message, string[] buttons, string title = "Error", MessageBoxType type = MessageBoxType.error)
     {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
-        if (buttons != null)
-            options.Buttons = buttons;
+        options.Buttons = buttons;
         return await Electron.Dialog.ShowMessageBoxAsync(options);
+    }
+
+    public static void QuitApp()
+    {
+        Electron.App.Quit();
     }
 
     private static MessageBoxOptions PrepareMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error)
@@ -459,7 +635,7 @@ public class Startup
         MessageBoxOptions options = new(message)
         {
             Type = type,
-            Title = title
+            Title = title,
         };
 
         switch (type)
@@ -478,46 +654,133 @@ public class Startup
         return options;
     }
 
-    private void SaveSetting(string key, object value, bool sendToWindow = true)
+    private static async Task SaveSetting(string key, object value, bool sendToWindow = true)
     {
-        settings.Set(key, value);
+        settings.Data.Set(key, value);
+        settings.Save();
 
-        if (settingsWindow != null && sendToWindow)
-            Electron.IpcMain.Send(settingsWindow, "settings", settings.Serialize());
+        await LoadSettings(key, value);
+
+        if (SettingsWindow != null && sendToWindow)
+            Electron.IpcMain.Send(SettingsWindow, "settings", settings.Serialize());
     }
 
-    private object GetHudLayout()
-    {
-        return settings.Get("hudLayout", new Dictionary<string, object>());
+    public static async Task LoadSettings(string? key = null, object? value = null) {
+        if (key == null) {
+            foreach (var setting in settings.Data.Settings) {
+                await LoadSettings(setting.Key, setting.Value);
+            }
+        } else {
+            if (value == null)
+                return;
+            switch (key) {
+                case "screenToUse":
+                    await LoadMonitor(value.ToString());
+                    break;
+                case "framerate":
+                    if (IsInt(value))
+                        SharedMemory.FrameRate = (long)value;
+                    break;
+            }
+        }
     }
 
-    private void SetHudLayout(object layout)
+    private static bool IsInt(object value) {
+        return value is long
+            || value is ulong
+            || value is int
+            || value is uint
+            || value is short
+            || value is ushort;
+    }
+
+    private static async Task LoadMonitor(string? value = null) {
+        if (MainWindow == null)
+            return;
+        var monitorId = value ?? await GetMainWindowDisplay();
+        logger.Info("Loading monitor: " + monitorId);
+        if (monitorId == null)
+            return;
+        var monitor = await GetDisplayById(monitorId);
+        if (monitor == null)
+            return;
+        MainWindow.SetBounds(monitor.WorkArea);
+    }
+
+    private static HudLayout? GetHudLayout()
     {
-        SaveSetting("hudLayout", layout);
+        try
+        {
+            var layout = HudLayout.ActiveHudLayout;
+            layout ??= HudLayout.AddHudLayout(new HudLayout(true));
+            return layout;
+        }
+        catch (Exception e)
+        {
+            logger.Error("Error getting HUD layout", e);
+            return null;
+        }
+    }
+
+    private static void SetHudLayout(HudLayout layout, bool sendToSettings = false, bool removeBefore = true)
+    {
+        if (IsInEditMode) {
+            logger.Info("Cannot set HUD layout while in edit mode");
+            return;
+        }
+        layout = HudLayout.UpdateActiveHudLayout(layout, removeBefore);
+        layout.Save();
+        SendHudLayout(layout, sendToSettings);
+    }
+
+    private static async Task<bool> RenameActiveLayout(string newName)
+    {
+        if (HudLayout.ActiveHudLayout == null) {
+            logger.Error("No active HUD layout");
+            return false;
+        }
+        return await RenameLayout(HudLayout.ActiveHudLayout, newName);
+    }
+
+    private static async Task<bool> RenameLayout(HudLayout layout, string newName)
+    {
+        bool res = await layout.Rename(newName);
+        if (res)
+        {
+            layout.Save();
+        }
+        else
+        {
+            DiscardNameChange();
+        }
+        return res;
+    }
+
+    private static void DiscardNameChange() {
+        HudLayout layout = HudLayout.ActiveHudLayout ?? throw new InvalidOperationException("No active HUD layout");
+        Electron.IpcMain.Send(SettingsWindow, "discard-name-change", layout.Name);
     }
 
     bool userDataClearedForMultiplier = false;
 
     bool? isShown = null;
 
-    private void RunLoop(BrowserWindow window, IWebHostEnvironment env)
+    private void RunLoop(BrowserWindow window)
     {
         fuelData.Load();
 
         using var memory = new SharedMemory();
 
-
         Thread.Sleep(1000);
-        if (env.IsDevelopment())
-            Electron.IpcMain.Send(window, "show");
 
         int iter = 0;
         ExtraData extraData = new()
         {
-            forceUpdateAll = false
+            forceUpdateAll = false,
         };
-        Thread thread = new(() => memory.Run((data) =>
+        Thread thread = new(async () => await memory.Run(async (data) =>
         {
+            extraData.timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (data.fuelUseActive != 1 && !userDataClearedForMultiplier)
             {
                 userDataClearedForMultiplier = true;
@@ -534,7 +797,7 @@ public class Startup
             extraData.rawData = data;
             extraData.rawData.numCars = Math.Max(data.numCars, data.position); // Bug in shared memory, sometimes numCars is updated in delay, this partially fixes it
             extraData.rawData.driverData = extraData.rawData.driverData.Take(extraData.rawData.numCars).ToArray();
-            if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % (1000 / SharedMemory.timeInterval.Milliseconds) * 10 == 0)
+            if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % SharedMemory.FrameRate == 0)
             {
                 FuelCombination combination = fuelData.GetCombination(data.layoutId, data.vehicleInfo.modelId);
                 extraData.fuelPerLap = combination.GetAverageFuelUsage();
@@ -562,18 +825,18 @@ public class Startup
             if (enteredEditMode)
             {
                 extraData.forceUpdateAll = true;
-                Electron.IpcMain.Send(window, "data", JsonConvert.SerializeObject(extraData));
+                await IpcCommunication.Invoke(window, "r3eData", JsonConvert.SerializeObject(extraData));
                 extraData.forceUpdateAll = false;
                 enteredEditMode = false;
             }
             else
             {
-                Electron.IpcMain.Send(window, "data", JsonConvert.SerializeObject(extraData));
+                await IpcCommunication.Invoke(window, "r3eData", JsonConvert.SerializeObject(extraData));
             }
 
             if (notDriving)
             {
-                if (!env.IsDevelopment() && window != null && (isShown ?? true))
+                if (window != null && (isShown ?? true))
                 {
                     Electron.IpcMain.Send(window, "hide");
                     isShown = false;
@@ -595,6 +858,21 @@ public class Startup
             }
         }));
         thread.Start();
+    }
+
+    public static Task<Display[]> GetDisplays() {
+        return Electron.Screen.GetAllDisplaysAsync();
+    }
+
+    public static async Task<string?> GetMainWindowDisplay() {
+        if (settings.Data.Contains("screenToUse")) {
+            return (string?)settings.Data.Get("screenToUse");
+        }
+        return (await Electron.Screen.GetPrimaryDisplayAsync()).Id;
+    }
+
+    public static async Task<Display?> GetDisplayById(string id) {
+        return Array.Find(await GetDisplays(), x => x.Id == id);
     }
 
 

@@ -1,4 +1,5 @@
 import EventListener from './EventListener.js';
+import HubCommunication from './HubCommunication.js';
 import Hud from './Hud.js';
 import SettingsValue from './SettingsValue.js';
 import { RELATIVE_SAFE_MODE, base64EncodedUint8ArrayToString, valueIsValid } from './consts.js';
@@ -104,7 +105,7 @@ export class Driver extends EventListener {
     const newMainDriver = driver != Driver.mainDriver;
 
     if (newMainDriver) {
-      console.log(`Setting main driver to ${driver.userId}`)
+      console.log('Setting main driver to', driver.userId);
     };
 
     Driver.mainDriver = driver;
@@ -166,7 +167,7 @@ export class Driver extends EventListener {
       driver.bestLap = newPoints;
       driver.bestLapTimeValid = true;
 
-      console.log(`Loaded saved best: ${driver.bestLapTime}`);
+      console.log('Loaded saved best', driver.bestLapTime);
     });
   }
 
@@ -243,14 +244,11 @@ export class Driver extends EventListener {
 
       if (!SettingsValue.get(RELATIVE_SAFE_MODE)) {
         if (laptime < Driver.MIN_LAP_TIME) {
-          console.warn(`Invalid lap time for ${this.userId}: ${laptime}`);
+          console.warn(`Invalid lap time for`, this.userId, laptime);
           this.setLapInvalid();
         } else {
-          if (
-            this.bestLapTime == null ||
-            (laptime < this.bestLapTime &&
-              (this.currentLapValid || !this.bestLapTimeValid))
-          ) {
+          let didUpdateBestLap = false;
+          if (this.bestLapTime == null || (laptime < this.bestLapTime && (this.currentLapValid || !this.bestLapTimeValid))) {
             if (this.currentLapValid && Driver.mainDriver === this) {
               shouldSaveBestLap = true;
             }
@@ -258,16 +256,19 @@ export class Driver extends EventListener {
               this.bestLap = this.points.slice();
               this.bestLapTime = laptime;
               this.bestLapTimeValid = this.currentLapValid;
+              
+              console.log('New best lap for', this.userId, laptime, this.bestLapTimeValid);
+              didUpdateBestLap = true;
             }
           }
 
-          if (
-            this.currentLapValid &&
-            (this.sessionBestLapTime == null ||
-              laptime < this.sessionBestLapTime)
-          ) {
+          if (this.currentLapValid && (this.sessionBestLapTime == null || laptime < this.sessionBestLapTime)) {
             this.sessionBestLap = this.points.slice();
             this.sessionBestLapTime = laptime;
+
+            if (!didUpdateBestLap) {
+              console.log('New session best for', this.userId, laptime);
+            }
           }
         }
       }
@@ -484,12 +485,9 @@ export function computeUid(driverInfo: IDriverInfo): string {
     return null;
   const obj = {
     name: base64EncodedUint8ArrayToString(driverInfo.name),
-    classId: driverInfo.classId,
-    teamId: driverInfo.teamId,
     userId: driverInfo.userId,
-    liveryId: driverInfo.liveryId,
-    engineType: driverInfo.engineType,
     slotId: driverInfo.slotId,
+    carId: driverInfo.liveryId,
   };
   return JSON.stringify(obj);
 }
@@ -609,8 +607,9 @@ enum LogLevel {
   ERROR = 'ERROR',
 }
 
-const realConsoleError = console.error;
+export const realConsoleError = console.error;
 
+const FLOOD_MAX_GAP = 0.7 * 1000;
 const FLOOD_CLEAR_TIME = 15 * 1000;
 
 
@@ -619,6 +618,8 @@ class LogMessage {
   private lastFullMessage: string;
   private floodCount: number;
   private sameFullMessage: boolean;
+  private firstTime: number = 0;
+  private lastTime: number = 0;
 
   constructor(
     messageIdentifier: string,
@@ -630,20 +631,40 @@ class LogMessage {
     this.sameFullMessage = true;
   }
 
+  /**
+   * - floodCount = 0: first message - always log.
+   * - floodCount = 1: second message - log if the time gap is big enough.
+   * - floodCount > 1: third message and onwards - time gap was small enough once, so we consider this a flood from now until the next clear.
+   * @param fullMessage
+   * @return Whether the message should be logged (or if it's flooding)
+   */
   log(fullMessage: string) {
+    const now = Date.now();
+    const gap = now - this.lastTime;
+    this.lastTime = now;
     this.sameFullMessage = this.lastFullMessage == null || (this.sameFullMessage && fullMessage === this.lastFullMessage);
     this.lastFullMessage = fullMessage;
 
-    if (this.floodCount++ == 0) {
+    if (this.floodCount === 0 || (this.floodCount === 1 && gap >= FLOOD_MAX_GAP)) {
+      if (this.floodCount === 0) {
+        this.firstTime = now;
+        this.floodCount++
+      }
+
       this.lastFullMessage = null;
       return true;
     }
+    this.floodCount++;
 
     return false;
   }
 
   notFlooding() {
     return this.floodCount == 0;
+  }
+
+  getFloodCount() {
+    return this.floodCount;
   }
 
   clear() {
@@ -653,7 +674,7 @@ class LogMessage {
 
     let message = this.sameFullMessage ? this.lastFullMessage : this.messageIdentifier;
 
-    let res;
+    let res = null;
 
     if (this.floodCount == 2) {
       res = message;
@@ -665,6 +686,13 @@ class LogMessage {
     this.lastFullMessage = null;
 
     return res;
+  }
+
+  getFirstTimestamp() {
+    return this.firstTime;
+  }
+  getLastTimestamp() {
+    return this.lastTime;
   }
 };
 
@@ -690,7 +718,7 @@ class MessagePool {
   log(messageIdentifier: string, fullMessage: string) {
     const message = this.getMessage(messageIdentifier, fullMessage);
     if (message.log(fullMessage)) {
-      this.logger.log(fullMessage, this.level);
+      this.logger.log(fullMessage, this.level, message.getLastTimestamp());
     }
   }
 
@@ -703,7 +731,7 @@ class MessagePool {
     for (const message of this.pool.values()) {
       const messageToLog = message.clear();
       if (messageToLog != null) {
-        this.logger.log(messageToLog, this.level);
+        this.logger.log(messageToLog, this.level, message.getFirstTimestamp(), message.getFloodCount() > 1 ? message.getLastTimestamp() : -1);
       }
     }
     this.pool.clear();
@@ -713,18 +741,16 @@ class MessagePool {
 export class Logger {
   private static readonly instances = new Set<Logger>();
 
-  private readonly ipc: import('electron').IpcRenderer;
+  private static readonly hub: HubCommunication = new HubCommunication();
   private readonly filename: string;
   private readonly messagePools: { [key in LogLevel]?: MessagePool } = {};
-  private readonly callbacks: { [key in LogLevel]?: Array<(...args: any[]) => void> } = {};
+  private readonly callbacks: {
+    [key in LogLevel]?: Array<(...args: any[]) => void>;
+  } = {};
 
-  constructor(ipc: import('electron').IpcRenderer, filename: string) {
-    this.ipc = ipc;
+  constructor(filename: string) {
     this.filename = filename;
 
-    if (ipc == null) {
-      throw new Error('Logger error: ipc is null');
-    }
     if (filename == null) {
       this.log('Logger error: filename is null', LogLevel.ERROR);
       throw new Error('Logger error has occured, see log for details'); // don't want to throw the same error message, because the error handler might catch it and also log it, causing a duplicate log
@@ -754,13 +780,18 @@ export class Logger {
     }
   }
 
-  log(message: string, level: LogLevel = LogLevel.INFO) {
+  log(
+    message: string,
+    level: LogLevel = LogLevel.INFO,
+    startTimestamp: number = -1,
+    endTimestamp: number = -1
+  ) {
     if (this.callbacks[level] != undefined) {
       for (const callback of this.callbacks[level]) {
         callback(message);
       }
     }
-    this.ipc.send('log', { message, level });
+    Logger.hub.invoke('Log', level, startTimestamp, endTimestamp, message);
   }
 
   logFunction(callback: (...args: any[]) => void, level: LogLevel) {
@@ -768,7 +799,7 @@ export class Logger {
       this.callbacks[level] = [];
     }
     this.callbacks[level].push(callback);
-  
+
     const pool = this.messagePools[level];
     const loggerInstance = this;
 
@@ -782,11 +813,11 @@ export class Logger {
       if (pool.isFlooding(messageIdentifier) || level !== LogLevel.ERROR) {
         pool.log(messageIdentifier, fullMessage);
       } else {
-        Logger.getStackTrace().then((stack) => {
+        Logger.getMappedStackTrace().then((stack) => {
           try {
             const caller_line = stack.split('\n')[8];
             if (caller_line == undefined) {
-              throw new Error('stack too short');
+              throw new Error('stacktrace too short');
             }
             const index = caller_line.indexOf('at ');
             origin = caller_line.slice(index + 1, caller_line.length) ?? origin;
@@ -820,6 +851,7 @@ export class Logger {
   }
 
   private static async mapStackTrace(stack: string) {
+    realConsoleError(stack);
     const stackLines = stack.split('\n');
     const mappedStack = [];
 
@@ -868,17 +900,21 @@ export class Logger {
     }
   }
 
-  private static async getStackTrace(): Promise<string> {
+  public static async getMappedStackTrace(): Promise<string> {
+    return await Logger.mapStackTraceAsync(Logger.getStackTrace());
+  }
+
+  public static getStackTrace(): string {
     try {
       throw Error('');
     } catch (err) {
-      return await Logger.mapStackTraceAsync(err.stack);
+      return err.stack;
     }
   }
 }
 
 export function enableLogging(ipc: import('electron').IpcRenderer, filename: string) {
-  const logger = new Logger(ipc, filename);
+  const logger = new Logger(filename);
 
   ipc.on('quit', () => {
     Logger.clear(true);

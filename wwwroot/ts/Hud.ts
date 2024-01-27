@@ -1,12 +1,23 @@
-import Action from "./Action";
+import {ipcRenderer} from 'electron';
+import Action from "./Action.js";
+import EventListener from './EventListener.js';
 import SettingsValue from "./SettingsValue.js";
 import DriverManager from "./actions/DriverManager.js";
 import RankedData from "./actions/RankedData.js";
 import TireManager from './actions/TireManager.js';
-import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS} from "./consts.js";
+import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, FRAMERATE} from "./consts.js";
+import IShared from './r3eTypes.js';
 import {AudioController, Logger} from "./utils.js";
+import {HudLayoutElements} from './settingsPage.js';
 
-export default class Hud {
+export default class Hud extends EventListener {
+    public static readonly PROCESSING_WARNING_THRESHOLD = 9;
+    public static readonly DELAY_WARNING_THRESHOLD = 200;
+    public static readonly DELAY_DROP_THRESHOLD = 5000;
+
+
+    public layoutElements: HudLayoutElements = {};
+
     private _isInEditMode: boolean = false;
     public actionServices: Action[] = [];
     public rankedDataService: RankedData = new RankedData();
@@ -49,6 +60,7 @@ export default class Hud {
     }
 
     constructor(positionalActions: Action[]) {
+        super("Hud");
         if (Hud._instance != undefined) {
             throw new Error("Hud is a singleton!");
         }
@@ -79,6 +91,7 @@ export default class Hud {
         new SettingsValue(POSITION_BAR_CELL_COUNT, 13);
         new SettingsValue(DELTA_MODE, 'session');
         new SettingsValue(SHOW_DELTA_ON_INVALID_LAPS, false);
+        new SettingsValue(FRAMERATE, 60);
     }
 
     private async loadR3EData() {
@@ -89,11 +102,19 @@ export default class Hud {
         try {
             action._execute(data);
         } catch (e) {
-            console.error('Error while executing action \'' + action.toString() + '\':', e.toString(), await Logger.mapStackTraceAsync(e.stack));
+            console.error('Error while executing action \'' + action.toString() + '\'', e.toString(), await Logger.mapStackTraceAsync(e.stack));
         }
     }
 
     public render(data: IExtendedShared, forceAll: boolean = false, isShown: boolean = true): void {
+        const start = Date.now();
+        const diffStart = start - data.timestamp;
+        if (diffStart > Hud.DELAY_DROP_THRESHOLD) {
+            console.error('Data was received with a delay of', diffStart + 'ms', 'dropping frame');
+            return;
+        } else if (diffStart > Hud.DELAY_WARNING_THRESHOLD) {
+            console.warn('Data was received with a delay of', diffStart + 'ms');
+        }
         (window as any).r3eData = data; // for debugging
         Hud.data = data;
         for (const action of this.alwaysExecuteActions) {
@@ -109,9 +130,21 @@ export default class Hud {
                 Hud.executeAction(action, data);
             }
         }
+        const end = Date.now();
+        const diffEnd = end - start;
+        if (diffEnd > Hud.PROCESSING_WARNING_THRESHOLD) {
+            console.warn('Render cycle completed in', diffEnd + 'ms');
+        }
     }
 
     public static getGameTimestamp() {
         return Hud.data.rawData.player.gameSimulationTime;
+    }
+    
+    protected override onEnteredReplay(data: IShared): void {
+        ipcRenderer.send('load-replay-preset');
+    }
+    protected override onLeftReplay(data: IShared): void {
+        ipcRenderer.send('unload-replay-preset');
     }
 }

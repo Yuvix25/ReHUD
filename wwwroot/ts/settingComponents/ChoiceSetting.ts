@@ -37,7 +37,7 @@ export default class ChoiceSetting extends SettingComponent {
         requestAnimationFrame(() => {
             this.loadChoices();
 
-            this.initializationDone();
+            this.isDomInitialized = true;
         });
     }
 

@@ -263,3 +263,5 @@ __pycache__/
 
 wwwroot/js/
 wwwroot/dist/
+ 
+*.cpuprofile

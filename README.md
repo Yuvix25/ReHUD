@@ -3,8 +3,9 @@
 <img src="https://raw.githubusercontent.com/Yuvix25/ReHUD/main/wwwroot/ReHUD.png" alt="ReHUD" height="170">
 <h1 style="font-weight: bold">ReHUD</h1>
 
-![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Yuvix25/ReHUD?include_prereleases&label=Release)
-![GitHub all releases](https://img.shields.io/github/downloads/Yuvix25/ReHUD/total?label=Downloads)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Yuvix25/ReHUD?include_prereleases&label=release)](https://github.com/Yuvix25/ReHUD/releases/latest)
+![GitHub all releases](https://img.shields.io/github/downloads/Yuvix25/ReHUD/total?label=downloads)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Yuvix25_ReHUD&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Yuvix25_ReHUD)
 
 </div>
 
@@ -73,7 +74,10 @@ $ ReHUD.exe /args --preset=Race
 ```
 
 ## Screenshots
-<img src="https://user-images.githubusercontent.com/58216719/232799762-dbd964cc-e461-4545-9b21-749b71d136d4.png" style="max-height: 500px">
+<img src="https://github.com/Yuvix25/ReHUD/assets/58216719/ac2dfb89-0019-4142-857e-60d9c89a1972" width="800">
+<br/>
+<img src="https://github.com/Yuvix25/ReHUD/assets/58216719/ad0ecfcc-7a0a-4f2d-99b9-5b20e06d44be" width="400">
+<img src="https://github.com/Yuvix25/ReHUD/assets/58216719/6956531f-a5cb-4c03-80c0-b56d4f7784ae" width="400">
 
 ---
 

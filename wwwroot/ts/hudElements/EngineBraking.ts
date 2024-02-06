@@ -1,10 +1,10 @@
 import HudElement from "./HudElement.js";
-import {valueIsValid, NA} from "../consts.js";
+import {valueIsValidAssertNull, NA} from "../consts.js";
 
 export default class EngineBraking extends HudElement {
-    override inputKeys: string[] = ['engineBrakeSetting'];
+    override sharedMemoryKeys: string[] = ['engineBrakeSetting'];
 
     protected override render(eb: number): string {
-        return `EB: ${valueIsValid(eb) ? eb : NA}`
+        return `EB: ${valueIsValidAssertNull(eb) ? eb : NA}`
     }
 }

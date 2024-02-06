@@ -1,4 +1,6 @@
-export default class NamedEntity {
+import SharedMemoryConsumer from './SharedMemoryConsumer.js';
+
+export default abstract class NamedEntity extends SharedMemoryConsumer {
   private readonly name: string;
 
   public getName() {
@@ -6,10 +8,11 @@ export default class NamedEntity {
   }
 
   constructor(name: string) {
+    super();
     this.name = name;
   }
 
-  public toString() {
+  public override toString() {
     return this.name;
   }
 }

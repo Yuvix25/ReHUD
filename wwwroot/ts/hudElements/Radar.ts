@@ -11,7 +11,7 @@ interface IExtendedDriverData extends IDriverData {
 }
 
 export default class Radar extends HudElementWithHideDelay {
-    override inputKeys: string[] = ['driverData', 'player', 'position', 'carSpeed'];
+    override sharedMemoryKeys: string[] = ['driverData', 'player', 'position', 'carSpeed'];
 
     protected override render(drivers: IExtendedDriverData[], driver: IPlayerData, myPlace: number, speed: number, radarId: string): Hide | null {
         const radar = document.getElementById(radarId);

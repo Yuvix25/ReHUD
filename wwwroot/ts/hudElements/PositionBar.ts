@@ -1,11 +1,11 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {laptimeFormat, valueIsValid, validNumberOrDefault, nameFormat, getClassColors, POSITION_BAR_CELL_COUNT} from "../consts.js";
+import {laptimeFormat, valueIsValidAssertNull, validNumberOrDefault, nameFormat, getClassColors, POSITION_BAR_CELL_COUNT} from "../consts.js";
 import {EFinishStatus, ESession, IDriverData, ISectors} from "../r3eTypes.js";
 import {Driver, getUid} from "../utils.js";
 import SettingsValue from "../SettingsValue.js";
 
 export default class PositionBar extends HudElement {
-    override inputKeys: string[] = ['driverData', 'position', 'sessionType', 'sectorTimesSessionBestLap'];
+    override sharedMemoryKeys: string[] = ['driverData', 'position', 'sessionType', 'sectorTimesSessionBestLap'];
 
     private static readonly precision = 3;
 
@@ -94,7 +94,7 @@ export default class PositionBar extends HudElement {
             }
         }
 
-        if (!valueIsValid(position) || Driver.mainDriver == null) {
+        if (!valueIsValidAssertNull(position) || Driver.mainDriver == null) {
             return this.hide();
         }
 
@@ -104,7 +104,7 @@ export default class PositionBar extends HudElement {
         const me = driverData[position];
 
         if (me == null) {
-            console.error('PositionBar: me is null', structuredClone((window as any).r3eData));
+            console.error('PositionBar: me is null');
             return this.hide();
         }
 
@@ -158,7 +158,7 @@ export default class PositionBar extends HudElement {
                 switch (sessionType) {
                     case ESession.Race:
                         time = driver.sectorTimePreviousSelf.sector3;
-                        if (valueIsValid(time)) {
+                        if (valueIsValidAssertNull(time)) {
                             if (time <= sessionBestSectors.sector3) {
                                 timeColor = 'purple';
                             } else if (time <= driver.sectorTimeBestSelf.sector3) {
@@ -190,7 +190,7 @@ export default class PositionBar extends HudElement {
                     case ESession.Practice:
                     case ESession.Warmup:
                         time = driver.sectorTimeBestSelf.sector3;
-                        if (myTime != null && valueIsValid(time)) {
+                        if (myTime != null && valueIsValidAssertNull(time)) {
                             deltaNumber = time - myTime;
                             deltaString = laptimeFormat(deltaNumber, true);
                         }

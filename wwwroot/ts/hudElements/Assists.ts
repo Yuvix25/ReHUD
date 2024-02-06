@@ -1,9 +1,9 @@
 import HudElement from "./HudElement.js";
-import {valueIsValid} from "../consts.js";
+import {valueIsValidAssertNull} from "../consts.js";
 import {IAidSettings} from "../r3eTypes.js";
 
 export default class Assists extends HudElement {
-    override inputKeys: string[] = ['aidSettings'];
+    override sharedMemoryKeys: string[] = ['aidSettings'];
 
     protected override render(assists: IAidSettings): null {
         const tcElement = document.getElementById('tc-icon');
@@ -12,8 +12,8 @@ export default class Assists extends HudElement {
         let tc = assists.tc;
         let abs = assists.abs;
 
-        tc = valueIsValid(tc) ? tc : 0;
-        abs = valueIsValid(abs) ? abs : 0;
+        tc = valueIsValidAssertNull(tc) ? tc : 0;
+        abs = valueIsValidAssertNull(abs) ? abs : 0;
 
         if (tc == 0 && abs == 0) {
             tcElement.style.display = 'none';

@@ -307,3 +307,14 @@ span.icon-button:not(.disabled):hover {
 #isReplayLayout > div > label::after {
     transition: all 0.1s;
 }
+
+
+
+.restart-button {
+    display: inline;
+    margin-left: 10px;
+}
+
+.restart-button.hidden {
+    display: none;
+}

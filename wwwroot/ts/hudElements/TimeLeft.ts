@@ -1,9 +1,9 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {SESSION_TYPES, getSessionType, valueIsValid} from "../consts.js";
+import {SESSION_TYPES, getSessionType, valueIsValidAssertNull} from "../consts.js";
 import {ESessionPhase} from "../r3eTypes.js";
 
 export default class TimeLeft extends HudElement {
-    override inputKeys: string[] = ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps', 'sessionPhase'];
+    override sharedMemoryKeys: string[] = ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps', 'sessionPhase'];
 
     protected override render(timeLeft: number, raceNumberOfLaps: number, sessionType: keyof typeof SESSION_TYPES, myLaps: number, sessionPhase: ESessionPhase): null | Hide {
         const timeLeftElement = document.getElementById('time-left');
@@ -37,10 +37,10 @@ export default class TimeLeft extends HudElement {
         }
 
 
-        if (!valueIsValid(timeLeft) && raceNumberOfLaps >= 0) {
+        if (!valueIsValidAssertNull(timeLeft) && raceNumberOfLaps >= 0) {
             sessionType = 4;
 
-            if (!valueIsValid(myLaps))
+            if (!valueIsValidAssertNull(myLaps))
                 myLaps = 0;
 
             showLapsLeft(`${myLaps + 1}/${raceNumberOfLaps}`);

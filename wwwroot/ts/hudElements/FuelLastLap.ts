@@ -2,7 +2,7 @@ import HudElement from "./HudElement.js";
 import {NA, allValuesAreValid, lerpRGB} from "../consts.js";
 
 export default class FuelLastLap extends HudElement {
-    override inputKeys: string[] = ['+fuelLastLap', '+fuelPerLap'];
+    override sharedMemoryKeys: string[] = ['+fuelLastLap', '+fuelPerLap'];
 
     protected override render(fuelLastLap: number, fuelPerLap: number): string {
         if (!allValuesAreValid(fuelLastLap, fuelPerLap)) {

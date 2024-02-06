@@ -1,11 +1,18 @@
 import {ipcRenderer} from "electron";
 import Action from "../Action.js";
-import {IExtendedShared, sessionPhaseNotDriving, valueIsValid} from "../consts.js";
+import {IExtendedShared, sessionPhaseNotDriving, valueIsValidAssertNull} from "../consts.js";
 import IShared, {ESession, IDriverData} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
 import EventEmitter from '../EventEmitter.js';
+import Hud from '../Hud.js';
 
 export default class DriverManager extends Action {
+    override sharedMemoryKeys: string[] = ['driverData', 'lapTimePreviousSelf', 'completedLaps', 'sessionType', 'gameInMenus', 'gameInReplay', 'gamePaused', 'layoutId', 'sessionTimeRemaining', 'sessionPhase', 'position', 'layoutLength'];
+    override isEnabled(): boolean {
+        return true;
+    }
+
+
     public drivers: {[uid: string]: Driver} = {};
     private removedDrivers: {[uid: string]: [Driver, number]} = {};
     private _leaderCrossedSFLineAt0: number = 0;
@@ -57,15 +64,15 @@ export default class DriverManager extends Action {
         if (uid in this.drivers) {
             const prevSectors = driver.sectorTimePreviousSelf;
             let shouldSaveBestLap = false;
-            if (isMainDriver && valueIsValid(data.lapTimePreviousSelf))
+            if (isMainDriver && valueIsValidAssertNull(data.lapTimePreviousSelf))
                 shouldSaveBestLap = this.drivers[uid].endLap(data.lapTimePreviousSelf, data.completedLaps, data.sessionType);
-            else if (valueIsValid(prevSectors.sector3))
+            else if (valueIsValidAssertNull(prevSectors.sector3))
                 shouldSaveBestLap = this.drivers[uid].endLap(prevSectors.sector3, driver.completedLaps, data.sessionType);
             else
                 shouldSaveBestLap = this.drivers[uid].endLap(null, driver.completedLaps, data.sessionType);
 
             if (shouldSaveBestLap && !data.gameInMenus && !data.gameInReplay && !data.gamePaused)
-                this.drivers[uid].saveBestLap(data.layoutId, driver.driverInfo.classId, ipcRenderer);
+                this.drivers[uid].saveBestLap(data.layoutId, driver.driverInfo.classId);
         }
 
         if (driver.place == 1 && (data.sessionTimeRemaining == 0 || this._leaderCrossedSFLineAt0 > 0)) {
@@ -152,7 +159,12 @@ export default class DriverManager extends Action {
                 const shouldLoad = this.drivers[uid].setAsMainDriver();
                 
                 if (shouldLoad) {
-                    ipcRenderer.send('load-best-lap', [data.layoutId, driver.driverInfo.classId]);
+                    Hud.hub.invoke('LoadBestLap', data.layoutId, driver.driverInfo.classId).then((data) => {
+                        const dataObj = JSON.parse(data);
+                        if (dataObj.bestLapTime != null) {
+                            Driver.loadBestLap(dataObj.bestLapTime, dataObj.lapPoints, dataObj.pointsPerMeter);
+                        }
+                    });
                 }
             }
 

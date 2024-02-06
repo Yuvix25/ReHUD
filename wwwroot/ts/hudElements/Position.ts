@@ -1,12 +1,12 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {NA, valueIsValid} from "../consts.js";
+import {NA, valueIsValidAssertNull} from "../consts.js";
 import {IDriverData} from "../r3eTypes.js";
 
 export default class Position extends HudElement {
-    override inputKeys: string[] = ['position', 'positionClass', 'driverData'];
+    override sharedMemoryKeys: string[] = ['position', 'positionClass', 'driverData'];
 
     protected override render(position: number, positionClass: number, drivers: IDriverData[]): string | Hide {
-        if (!valueIsValid(position))
+        if (!valueIsValidAssertNull(position))
             return this.hide(NA);
 
         let myIndex = -1;

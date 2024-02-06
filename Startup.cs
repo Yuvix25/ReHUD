@@ -93,7 +93,6 @@ public class Startup
         });
 
         Electron.App.CommandLine.AppendSwitch("enable-transparent-visuals");
-        Electron.App.CommandLine.AppendSwitch("disable-gpu-compositing");
 
         if (HybridSupport.IsElectronActive)
         {
@@ -110,7 +109,6 @@ public class Startup
                             Electron.IpcMain.Send(window, "port", BridgeSettings.WebPort);
                         }
                     });
-
                     await CreateMainWindow();
                     await CreateSettingsWindow(env);
 
@@ -142,6 +140,8 @@ public class Startup
     internal static readonly LapPointsData lapPointsData = new();
     internal static readonly Settings settings = new();
 
+    private string[]? usedKeys = null;
+
     private static async Task<BrowserWindow> CreateWindowAsync(BrowserWindowOptions options, string loadUrl = "/")
     {
         loadUrl = "http://localhost:" + BridgeSettings.WebPort + loadUrl;
@@ -150,6 +150,13 @@ public class Startup
 
     private async Task CreateMainWindow()
     {
+        await Electron.IpcMain.On("used-keys", (args) => {
+            if (args == null)
+                return;
+
+            usedKeys = ((JArray)args).Select(x => (string?)x).Where(x => x != null).ToArray()!;
+        });
+
         MainWindow = await CreateWindowAsync(new BrowserWindowOptions()
         {
             Resizable = false,
@@ -313,33 +320,6 @@ public class Startup
             isShown = null;
         });
 
-        await Electron.IpcMain.On("save-best-lap", (args) =>
-        {
-            JArray array = (JArray)args;
-            int layoutId = (int)array[0];
-            int classId = (int)array[1];
-            double laptime = (double)array[2];
-            double[] points = ((JArray)array[3]).Select(x => (double)x).ToArray();
-            double pointsPerMeter = (double)array[4];
-
-            LapPointsCombination combination = lapPointsData.GetCombination(layoutId, classId);
-            combination.Set(laptime, points, pointsPerMeter);
-
-            lapPointsData.Save();
-        });
-
-        await Electron.IpcMain.On("load-best-lap", (args) =>
-        {
-            JArray array = (JArray)args;
-            int layoutId = (int)array[0];
-            int classId = (int)array[1];
-
-            LapPointsCombination? combination = lapPointsData.GetCombination(layoutId, classId, false);
-            if (combination == null)
-                return;
-            Electron.IpcMain.Send(MainWindow, "load-best-lap", combination.Serialize());
-        });
-
         RunLoop(MainWindow);
 
         Electron.App.BeforeQuit += async (QuitEventArgs args) =>
@@ -353,6 +333,22 @@ public class Startup
         };
         MainWindow.OnClosed += () => Electron.App.Quit();
     }
+
+    public static void SaveBestLap(int layoutId, int classId, double laptime, double[] points, double pointsPerMeter)
+    {
+        LapPointsCombination combination = lapPointsData.GetCombination(layoutId, classId);
+        combination.Set(laptime, points, pointsPerMeter);
+
+        lapPointsData.Save();
+    }
+    public static string LoadBestLap(int layoutId, int classId)
+    {
+        LapPointsCombination? combination = lapPointsData.GetCombination(layoutId, classId, false);
+        if (combination == null)
+            return "{}";
+        return combination.Serialize();
+    }
+
 
     private static void SendHudLayout()
     {
@@ -402,6 +398,12 @@ public class Startup
         if (!env.IsDevelopment())
             SettingsWindow.RemoveMenu();
 
+        await Electron.IpcMain.On("restart-app", (args) =>
+        {
+            Electron.App.Relaunch();
+            Electron.App.Exit(0);
+        });
+
         await Electron.IpcMain.On("load-settings", async (data) =>
         {
             await InitSettingsWindow();
@@ -423,6 +425,8 @@ public class Startup
                 if (MainWindow != null) {
                     await IpcCommunication.Invoke(MainWindow, "edit-mode");
 
+                    logger.Info("Entering edit mode");
+
                     enteredEditMode = true;
                     IsInEditMode = true;
 
@@ -436,7 +440,8 @@ public class Startup
                             },
                             timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                         };
-                        await IpcCommunication.Invoke(MainWindow, "r3eData", JsonConvert.SerializeObject(extraData));
+                        logger.Info("Sending empty data for edit mode");
+                        await IpcCommunication.Invoke(MainWindow, "r3eData", extraData.Serialize(usedKeys));
                     }
                 }
             }
@@ -480,7 +485,7 @@ public class Startup
             Electron.IpcMain.Send(MainWindow, "set-setting", arg.ToString());
             JArray array = (JArray)arg;
             if (array.Count == 2 && array[0] != null && array[0].Type == JTokenType.String)
-                SaveSetting(array[0].ToString(), ConvertJToken(array[1]), false);
+                _ = SaveSetting(array[0].ToString(), ConvertJToken(array[1])!, false);
             else
                 logger.Error("Invalid setting when attempting 'set-setting': " + arg);
         });
@@ -681,6 +686,24 @@ public class Startup
                     if (IsInt(value))
                         SharedMemory.FrameRate = (long)value;
                     break;
+                case "hardwareAcceleration":
+                    if (value is bool hardwareAcceleration)
+                        SetHardwareAccelerationEnabled(hardwareAcceleration);
+                    break;
+            }
+        }
+    }
+
+    private static readonly string[] hardwareAccelerationSettings = new string[] { "disable-gpu-compositing", "disable-gpu", "disable-software-rasterizer" };
+    private static void SetHardwareAccelerationEnabled(bool enabled) {
+        logger.Info("Setting hardware acceleration: " + enabled);
+        if (enabled) {
+            foreach (var setting in hardwareAccelerationSettings) {
+                Electron.App.CommandLine.RemoveSwitch(setting);
+            }
+        } else {
+            foreach (var setting in hardwareAccelerationSettings) {
+                Electron.App.CommandLine.AppendSwitch(setting);
             }
         }
     }
@@ -825,13 +848,13 @@ public class Startup
             if (enteredEditMode)
             {
                 extraData.forceUpdateAll = true;
-                await IpcCommunication.Invoke(window, "r3eData", JsonConvert.SerializeObject(extraData));
+                await IpcCommunication.Invoke(window, "r3eData", extraData.Serialize(usedKeys));
                 extraData.forceUpdateAll = false;
                 enteredEditMode = false;
             }
             else
             {
-                await IpcCommunication.Invoke(window, "r3eData", JsonConvert.SerializeObject(extraData));
+                await IpcCommunication.Invoke(window, "r3eData", extraData.Serialize(usedKeys));
             }
 
             if (notDriving)

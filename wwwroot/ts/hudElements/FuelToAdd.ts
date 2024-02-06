@@ -3,7 +3,7 @@ import {NA, allValuesAreValid, lerpRGB} from "../consts.js";
 import {EEngineType, IDriverInfo} from '../r3eTypes.js';
 
 export default class FuelToAdd extends HudElement {
-    override inputKeys: string[] = ['+lapsUntilFinish', 'vehicleInfo', 'fuelLeft', 'batterySoC', '+fuelPerLap'];
+    override sharedMemoryKeys: string[] = ['+lapsUntilFinish', 'vehicleInfo', 'fuelLeft', 'batterySoC', '+fuelPerLap'];
 
     protected override render(lapsUntilFinish: number, vehicleInfo: IDriverInfo, fuelLeft: number, battery: number, fuelPerLap: number): string {
         if (vehicleInfo.engineType === EEngineType.Electric) {

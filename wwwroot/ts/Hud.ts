@@ -5,18 +5,35 @@ import SettingsValue from "./SettingsValue.js";
 import DriverManager from "./actions/DriverManager.js";
 import RankedData from "./actions/RankedData.js";
 import TireManager from './actions/TireManager.js';
-import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, FRAMERATE} from "./consts.js";
+import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, FRAMERATE, HARDWARE_ACCELERATION} from "./consts.js";
 import IShared from './r3eTypes.js';
 import {AudioController, Logger} from "./utils.js";
 import {HudLayoutElements} from './settingsPage.js';
+import SharedMemorySupplier from './SharedMemorySupplier.js';
+import EventEmitter from './EventEmitter.js';
+import HubCommunication from './HubCommunication.js';
 
 export default class Hud extends EventListener {
     public static readonly PROCESSING_WARNING_THRESHOLD = 9;
     public static readonly DELAY_WARNING_THRESHOLD = 200;
     public static readonly DELAY_DROP_THRESHOLD = 5000;
 
+    public static readonly hub: HubCommunication = new HubCommunication();
 
-    public layoutElements: HudLayoutElements = {};
+    override sharedMemoryKeys: string[] = ['+timestamp', 'player'];
+    override isEnabled(): boolean {
+        return true;
+    }
+
+
+    public _layoutElements: HudLayoutElements = {};
+    public set layoutElements(layoutElements: HudLayoutElements) {
+        this._layoutElements = layoutElements;
+        SharedMemorySupplier.informBackend(true);
+    }
+    public get layoutElements(): HudLayoutElements {
+        return this._layoutElements;
+    }
 
     private _isInEditMode: boolean = false;
     public actionServices: Action[] = [];
@@ -92,6 +109,10 @@ export default class Hud extends EventListener {
         new SettingsValue(DELTA_MODE, 'session');
         new SettingsValue(SHOW_DELTA_ON_INVALID_LAPS, false);
         new SettingsValue(FRAMERATE, 60);
+        new SettingsValue(HARDWARE_ACCELERATION, true);
+
+        new EventEmitter('EventEmitter'); //TODO: currently this is needed to get the shared memory keys it's using, need to un-staticify it maybe
+        SharedMemorySupplier.informBackend();
     }
 
     private async loadR3EData() {

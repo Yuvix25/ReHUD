@@ -3,7 +3,7 @@ import {laptimeFormat} from "../consts.js";
 import {Driver} from '../utils.js';
 
 export default class AlltimeBestLap extends HudElement {
-    override inputKeys: string[] = [];
+    override sharedMemoryKeys: string[] = [];
 
     protected override render(): string {
         if (Driver.mainDriver?.bestLapTime == null || !Driver.mainDriver?.bestLapTimeValid)

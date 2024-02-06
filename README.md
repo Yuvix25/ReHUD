@@ -91,7 +91,7 @@ Any contribution to the project will be highly appreciated! Feel free to open a 
 ## Developer Notes
 This section is only relevant if you want to contribute to the project, or if you want to build the app yourself. If you just want to use the app, you can ignore this section.
 ### Electron.NET
-This project is built using Electron.NET, which is a .NET wrapper for Electron. This means that the app is built using C# and .NET, but is run using Electron. This allows for a lot of flexibility and ease of development, as well as the ability to use any npm package in the app. However, Electron.NET is not updated very often - which means that I had to manually add some features to it, such as display names. While I made sure that ReHUD will still work with the [official version of Electron.NET](https://github.com/ElectronNET/Electron.NET), I recommend using my fork of it (and specifically the `ReHUD/main` branch) which can be found [here](https://github.com/Yuvix25/Electron.NET/tree/ReHUD/main) for development.
+This project is built using Electron.NET, which is a .NET wrapper for Electron. This means that the app is built using C# and .NET, but is run using Electron. This allows for a lot of flexibility and ease of development, as well as the ability to use any npm package in the app. However, Electron.NET is not updated very often - which means that I had to manually add some features to it, such as display names. To develop ReHUD locally, you need to use my fork of Electron.NET (and specifically the `ReHUD/main` branch) which can be found [here](https://github.com/Yuvix25/Electron.NET/tree/ReHUD/main).
 
 
 ## Special Thanks

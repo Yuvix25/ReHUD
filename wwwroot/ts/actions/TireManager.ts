@@ -3,11 +3,16 @@ import {
   IExtendedShared,
   addObjects,
   multiplyObject,
-  valueIsValid,
+  valueIsValidAssertNull,
 } from '../consts.js';
 import IShared, { ESession, IDriverData, ITireData } from '../r3eTypes.js';
 
 export default class TireManager extends Action {
+  override sharedMemoryKeys: string[] = ['tireWear', 'vehicleInfo', 'layoutId', 'tireWearActive', 'gameInReplay', 'gamePaused', 'currentLapValid'];
+  override isEnabled(): boolean {
+    return true;
+  }
+  
   private state = {
     carId: -1,
     layoutId: -1,
@@ -108,7 +113,7 @@ export default class TireManager extends Action {
     }
     return (
       this.state.tireWearLevel > 0 &&
-      Object.values(data.tireWear).every(valueIsValid) &&
+      Object.values(data.tireWear).every(valueIsValidAssertNull) &&
       this.lastLapValid &&
       !data.gameInReplay &&
       !data.gamePaused

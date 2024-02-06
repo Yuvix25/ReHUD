@@ -87,7 +87,7 @@ public class FuelCombination
         return averageFuelUsage;
     }
 
-    public double? GetLastLapFuelUsage()
+    public double GetLastLapFuelUsage()
     {
         if (fuelUsage.Count > 0)
             return lastFuel;

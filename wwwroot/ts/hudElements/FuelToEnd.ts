@@ -2,7 +2,7 @@ import HudElement from "./HudElement.js";
 import {NA, allValuesAreValid} from "../consts.js";
 
 export default class FuelToEnd extends HudElement {
-    override inputKeys: string[] = ['+lapsUntilFinish', '+fuelPerLap'];
+    override sharedMemoryKeys: string[] = ['+lapsUntilFinish', '+fuelPerLap'];
 
     protected override render(fuelLeft: number, fuelPerLap: number): string {
         if (!allValuesAreValid(fuelLeft, fuelPerLap))

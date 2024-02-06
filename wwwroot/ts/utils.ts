@@ -62,6 +62,11 @@ export class DeltaManager {
 }
 
 export class Driver extends EventListener {
+  override sharedMemoryKeys: string[] = []; // while this class does use shared memory, it's provided as single values by the driver manager, so it does not directly access the shared memory object
+  override isEnabled(): boolean {
+    return true;
+  }
+
   static readonly MIN_LAP_TIME: number = 10; // seconds
 
   static pointsPerMeter = 0.5;
@@ -236,7 +241,7 @@ export class Driver extends EventListener {
     this.currentIndex = -1;
 
     if (this.crossedFinishLine != null && (sessionType !== ESession.Race || completedLaps > 1)) {
-      if (!valueIsValid(laptime) || laptime == null) {
+      if (!valueIsValid(laptime)) {
         laptime = time - this.points[0];
       }
 
@@ -286,15 +291,8 @@ export class Driver extends EventListener {
   saveBestLap(
     layoutId: number,
     carClassId: number,
-    ipcRenderer: import('electron').IpcRenderer
   ) {
-    ipcRenderer.send('save-best-lap', [
-      layoutId,
-      carClassId,
-      this.bestLapTime,
-      this.bestLap,
-      Driver.pointsPerMeter,
-    ]);
+    Hud.hub.invoke('SaveBestLap', layoutId, carClassId, this.bestLapTime, this.bestLap, Driver.pointsPerMeter);
   }
 
   /**
@@ -741,7 +739,6 @@ class MessagePool {
 export class Logger {
   private static readonly instances = new Set<Logger>();
 
-  private static readonly hub: HubCommunication = new HubCommunication();
   private readonly filename: string;
   private readonly messagePools: { [key in LogLevel]?: MessagePool } = {};
   private readonly callbacks: {
@@ -791,7 +788,7 @@ export class Logger {
         callback(message);
       }
     }
-    Logger.hub.invoke('Log', level, startTimestamp, endTimestamp, message);
+    Hud.hub.invoke('Log', level, startTimestamp, endTimestamp, message);
   }
 
   logFunction(callback: (...args: any[]) => void, level: LogLevel) {

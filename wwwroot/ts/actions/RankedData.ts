@@ -15,6 +15,11 @@ export type RankedDataEntry = {
 
 
 export default class RankedData extends EventListener {
+    override sharedMemoryKeys: string[] = [];
+    override isEnabled(): boolean {
+        return true;
+    }
+
     private static readonly URL = 'https://game.raceroom.com/multiplayer-rating/ratings.json';
     public rankedData: {[key: string]: RankedDataEntry} = null;
 

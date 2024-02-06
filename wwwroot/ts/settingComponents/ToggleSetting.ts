@@ -46,7 +46,10 @@ export default class ToggleSetting extends SettingComponent {
         });
     }
 
-    protected valueChange(val: boolean) {
+    protected valueChange(val: boolean|string) {
+        if (typeof val === 'string') {
+            val = val === 'true';
+        }
         this.value = val;
         this.checkbox.checked = val;
     }

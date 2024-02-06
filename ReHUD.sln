@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReHUD", "ReHUD.csproj", "{A864472B-E049-4C5A-A1F6-443115CCC556}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReHUD", "ReHUD.csproj", "{C802339A-770E-42A3-8709-90D7A6AB3B60}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A864472B-E049-4C5A-A1F6-443115CCC556}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A864472B-E049-4C5A-A1F6-443115CCC556}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A864472B-E049-4C5A-A1F6-443115CCC556}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A864472B-E049-4C5A-A1F6-443115CCC556}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C802339A-770E-42A3-8709-90D7A6AB3B60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C802339A-770E-42A3-8709-90D7A6AB3B60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C802339A-770E-42A3-8709-90D7A6AB3B60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C802339A-770E-42A3-8709-90D7A6AB3B60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {0DBCFD53-2B85-4509-A42D-C7CA7F7366B2}
+		SolutionGuid = {43EDC7E8-9FBF-40AB-BBAF-22953B645C94}
 	EndGlobalSection
 EndGlobal

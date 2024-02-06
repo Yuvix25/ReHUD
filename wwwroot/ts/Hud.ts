@@ -5,7 +5,7 @@ import SettingsValue from "./SettingsValue.js";
 import DriverManager from "./actions/DriverManager.js";
 import RankedData from "./actions/RankedData.js";
 import TireManager from './actions/TireManager.js';
-import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, FRAMERATE, HARDWARE_ACCELERATION} from "./consts.js";
+import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, P2P_READY_VOLUME, RADAR_LOW_DETAIL, RADAR_OPACITY, RADAR_POINTER, RADAR_FADE_RANGE, FRAMERATE, HARDWARE_ACCELERATION} from "./consts.js";
 import IShared from './r3eTypes.js';
 import {AudioController, Logger} from "./utils.js";
 import {HudLayoutElements} from './settingsPage.js';
@@ -44,7 +44,8 @@ export default class Hud extends EventListener {
     private normalActions: Array<Action> = new Array<Action>();
     private alwaysExecuteActions: Array<Action> = new Array<Action>();
     public readonly r3eData: any;
-    public readonly radarAudioController = new AudioController({volumeMultiplier: 1});
+    public readonly radarAudioController = new AudioController({volumeMultiplier: 1, soundFileName: 'beep.wav'});
+    public readonly p2pAudioController = new AudioController({volumeMultiplier: 1, soundFileName: 'echo_beep.wav'});
 
     private static data: IExtendedShared;
 
@@ -101,8 +102,15 @@ export default class Hud extends EventListener {
         new SettingsValue(SPEED_UNITS, 'kmh');
         new SettingsValue(PRESSURE_UNITS, 'kPa');
         new SettingsValue(RADAR_RANGE, DEFAULT_RADAR_RADIUS);
+        new SettingsValue(RADAR_LOW_DETAIL, false);
+        new SettingsValue(RADAR_POINTER, false);
+        new SettingsValue(RADAR_FADE_RANGE, 2);
+        new SettingsValue(RADAR_OPACITY, 0.8);
         new SettingsValue(RADAR_BEEP_VOLUME, 1.5).onValueChanged((value) => {
             this.radarAudioController.setVolume(value);
+        });
+        new SettingsValue(P2P_READY_VOLUME, 1.5).onValueChanged((value) => {
+            this.p2pAudioController.setVolume(value);
         });
         new SettingsValue(RELATIVE_SAFE_MODE, false);
         new SettingsValue(POSITION_BAR_CELL_COUNT, 13);

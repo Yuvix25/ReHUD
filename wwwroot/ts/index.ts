@@ -43,6 +43,9 @@ import AlltimeBestLap from './hudElements/AlltimeBestLap.js';
 import PitTimer from './hudElements/PitTimer.js';
 import CompletedLaps from './hudElements/CompletedLaps.js';
 import IpcCommunication from './IpcCommunication.js';
+import Rake from './hudElements/Rake.js';
+import DRS from './hudElements/Drs.js';
+import P2P from './hudElements/PushToPass.js';
 
 enableLogging(ipcRenderer, 'index.js');
 
@@ -90,6 +93,11 @@ const hud = new Hud([
     new Delta({name: 'Delta', containerId: 'delta', elementId: 'delta-number', transformableId: 'delta', renderEvery: 50}),
     new SectorTimes({name: 'SectorTimes', containerId: 'sector-times', transformableId: 'sector-times', renderEvery: 20}),
     new PitTimer({name: 'PitTimer', containerId: 'pit-timer', elementId: 'pit-time-left', transformableId: 'pit-timer', renderEvery: 0}),
+
+    new Rake({name: 'Rake', containerId:'rake', elementId: 'rake-bar-number', transformableId: 'rake', renderEvery: 3}),
+
+    new DRS({name: 'DRS', containerId: 'drs', elementId: 'drs-left', transformableId: 'drs', renderEvery: 50}),
+    new P2P({name: 'P2P', containerId: 'p2p', elementId: 'p2p-left', transformableId: 'p2p', renderEvery: 50}),
 ]);
 
 (window as any).hud = hud;

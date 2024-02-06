@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 492 72">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#linear-gradient);
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+        stroke-width: 2px;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="1" y1="36" x2="491" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#006cb6"/>
+      <stop offset=".15" stop-color="#006cb3"/>
+      <stop offset=".24" stop-color="#006fab"/>
+      <stop offset=".31" stop-color="#00739c"/>
+      <stop offset=".38" stop-color="#007a88"/>
+      <stop offset=".44" stop-color="#00826e"/>
+      <stop offset=".5" stop-color="#008c4e"/>
+      <stop offset=".5" stop-color="#008d4c"/>
+      <stop offset=".54" stop-color="#318348"/>
+      <stop offset=".57" stop-color="#5c7a46"/>
+      <stop offset=".62" stop-color="#827243"/>
+      <stop offset=".66" stop-color="#a36c41"/>
+      <stop offset=".71" stop-color="#bd673f"/>
+      <stop offset=".76" stop-color="#d1633e"/>
+      <stop offset=".81" stop-color="#e0603d"/>
+      <stop offset=".88" stop-color="#e85e3d"/>
+      <stop offset="1" stop-color="#eb5e3d"/>
+    </linearGradient>
+  </defs>
+  <rect class="cls-1" x="1" y="1" width="490" height="70" rx="10" ry="10"/>
+</svg>

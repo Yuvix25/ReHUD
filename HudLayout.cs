@@ -353,7 +353,7 @@ public class HudLayout : JsonUserData
         return layouts.ContainsKey(name) ? layouts[name] : null;
     }
 
-    public static HudLayout? UpdateActiveHudLayout(HudLayout newLayout, bool removeBefore = true)
+    public static HudLayout UpdateActiveHudLayout(HudLayout newLayout, bool removeBefore = true)
     {
         HudLayout layout = ActiveHudLayout ?? throw new InvalidOperationException("No active HUD layout");
         layout.CopyFrom(newLayout);

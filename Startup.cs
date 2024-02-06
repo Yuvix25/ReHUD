@@ -384,7 +384,7 @@ public class Startup
         SettingsWindow = await CreateWindowAsync(new BrowserWindowOptions()
         {
             Width = 800,
-            Height = 600,
+            Height = 780,
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
             WebPreferences = new WebPreferences()
             {

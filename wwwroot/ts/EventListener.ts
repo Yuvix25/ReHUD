@@ -1,7 +1,7 @@
 import EventEmitter from "./EventEmitter.js";
 import Hud from "./Hud";
 import NamedEntity from "./NamedEntity.js";
-import IShared, {ESession, ESessionPhase, IDriverData} from "./r3eTypes.js";
+import IShared, {ESession, ESessionPhase, IDriverData, IPushToPass} from "./r3eTypes.js";
 
 export default abstract class EventListener extends NamedEntity {
     protected hud: Hud;
@@ -20,6 +20,9 @@ export default abstract class EventListener extends NamedEntity {
         EventEmitter.on(EventEmitter.MAIN_DRIVER_CHANGED_EVENT, this.onMainDriverChange.bind(this));
         EventEmitter.on(EventEmitter.ENTERED_REPLAY_EVENT, this.onEnteredReplay.bind(this));
         EventEmitter.on(EventEmitter.LEFT_REPLAY_EVENT, this.onLeftReplay.bind(this));
+        EventEmitter.on(EventEmitter.P2P_DEACTIVATION_EVENT, this.onPushToPassDeactivation.bind(this));
+        EventEmitter.on(EventEmitter.P2P_ACTIVATION_EVENT, this.onPushToPassActivation.bind(this));
+        EventEmitter.on(EventEmitter.P2P_READY_EVENT, this.onPushToPassReady.bind(this));
     }
 
     setHud(hud: Hud): void {
@@ -42,4 +45,7 @@ export default abstract class EventListener extends NamedEntity {
     protected onGameResume(data: IShared) { }
     protected onEnteredReplay(data: IShared) { }
     protected onLeftReplay(data: IShared) { }
+    protected onPushToPassDeactivation(data: IShared, pushToPass: IPushToPass) { }
+    protected onPushToPassActivation(data: IShared, pushToPass: IPushToPass) { }
+    protected onPushToPassReady(data: IShared) { }
 }

@@ -1,10 +1,10 @@
 import HudElement from "./HudElement.js";
 import SettingsValue from "../SettingsValue.js";
-import {validOrDefault, convertPressure, PRESSURE_UNITS, NA, valueIsValid, lerpRGB3} from "../consts.js";
+import {validOrDefault, convertPressure, PRESSURE_UNITS, NA, valueIsValidAssertNull, lerpRGB3} from "../consts.js";
 import {IBrakeTemp, ITireData, ITireTemp} from "../r3eTypes.js";
 
 export default class Tires extends HudElement {
-    override inputKeys: string[] = ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt', 'tirePressure'];
+    override sharedMemoryKeys: string[] = ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt', 'tirePressure'];
 
     protected override render(tireTemp: ITireData<ITireTemp>, tireWear: ITireData<number>, brakeTemp: ITireData<IBrakeTemp>, tireDirt: ITireData<number>, tirePressure: ITireData<number>): null {
         const nameMap = {
@@ -19,18 +19,18 @@ export default class Tires extends HudElement {
         for (const tire of Object.keys(nameMap) as (keyof typeof nameMap)[]) {
             const name = nameMap[tire];
 
-            const optimal = tireTemp?.[tire]?.optimalTemp;
-            const cold = tireTemp?.[tire]?.coldTemp;
-            const hot = tireTemp?.[tire]?.hotTemp;
+            const optimal = tireTemp[tire].optimalTemp;
+            const cold = tireTemp[tire].coldTemp;
+            const hot = tireTemp[tire].hotTemp;
 
-            const optimalBrake = brakeTemp?.[tire]?.optimalTemp;
-            const coldBrake = brakeTemp?.[tire]?.coldTemp;
-            const hotBrake = brakeTemp?.[tire]?.hotTemp;
-            const currentBrake = brakeTemp?.[tire]?.currentTemp;
+            const optimalBrake = brakeTemp[tire].optimalTemp;
+            const coldBrake = brakeTemp[tire].coldTemp;
+            const hotBrake = brakeTemp[tire].hotTemp;
+            const currentBrake = brakeTemp[tire].currentTemp;
 
-            const wear = validOrDefault(tireWear?.[tire], 0); // undefined - puncture
-            const dirt = validOrDefault(tireDirt?.[tire], 0);
-            const pressure = convertPressure(tirePressure?.[tire], SettingsValue.get(PRESSURE_UNITS));
+            const wear = validOrDefault(tireWear[tire], 0); // undefined - puncture
+            const dirt = validOrDefault(tireDirt[tire], 0);
+            const pressure = convertPressure(tirePressure[tire], SettingsValue.get(PRESSURE_UNITS));
             
             const sides = ['left', 'center', 'right'] as const;
             for (let i = 1; i <= 3; i++) {
@@ -62,13 +62,13 @@ export default class Tires extends HudElement {
 
                 text.innerText = `${Math.round(temp)}°`;
 
-                if (!valueIsValid(optimal) || !valueIsValid(cold) || !valueIsValid(hot) || !valueIsValid(temp)) {
+                if (!valueIsValidAssertNull(optimal) || !valueIsValidAssertNull(cold) || !valueIsValidAssertNull(hot) || !valueIsValidAssertNull(temp)) {
                     this.root.style.setProperty(`--${name}-${i}-color`, 'var(--temp-color-normal)');
                     continue;
                 }
                 this.root.style.setProperty(`--${name}-${i}-color`, lerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (optimal - cold) / (hot - cold), (temp - cold) / (hot - cold)));
 
-                if (!valueIsValid(optimalBrake) || !valueIsValid(coldBrake) || !valueIsValid(hotBrake) || !valueIsValid(currentBrake)) {
+                if (!valueIsValidAssertNull(optimalBrake) || !valueIsValidAssertNull(coldBrake) || !valueIsValidAssertNull(hotBrake) || !valueIsValidAssertNull(currentBrake)) {
                     this.root.style.setProperty(`--${name}-brake-color`, 'var(--temp-color-normal)');
                     continue;
                 }

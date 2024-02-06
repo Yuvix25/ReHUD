@@ -1,8 +1,8 @@
 import HudElement from "./HudElement.js";
-import {validNumberOrDefault, valueIsValid} from "../consts.js";
+import {validNumberOrDefault, valueIsValidAssertNull} from "../consts.js";
 
 export default class DriverInputs extends HudElement {
-    override inputKeys: string[] = ['throttleRaw', 'throttle', 'brakeRaw', 'brake', 'clutchRaw', 'clutch', 'steerInputRaw', 'steerWheelRangeDegrees'];
+    override sharedMemoryKeys: string[] = ['throttleRaw', 'throttle', 'brakeRaw', 'brake', 'clutchRaw', 'clutch', 'steerInputRaw', 'steerWheelRangeDegrees'];
 
     private static rawOrReal(n: number, r: number): number {
         return validNumberOrDefault(n, validNumberOrDefault(r, 0));
@@ -22,7 +22,7 @@ export default class DriverInputs extends HudElement {
         bRaw = DriverInputs.rawOrReal(bRaw, b);
         cRaw = DriverInputs.rawOrReal(cRaw, c);
         sRaw = sRaw ?? 0;
-        sRange = valueIsValid(sRange) ? sRange : 360;
+        sRange = valueIsValidAssertNull(sRange) ? sRange : 360;
 
         throttle.innerText = `${Math.round(tRaw * 100)}`;
         brake.innerText = `${Math.round(bRaw * 100)}`;

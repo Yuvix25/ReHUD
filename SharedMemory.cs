@@ -46,9 +46,10 @@ namespace R3E
             {
                 var timeNow = DateTime.UtcNow;
 
-                if (timeNow.Subtract(timeLast) < timeInterval)
+                var timeDiff = timeNow.Subtract(timeLast);
+                if (timeDiff < timeInterval)
                 {
-                    await Task.Delay(1);
+                    await Task.Delay(timeInterval - timeDiff);
                     continue;
                 }
 

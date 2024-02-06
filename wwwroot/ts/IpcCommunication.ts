@@ -1,4 +1,5 @@
 import {ipcRenderer} from 'electron';
+import {TimeoutError, promiseTimeout} from './consts.js';
 
 export default class IpcCommunication {
     /**
@@ -10,13 +11,24 @@ export default class IpcCommunication {
         ipcRenderer.on(channel, (event, args) => {
             (async () => {
                 const data = JSON.parse(args[0]);
-                const conversationid: string = data[0];
-                const res = await callback(event, data[1]);
-                if (res === undefined) {
-                    ipcRenderer.send(conversationid);
-                } else {
-                    ipcRenderer.send(conversationid, JSON.stringify(res));
+                const conversationId: string = data[0];
+                let res: any = null;
+                try {
+                    res = await promiseTimeout(callback(event, data[1]), 10000);
+                } catch (e) {
+                    if (e instanceof TimeoutError) {
+                        console.error(`Response to ${channel} timed out.`, e);
+                    } else {
+                        console.error(e);
+                    }
                 }
+
+                const response = [Date.now()];
+                if (res !== undefined) {
+                    response.push(res);
+                }
+
+                ipcRenderer.send(conversationId, JSON.stringify(response));
             })();
         });
     }

@@ -3,7 +3,7 @@ import {EEngineType, IDriverInfo} from '../r3eTypes.js';
 import HudElement from "./HudElement.js";
 
 export default class Gear extends HudElement {
-    override inputKeys: string[] = ['gear', 'vehicleInfo'];
+    override sharedMemoryKeys: string[] = ['gear', 'vehicleInfo'];
 
     private static readonly normalGearMap = new Map<number, string>([
         [-1, 'R'],

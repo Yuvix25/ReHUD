@@ -1,9 +1,9 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {LAST_LAP_SECTORS_TIME_ON_SCREEN, laptimeFormat, mapSectorTimes, valueIsValid} from "../consts.js";
+import {LAST_LAP_SECTORS_TIME_ON_SCREEN, laptimeFormat, mapSectorTimes, valueIsValidAssertNull} from "../consts.js";
 import IShared, {IDriverData, ISectorStarts, ISectors} from "../r3eTypes.js";
 
 export default class SectorTimes extends HudElement {
-    override inputKeys: string[] = ['sectorTimesSessionBestLap', 'sectorTimesBestSelf', 'sectorTimesCurrentSelf', 'sectorTimesPreviousSelf', 'lapDistanceFraction', 'sectorStartFactors'];
+    override sharedMemoryKeys: string[] = ['sectorTimesSessionBestLap', 'sectorTimesBestSelf', 'sectorTimesCurrentSelf', 'sectorTimesPreviousSelf', 'lapDistanceFraction', 'sectorStartFactors'];
 
     private lastCompletedLapTimestamp: number = null;
 
@@ -22,17 +22,17 @@ export default class SectorTimes extends HudElement {
 
         const now = Date.now() / 1000;
 
-        if (valueIsValid(lapDistance) && valueIsValid(sectorPositions?.sector2) && lapDistance < sectorPositions.sector2) {
+        if (valueIsValidAssertNull(lapDistance) && valueIsValidAssertNull(sectorPositions?.sector2) && lapDistance < sectorPositions.sector2) {
             selfCurrent = null;
         }
 
-        if (selfCurrent == null && selfPrevious != null && selfPrevious.every(valueIsValid) && now - this.lastCompletedLapTimestamp <= LAST_LAP_SECTORS_TIME_ON_SCREEN) {
+        if (selfCurrent == null && selfPrevious != null && selfPrevious.every(valueIsValidAssertNull) && now - this.lastCompletedLapTimestamp <= LAST_LAP_SECTORS_TIME_ON_SCREEN) {
             selfCurrent = selfPrevious;
         } else if (selfPrevious != null && selfCurrent != null && selfPrevious[0] === selfCurrent[0] && selfPrevious[1] === selfCurrent[1] && selfPrevious[2] === selfCurrent[2]) {
             selfCurrent = null; // RaceRoom doesn't clean up current after a new lap, only when the 1st sector is completed
         }
 
-        if (selfCurrent == null || !selfCurrent.some(valueIsValid)) {
+        if (selfCurrent == null || !selfCurrent.some(valueIsValidAssertNull)) {
             for (const sectorElement of sectorElements) {
                 if (!(sectorElement instanceof HTMLElement))
                     continue;
@@ -54,16 +54,16 @@ export default class SectorTimes extends HudElement {
             const sectorTimeBestSelf = selfBest[i];
             const sectorTimeSessionBest = sessionBest[i];
 
-            if (!valueIsValid(sectorTime) || foundNull) {
+            if (!valueIsValidAssertNull(sectorTime) || foundNull) {
                 sectorElement.style.display = 'none';
                 foundNull = true;
             } else {
                 sectorElement.style.display = null;
 
                 let color;
-                if (!valueIsValid(sectorTimeSessionBest) || sectorTime <= sectorTimeSessionBest)
+                if (!valueIsValidAssertNull(sectorTimeSessionBest) || sectorTime <= sectorTimeSessionBest)
                     color = 'var(--time-purple)';
-                else if (!valueIsValid(sectorTimeBestSelf) || sectorTime <= sectorTimeBestSelf)
+                else if (!valueIsValidAssertNull(sectorTimeBestSelf) || sectorTime <= sectorTimeBestSelf)
                     color = 'var(--time-green)';
                 else
                     color = 'var(--time-gray)';

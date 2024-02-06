@@ -31,7 +31,7 @@
         }
     </choice-setting>
 
-    <slider-setting key="framerate" min="10" max="1000" step="1" value="60">Framerate</slider-setting>
+    <slider-setting key="framerate" min="3" max="1000" step="1" value="60">Framerate</slider-setting>
 
     <choice-setting key="speedUnits" value="kmh">
         <label>Speed Units</label>
@@ -60,7 +60,9 @@
 
 
     <toggle-setting key="relativeSafeMode" tooltip="Enabling this option will mean that the relative will only work with saved best lap data, and will not save new ones.">Relative Safe Mode</toggle-setting>
-    <toggle-setting key="check-for-updates">Check for Updates<toggle-setting>
+    <toggle-setting key="check-for-updates">Check for Updates</toggle-setting>
+
+    <toggle-setting key="hardwareAcceleration" restart-to-apply="true" tooltip="If your ReHUD window has a black background instead of a transparent one, try disabling this option.">Hardware Acceleration</toggle-setting>
 </div>
 
 <div id="layout-tab" class="main-tabs tabcontent">

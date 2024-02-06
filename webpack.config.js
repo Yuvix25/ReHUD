@@ -1,4 +1,5 @@
 import path from 'path';
+import webpackNodeExternals from 'webpack-node-externals';
 
 export default {
   entry: {
@@ -11,5 +12,7 @@ export default {
   },
   target: 'node',
   mode: 'production',
-  externals: [{ electron: 'commonjs electron' }],
+  externals: [{ electron: 'commonjs electron' }, webpackNodeExternals({
+    allowlist: [/^(?!(ws)$).*$/], // all modules except 'ws' should be bundled
+  })],
 };

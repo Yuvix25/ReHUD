@@ -7,7 +7,7 @@ import RankedData from "../actions/RankedData.js";
 
 
 export default class RelativeViewer extends HudElement {
-    override inputKeys: string[] = ['driverData', 'position', 'sessionPhase'];
+    override sharedMemoryKeys: string[] = ['driverData', 'position', 'sessionPhase'];
 
     public static readonly IMAGE_REDIRECT = 'https://game.raceroom.com/store/image_redirect?id=';
 

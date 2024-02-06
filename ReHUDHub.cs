@@ -18,10 +18,10 @@ namespace SignalRChat.Hubs
                 LogMessage logMessage = new(startTimestamp, endTimestamp, message);
                 if (Startup.logger != null) {
                     switch (level) {
-                        case "warn":
+                        case "WARN":
                             Startup.logger.Warn(logMessage);
                             break;
-                        case "error":
+                        case "ERROR":
                             Startup.logger.Error(logMessage);
                             break;
                         default:
@@ -32,6 +32,17 @@ namespace SignalRChat.Hubs
             } catch (Exception e) {
                 Console.WriteLine(e);
             }
+        }
+
+        public void SaveBestLap(int layoutId, int classId, double laptime, double[] points, double pointsPerMeter)
+        {
+            Startup.logger.Info($"SaveBestLap: layoutId={layoutId}, classId={classId}, laptime={laptime}, points={points.Length}, pointsPerMeter={pointsPerMeter}");
+            Startup.SaveBestLap(layoutId, classId, laptime, points, pointsPerMeter);
+        }
+
+        public string LoadBestLap(int layoutId, int classId)
+        {
+            return Startup.LoadBestLap(layoutId, classId);
         }
     }
 }

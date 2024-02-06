@@ -60,8 +60,6 @@ export default abstract class HudElement extends Action {
     private _isHidden: boolean = false;
     private lastRes: string | Style | null | Hide = null;
 
-    abstract readonly inputKeys: string[];
-
     private static readonly HIDE = new Hide();
 
     /**
@@ -146,7 +144,7 @@ export default abstract class HudElement extends Action {
 
     private getInputs(data: any): any[] {
         const values = [];
-        for (const valueName of this.inputKeys) {
+        for (const valueName of this.sharedMemoryKeys) {
             if (valueName.startsWith('+')) {
                 values.push(data[valueName.slice(1)]);
                 continue;
@@ -183,6 +181,10 @@ export default abstract class HudElement extends Action {
             return false;
 
         return true;
+    }
+
+    override isEnabled(): boolean {
+        return this.shouldExecuteWhileHidden() || !this.isDisabledInLayout();
     }
 }
 

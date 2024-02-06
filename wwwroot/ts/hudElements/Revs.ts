@@ -1,11 +1,11 @@
 import HudElement from "./HudElement.js";
-import {valueIsValid} from "../consts.js";
+import {valueIsValidAssertNull} from "../consts.js";
 
 export default class Revs extends HudElement {
-    override inputKeys: string[] = ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'];
+    override sharedMemoryKeys: string[] = ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'];
 
     protected override render(current: number, max: number, upshift: number, pitLimiter: number, id: string): null {
-        if (!valueIsValid(current) || !valueIsValid(max))
+        if (!valueIsValidAssertNull(current) || !valueIsValidAssertNull(max))
             return null;
 
         try {

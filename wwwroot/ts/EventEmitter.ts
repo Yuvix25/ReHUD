@@ -1,3 +1,4 @@
+import NamedEntity from './NamedEntity.js';
 import IShared, {ESession, ESessionPhase, IDriverData} from "./r3eTypes.js";
 import {getUid} from "./utils.js";
 
@@ -10,7 +11,7 @@ export type EventCallbacks = {
 /**
  * An event emitter for some events regarding data from the Shared Memory API.
  */
-export default class EventEmitter {
+export default class EventEmitter extends NamedEntity {
     public static readonly NEW_LAP_EVENT = 'newLap';
     public static readonly POSITION_JUMP_EVENT = 'positionJump';
     public static readonly ENTERED_PITLANE_EVENT = 'enteredPitlane';
@@ -33,10 +34,15 @@ export default class EventEmitter {
     public static readonly valueListenersReversed: {[key: string]: [string, any]} = Object.entries(EventEmitter.valueListeners).reduce((acc: {[key: string]: [string, string]}, [key, value]) => {
         for (const event of value) {
             acc[event[0]] = [key, event[1]];
-
         }
         return acc;
     }, {});
+
+    override sharedMemoryKeys: string[] = ['sessionType', 'sessionPhase', 'vehicleInfo', 'layoutId', 'driverData', 'playerName', 'gameInReplay', 'controlType', 'gamePaused', 'layoutLength'];
+
+    override isEnabled(): boolean {
+        return true;
+    }
 
     static CLOSE_THRESHOLD = 50; // meters
     static events: {[key: string]: Array<(data: any) => void>} = {};

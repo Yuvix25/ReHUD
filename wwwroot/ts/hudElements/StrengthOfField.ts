@@ -3,7 +3,7 @@ import {IDriverData} from "../r3eTypes.js";
 import { NA } from "../consts.js";
 
 export default class StrengthOfField extends HudElement {
-    override inputKeys: string[] = ['driverData'];
+    override sharedMemoryKeys: string[] = ['driverData'];
 
     protected override render(drivers: IDriverData[]): string | Hide {
         let rankings = drivers.map(driver => this.hud.rankedDataService.getRankedDataForDriver(driver));

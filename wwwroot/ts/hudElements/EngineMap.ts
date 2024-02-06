@@ -1,10 +1,10 @@
 import HudElement from "./HudElement.js";
-import {valueIsValid} from "../consts.js";
+import {valueIsValidAssertNull} from "../consts.js";
 
 export default class EngineMap extends HudElement {
-    override inputKeys: string[] = ['engineMapSetting'];
+    override sharedMemoryKeys: string[] = ['engineMapSetting'];
 
     protected override render(em: number): string {
-        return `EM: ${valueIsValid(em) ? em : 5}`;
+        return `EM: ${valueIsValidAssertNull(em) ? em : 5}`;
     }
 }

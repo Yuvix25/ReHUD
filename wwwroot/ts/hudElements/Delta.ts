@@ -1,11 +1,11 @@
 import HudElement, {Hide, Style} from "./HudElement.js";
-import {DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, valueIsValid} from "../consts.js";
+import {DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, valueIsValidAssertNull} from "../consts.js";
 import IShared, {IDriverData} from "../r3eTypes.js";
 import {DeltaManager, Driver} from "../utils.js";
 import SettingsValue from "../SettingsValue.js";
 
 export default class Delta extends HudElement {
-    override inputKeys: string[] = ['timeDeltaBestSelf', 'lapTimeCurrentSelf', 'currentLapValid', 'lapDistance'];
+    override sharedMemoryKeys: string[] = ['timeDeltaBestSelf', 'lapTimeCurrentSelf', 'currentLapValid', 'lapDistance'];
 
     protected override onNewLap(_data: IShared, driver: IDriverData, isMainDriver: boolean): void {
         if (isMainDriver)
@@ -36,7 +36,7 @@ export default class Delta extends HudElement {
             currentLapValid = 1;
         }
 
-        if (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000 || !valueIsValid(currentLapValid) || currentLapValid === 0) {
+        if (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000 || !valueIsValidAssertNull(currentLapValid) || currentLapValid === 0) {
             DeltaManager.clear();
             return this.hide('0.000');
         }

@@ -1,6 +1,6 @@
 /* ========================================== Types ========================================== */
 
-import IShared, { EFinishStatus, ESessionPhase, IDriverData } from './r3eTypes.js';
+import IShared, { EFinishStatus, ESessionPhase, IDriverData, ISectors } from './r3eTypes.js';
 
 export interface IExtendedShared {
   rawData: IShared;
@@ -27,6 +27,7 @@ export const POSITION_BAR_CELL_COUNT = 'positionBarCellCount';
 export const DELTA_MODE = 'deltaMode';
 export const SHOW_DELTA_ON_INVALID_LAPS = 'showDeltaOnInvalidLaps';
 export const FRAMERATE = 'framerate';
+export const HARDWARE_ACCELERATION = 'hardwareAcceleration';
 export const HUD_LAYOUT = 'hudLayout';
 
 export const DEFAULT_RENDER_CYCLE = 30;
@@ -184,7 +185,7 @@ export function finishedBadly(finishStatus: EFinishStatus) {
 export function getSessionType(
   sessionType: keyof typeof SESSION_TYPES
 ): (typeof SESSION_TYPES)[keyof typeof SESSION_TYPES] {
-  if (valueIsValid(sessionType) && 0 <= sessionType && sessionType <= 4) {
+  if (valueIsValidAssertNull(sessionType) && 0 <= sessionType && sessionType <= 4) {
     return SESSION_TYPES[sessionType];
   }
   return SESSION_TYPES[5];
@@ -242,13 +243,18 @@ export function validOrDefault(val: any, defaultVal: any) {
   return val;
 }
 
+export function valueIsValidAssertNull(val: number) {
+  if (val == null) throw new Error('value is null');
+  return val != -1;
+}
+
 export function valueIsValid(val: number) {
   return val != -1 && val != null;
 }
 
 export function allValuesAreValid(...values: number[]) {
   for (const val of values) {
-    if (!valueIsValid(val)) return false;
+    if (!valueIsValidAssertNull(val)) return false;
   }
   return true;
 }
@@ -300,17 +306,14 @@ export function laptimeFormat(time: number, minimize = false): string {
  * @return time in format 'hh:mm:ss'
  */
 export function timeFormat(time: number): string {
+  if (!valueIsValid(time) || Number.isNaN(time)) return '-:--:--';
   const hours = Math.floor(time / 3600);
   const minutes = (Math.floor(time / 60) % 60).toString().padStart(2, '0');
   const seconds = (Math.floor(time) % 60).toString().padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
 }
 
-export const mapSectorTimes = (sectorTimes: {
-  sector1: number;
-  sector2: number;
-  sector3: number;
-}) => {
+export const mapSectorTimes = (sectorTimes: ISectors) => {
   if (sectorTimes == null) return null;
   const res = [sectorTimes.sector1, sectorTimes.sector2, sectorTimes.sector3];
   if (valueIsValid(res[0]) && valueIsValid(res[1])) {
@@ -360,6 +363,7 @@ export function lerpRGBn(colors: number[][], t: number) {
  * @param array
  */
 export function base64EncodedUint8ArrayToString(base64: string): string {
+  if (base64 == null) return NA;
   let array = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
   array = array.slice(0, array.indexOf(0));
@@ -388,4 +392,21 @@ export function insertCell(
   if (className != null) cell.className = className;
 
   return cell;
+}
+
+
+export class TimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}
+
+export function promiseTimeout<T>(promise: Promise<T>, timeout: number) {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve, reject) => {
+      setTimeout(() => reject(new TimeoutError('timeout')), timeout);
+    }),
+  ]);
 }

@@ -1,11 +1,11 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {NA, valueIsValid} from "../consts.js";
+import {NA, valueIsValidAssertNull} from "../consts.js";
 
 export default class CompletedLaps extends HudElement {
-    override inputKeys: string[] = ['completedLaps'];
+    override sharedMemoryKeys: string[] = ['completedLaps'];
 
     protected override render(completedLaps: number): string | Hide {
-        if (!valueIsValid(completedLaps))
+        if (!valueIsValidAssertNull(completedLaps))
             return this.hide(NA);
 
         return `${completedLaps}`;

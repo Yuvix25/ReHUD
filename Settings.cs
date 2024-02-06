@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Newtonsoft.Json;
 
 namespace ReHUD;
@@ -32,6 +33,18 @@ public class SettingsData
     [JsonProperty]
     private readonly Dictionary<string, object> settings;
 
+    public readonly ImmutableDictionary<string, object> DefaultSettings = ImmutableDictionary<string, object>.Empty
+        .Add("framerate", 60)
+        .Add("speedUnits", "kmh")
+        .Add("radarRange", 12)
+        .Add("radarBeepVolume", 1)
+        .Add("positionBarCellCount", 13)
+        .Add("deltaMode", "session")
+        .Add("showDeltaOnInvalidLaps", false)
+        .Add("relativeSafeMode", false)
+        .Add("check-for-updates", true)
+        .Add("hardwareAcceleration", true);
+
     public IEnumerable<KeyValuePair<string, object>> Settings => settings;
 
     public SettingsData() {
@@ -40,6 +53,13 @@ public class SettingsData
     public SettingsData(string data)
     {
         settings = JsonConvert.DeserializeObject<Dictionary<string, object>>(data) ?? new();
+        foreach (var (key, value) in DefaultSettings)
+        {
+            if (!settings.ContainsKey(key))
+            {
+                settings[key] = value;
+            }
+        }
     }
 
     public string Serialize()
@@ -60,7 +80,7 @@ public class SettingsData
 
     public object? Get(string key)
     {
-        return Contains(key) ? settings[key] : null;
+        return Contains(key) ? settings[key] : (DefaultSettings.ContainsKey(key) ? DefaultSettings[key] : null);
     }
 
     public object? Get(string key, object? orDefault)

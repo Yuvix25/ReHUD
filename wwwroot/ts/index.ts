@@ -97,7 +97,7 @@ const hud = new Hud([
 
 let layoutLoaded = false;
 
-function elementAdjusted(event: DraggableEvent, position=true) {
+function elementAdjusted(event: DraggableEvent) {
     const element = event.source;
     if (hud.layoutElements[element.id] == undefined)
         hud.layoutElements[element.id] = {left: 0, top: 0, scale: 1, shown: true};
@@ -108,7 +108,7 @@ function elementAdjusted(event: DraggableEvent, position=true) {
     }
     hud.layoutElements[element.id].scale = scale;
 
-    if (position) {
+    if (event.dragged) {
         hud.layoutElements[element.id].left = event.left;
         hud.layoutElements[element.id].top = event.top;
 
@@ -249,7 +249,7 @@ function addTransformable(id: TransformableId) {
         element.dataset.scale = scale.toString();
         scale = Math.pow(scale, ELEMENT_SCALE_POWER);
         element.style.scale = scale.toString();
-        elementAdjusted({source: element, left: null, top: null}, false);
+        elementAdjusted({source: element, left: null, top: null, dragged: false});
     });
 
     return draggable;

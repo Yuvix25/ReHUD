@@ -4,21 +4,22 @@ export interface TransformableHTMLElement extends HTMLElement {
   id: TransformableId;
 }
 
-export type DraggableEvent = {source: TransformableHTMLElement, left: number, top: number};
+export type DraggableEvent = {source: TransformableHTMLElement, left: number, top: number, dragged: boolean};
 type DraggableEventCallback = (event: DraggableEvent) => void;
 type DraggableEvents = {'drag:start': DraggableEventCallback; 'drag:stop': DraggableEventCallback;};
 
 export default class Draggable {
-  element: TransformableHTMLElement;
-  events: DraggableEvents;
-  dragging: boolean;
-  startDraggingDispatched: boolean;
-  x: number;
-  y: number;
-  startX: number;
-  startY: number;
-  currentX: number;
-  currentY: number;
+  private element: TransformableHTMLElement;
+  private events: DraggableEvents;
+  private dragging: boolean;
+  private dragged: boolean;
+  private startDraggingDispatched: boolean;
+  private x: number;
+  private y: number;
+  private startX: number;
+  private startY: number;
+  private currentX: number;
+  private currentY: number;
 
   constructor(element: TransformableHTMLElement, events: DraggableEvents) {
     this.element = element;
@@ -29,6 +30,7 @@ export default class Draggable {
     window.addEventListener('mouseup', this.stopDragging.bind(this));
 
     this.dragging = false;
+    this.dragged = false;
     this.startDraggingDispatched = false;
 
     const {left, top} = getRealOffset(this.element);
@@ -63,6 +65,8 @@ export default class Draggable {
     if (this.dragging) {
       event.preventDefault();
 
+      this.dragged = true;
+
       this.currentX = this.x + (event.clientX - this.startX);
       this.currentY = this.y + (event.clientY - this.startY);
 
@@ -88,15 +92,18 @@ export default class Draggable {
     event.preventDefault();
 
     this.dragging = false;
+    
     this.startDraggingDispatched = false;
 
     this.x = this.currentX;
     this.y = this.currentY;
 
     this.events['drag:stop'](this.getDragEvent());
+
+    this.dragged = false;
   }
 
   private getDragEvent() : DraggableEvent {
-    return {source : this.element, left: this.currentX, top: this.currentY};
+    return {source : this.element, left: this.currentX, top: this.currentY, dragged: this.dragged};
   }
 }

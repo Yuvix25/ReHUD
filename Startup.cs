@@ -17,6 +17,11 @@ public class Startup
     public static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     string? logFilePath;
 
+    private static readonly List<string> raceroomProcessNames = new() { "RRRE", "RRRE64" };
+
+    private ProcessObserver raceroomObserver;
+    private SharedMemory sharedMemory;
+
     public Startup(IConfiguration configuration)
     {
         Configuration = configuration;
@@ -40,6 +45,11 @@ public class Startup
         var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
         XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
+        raceroomObserver = new(raceroomProcessNames);
+        sharedMemory = new(raceroomObserver, null);
+
+        raceroomObserver.Start();
+
         version.Load();
         _ = AppVersion().ContinueWith(async (t) =>
         {
@@ -49,8 +59,9 @@ public class Startup
             await LoadSettings();
 
             HudLayout.LoadHudLayouts();
-            
-            try {
+
+            try
+            {
                 string preset = await Electron.App.CommandLine.GetSwitchValueAsync("preset");
                 if (preset != null && preset.Length > 0)
                 {
@@ -65,7 +76,8 @@ public class Startup
                     }
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 logger.Error("Error loading preset", e);
             }
         });
@@ -154,7 +166,8 @@ public class Startup
 
     private async Task CreateMainWindow()
     {
-        await Electron.IpcMain.On("used-keys", (args) => {
+        await Electron.IpcMain.On("used-keys", (args) =>
+        {
             if (args == null)
                 return;
 
@@ -239,7 +252,8 @@ public class Startup
             SetHudLayout(layout);
         });
 
-        await Electron.IpcMain.On("load-replay-preset", (args) => {
+        await Electron.IpcMain.On("load-replay-preset", (args) =>
+        {
             var layout = HudLayout.LoadReplayLayout();
             if (layout != null)
             {
@@ -426,7 +440,8 @@ public class Startup
 
             if (!locked) // enter edit mode
             {
-                if (MainWindow != null) {
+                if (MainWindow != null)
+                {
                     await IpcCommunication.Invoke(MainWindow, "edit-mode");
 
                     logger.Info("Entering edit mode");
@@ -434,7 +449,8 @@ public class Startup
                     enteredEditMode = true;
                     IsInEditMode = true;
 
-                    if (!SharedMemory.IsRunning) {
+                    if (!raceroomObserver.IsRunning)
+                    {
                         var extraData = new ExtraData
                         {
                             forceUpdateAll = true,
@@ -454,7 +470,7 @@ public class Startup
                 isShown = null;
                 IsInEditMode = false;
 
-                if (!SharedMemory.IsRunning)
+                if (!raceroomObserver.IsRunning)
                 {
                     Electron.IpcMain.Send(MainWindow, "hide");
                 }
@@ -519,7 +535,8 @@ public class Startup
             if (name == null)
                 return;
             var layout = HudLayout.GetHudLayout(name);
-            if (layout != null) {
+            if (layout != null)
+            {
                 await layout.DeleteLayout();
                 SendHudLayout();
             }
@@ -663,7 +680,7 @@ public class Startup
         return options;
     }
 
-    private static async Task SaveSetting(string key, object value, bool sendToWindow = true)
+    private async Task SaveSetting(string key, object value, bool sendToWindow = true)
     {
         settings.Data.Set(key, value);
         settings.Save();
@@ -674,21 +691,27 @@ public class Startup
             Electron.IpcMain.Send(SettingsWindow, "settings", settings.Serialize());
     }
 
-    public static async Task LoadSettings(string? key = null, object? value = null) {
-        if (key == null) {
-            foreach (var setting in settings.Data.Settings) {
+    public async Task LoadSettings(string? key = null, object? value = null)
+    {
+        if (key == null)
+        {
+            foreach (var setting in settings.Data.Settings)
+            {
                 await LoadSettings(setting.Key, setting.Value);
             }
-        } else {
+        }
+        else
+        {
             if (value == null)
                 return;
-            switch (key) {
+            switch (key)
+            {
                 case "screenToUse":
                     await LoadMonitor(value.ToString());
                     break;
                 case "framerate":
                     if (IsInt(value))
-                        SharedMemory.FrameRate = (long)value;
+                        sharedMemory.FrameRate = (long)value;
                     break;
                 case "hardwareAcceleration":
                     if (value is bool hardwareAcceleration)
@@ -703,14 +726,20 @@ public class Startup
     }
 
     private static readonly string[] hardwareAccelerationSettings = new string[] { "disable-gpu-compositing", "disable-gpu", "disable-software-rasterizer" };
-    private static void SetHardwareAccelerationEnabled(bool enabled) {
+    private static void SetHardwareAccelerationEnabled(bool enabled)
+    {
         logger.Info("Setting hardware acceleration: " + enabled);
-        if (enabled) {
-            foreach (var setting in hardwareAccelerationSettings) {
+        if (enabled)
+        {
+            foreach (var setting in hardwareAccelerationSettings)
+            {
                 Electron.App.CommandLine.RemoveSwitch(setting);
             }
-        } else {
-            foreach (var setting in hardwareAccelerationSettings) {
+        }
+        else
+        {
+            foreach (var setting in hardwareAccelerationSettings)
+            {
                 Electron.App.CommandLine.AppendSwitch(setting);
             }
         }
@@ -731,7 +760,8 @@ public class Startup
             || value is ushort;
     }
 
-    private static async Task LoadMonitor(string? value = null) {
+    private static async Task LoadMonitor(string? value = null)
+    {
         if (MainWindow == null)
             return;
         var monitorId = value ?? await GetMainWindowDisplay();
@@ -761,7 +791,8 @@ public class Startup
 
     private static void SetHudLayout(HudLayout layout, bool sendToSettings = false, bool removeBefore = true)
     {
-        if (IsInEditMode) {
+        if (IsInEditMode)
+        {
             logger.Info("Cannot set HUD layout while in edit mode");
             return;
         }
@@ -772,7 +803,8 @@ public class Startup
 
     private static async Task<bool> RenameActiveLayout(string newName)
     {
-        if (HudLayout.ActiveHudLayout == null) {
+        if (HudLayout.ActiveHudLayout == null)
+        {
             logger.Error("No active HUD layout");
             return false;
         }
@@ -793,7 +825,8 @@ public class Startup
         return res;
     }
 
-    private static void DiscardNameChange() {
+    private static void DiscardNameChange()
+    {
         HudLayout layout = HudLayout.ActiveHudLayout ?? throw new InvalidOperationException("No active HUD layout");
         Electron.IpcMain.Send(SettingsWindow, "discard-name-change", layout.Name);
     }
@@ -806,8 +839,6 @@ public class Startup
     {
         fuelData.Load();
 
-        using var memory = new SharedMemory();
-
         Thread.Sleep(1000);
 
         int iter = 0;
@@ -815,7 +846,8 @@ public class Startup
         {
             forceUpdateAll = false,
         };
-        Thread thread = new(async () => await memory.Run(async (data) =>
+
+        sharedMemory.OnDataReady += async (data) =>
         {
             extraData.timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (data.fuelUseActive != 1 && !userDataClearedForMultiplier)
@@ -834,7 +866,7 @@ public class Startup
             extraData.rawData = data;
             extraData.rawData.numCars = Math.Max(data.numCars, data.position); // Bug in shared memory, sometimes numCars is updated in delay, this partially fixes it
             extraData.rawData.driverData = extraData.rawData.driverData.Take(extraData.rawData.numCars).ToArray();
-            if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % SharedMemory.FrameRate == 0)
+            if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % sharedMemory.FrameRate == 0)
             {
                 FuelCombination combination = fuelData.GetCombination(data.layoutId, data.vehicleInfo.modelId);
                 extraData.fuelPerLap = combination.GetAverageFuelUsage();
@@ -893,22 +925,25 @@ public class Startup
                 window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
                 isShown = true;
             }
-        }));
-        thread.Start();
+        };
     }
 
-    public static Task<Display[]> GetDisplays() {
+    public static Task<Display[]> GetDisplays()
+    {
         return Electron.Screen.GetAllDisplaysAsync();
     }
 
-    public static async Task<string?> GetMainWindowDisplay() {
-        if (settings.Data.Contains("screenToUse")) {
+    public static async Task<string?> GetMainWindowDisplay()
+    {
+        if (settings.Data.Contains("screenToUse"))
+        {
             return (string?)settings.Data.Get("screenToUse");
         }
         return (await Electron.Screen.GetPrimaryDisplayAsync()).Id;
     }
 
-    public static async Task<Display?> GetDisplayById(string id) {
+    public static async Task<Display?> GetDisplayById(string id)
+    {
         return Array.Find(await GetDisplays(), x => x.Id == id);
     }
 

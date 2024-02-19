@@ -6,13 +6,14 @@
     "source-map-js": "^1.0.2"
   },
   "devDependencies": {
+    "typescript": "^5.3.3",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
     "webpack-node-externals": "^3.0.0"
   },
   "scripts": {
-    "prestart": "tsc && webpack --devtool source-map --config webpack.config.js",
+    "prestart": ".\\node_modules\\.bin\\tsc --project tsconfig.json && webpack --devtool source-map --config webpack.config.js",
     "start": "electronize start",
     "build": "npm run prestart && electronize build /target win"
   },

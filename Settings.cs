@@ -43,7 +43,8 @@ public class SettingsData
         .Add("showDeltaOnInvalidLaps", false)
         .Add("relativeSafeMode", false)
         .Add("check-for-updates", true)
-        .Add("hardwareAcceleration", true);
+        .Add("hardwareAcceleration", true)
+        .Add("enableVRMode", false);
 
     public IEnumerable<KeyValuePair<string, object>> Settings => settings;
 

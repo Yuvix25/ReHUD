@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using R3E;
 using SignalRChat.Hubs;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace ReHUD;
 
@@ -33,6 +34,9 @@ public class Startup
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+        //if (env.IsDevelopment())
+        //    Debugger.Launch();
+
         logFilePath = Path.Combine(JsonUserData.dataPath, "ReHUD.log");
         GlobalContext.Properties["LogFilePath"] = logFilePath;
 
@@ -109,7 +113,7 @@ public class Startup
                             Electron.IpcMain.Send(window, "port", BridgeSettings.WebPort);
                         }
                     });
-                    await CreateMainWindow();
+                    await CreateMainWindow(env);
                     await CreateSettingsWindow(env);
 
                     await Task.Delay(1000); // TODO
@@ -135,6 +139,9 @@ public class Startup
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
     private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file named 'ReHUD.log' in C:\\Users\\<username>\\Documents\\ReHUD";
 
+    private const string BLACK_OPAQUE = "#FF000000";
+    private const string BLACK_TRANSPARENT = "#00000000";
+
     internal static readonly ReHUDVersion version = new();
     internal static readonly FuelData fuelData = new();
     internal static readonly LapPointsData lapPointsData = new();
@@ -148,7 +155,7 @@ public class Startup
         return await Electron.WindowManager.CreateWindowAsync(options, loadUrl);
     }
 
-    private async Task CreateMainWindow()
+    private async Task CreateMainWindow(IWebHostEnvironment env)
     {
         await Electron.IpcMain.On("used-keys", (args) => {
             if (args == null)
@@ -165,7 +172,7 @@ public class Startup
             Movable = false,
             Frame = false,
             Transparent = true,
-            BackgroundColor = "#00000000",
+            BackgroundColor = BLACK_TRANSPARENT,
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
             WebPreferences = new WebPreferences()
             {
@@ -181,6 +188,9 @@ public class Startup
             Electron.App.Quit();
             return;
         }
+
+        //if (env.IsDevelopment())
+        //    MainWindow.WebContents.OpenDevTools();
 
         MainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
         MainWindow.SetIgnoreMouseEvents(true);
@@ -397,6 +407,8 @@ public class Startup
 
         if (!env.IsDevelopment())
             SettingsWindow.RemoveMenu();
+        //else
+        //    SettingsWindow.WebContents.OpenDevTools();
 
         await Electron.IpcMain.On("restart-app", (args) =>
         {
@@ -690,6 +702,10 @@ public class Startup
                     if (value is bool hardwareAcceleration)
                         SetHardwareAccelerationEnabled(hardwareAcceleration);
                     break;
+                case "enableVRMode":
+                    if (value is bool enableVRMode)
+                        EnableVRMode(enableVRMode);
+                    break;
             }
         }
     }
@@ -706,6 +722,12 @@ public class Startup
                 Electron.App.CommandLine.AppendSwitch(setting);
             }
         }
+    }
+
+    private static void EnableVRMode(bool enableVRMode)
+    {
+        logger.Info("Setting main window background opacity: " + (enableVRMode ? "#FF" : "#00"));
+        MainWindow?.SetBackgroundColor(enableVRMode ? BLACK_OPAQUE : BLACK_TRANSPARENT);
     }
 
     private static bool IsInt(object value) {

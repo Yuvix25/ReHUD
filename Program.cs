@@ -14,7 +14,9 @@ public static class Program
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseElectron(args);
-                // webBuilder.UseEnvironment(Environments.Development);
+//#if (DEBUG)
+//                webBuilder.UseEnvironment(Environments.Development);
+//# endif
                 webBuilder.UseStartup<Startup>();
             });
 }

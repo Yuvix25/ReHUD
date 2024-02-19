@@ -79,7 +79,6 @@ namespace R3E
         {
             Startup.logger.Info("Starting Shared memory Worker Thread");
 
-            var timeLast = DateTime.UtcNow;
             var found = false;
 
             while (!cancellationToken.IsCancellationRequested)

@@ -448,7 +448,7 @@ public class Startup
                     enteredEditMode = true;
                     IsInEditMode = true;
 
-                    if (!raceroomObserver.IsRunning)
+                    if (!sharedMemory.IsRunning)
                     {
                         var extraData = new ExtraData
                         {
@@ -469,7 +469,7 @@ public class Startup
                 isShown = null;
                 IsInEditMode = false;
 
-                if (!raceroomObserver.IsRunning)
+                if (!sharedMemory.IsRunning)
                 {
                     Electron.IpcMain.Send(MainWindow, "hide");
                 }

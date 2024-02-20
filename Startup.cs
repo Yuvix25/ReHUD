@@ -8,7 +8,6 @@ using System.Net.Http.Headers;
 using R3E;
 using SignalRChat.Hubs;
 using Newtonsoft.Json.Linq;
-using System.Diagnostics;
 
 namespace ReHUD;
 

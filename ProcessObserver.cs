@@ -20,7 +20,8 @@ namespace ReHUD
 
             this.processNames = processNames;
 
-            var processNamePredicate = string.Join(" OR ", processNames.Select(processName => $"TargetInstance.Name = '{processName}'"));
+            var processNamePredicate = string.Join(" OR ", processNames.Select(processName => $"TargetInstance.Name = '{processName}.exe'"));
+
             startWatcher = new ManagementEventWatcher(new WqlEventQuery($"SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process' AND ({processNamePredicate})"));
             startWatcher.EventArrived += ProcessStarted;
 

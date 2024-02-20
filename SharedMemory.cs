@@ -16,19 +16,11 @@ namespace R3E
 
         private CancellationTokenSource cancellationTokenSource = new();
 
-        private Shared _data;
+        private Shared? _data;
         private volatile PeriodicTimer dataTimer;
-        private volatile MemoryMappedFile? _file;
-        private readonly byte[] _buffer;
-        private readonly GCHandle _bufferHandle;
 
         private volatile bool _isRunning = false;
         public bool IsRunning { get => _isRunning; }
-
-        private bool Mapped
-        {
-            get => _file != null;
-        }
 
         public event Action<Shared> OnDataReady;
 
@@ -43,14 +35,13 @@ namespace R3E
             }
         }
 
+        public Shared? Data { get => _data;  }
+
         public SharedMemory(ProcessObserver raceroomObserver, TimeSpan? refreshRate)
         {
             this.raceroomObserver = raceroomObserver;
             this.raceroomObserver.OnProcessStarted += RaceRoomStarted;
             this.raceroomObserver.OnProcessStopped += RaceRoomStopped;
-
-            _buffer = new byte[SharedSize];
-            _bufferHandle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
 
             timeInterval = refreshRate ?? TimeSpan.FromMilliseconds(16.6); // ~60fps
             dataTimer = new(timeInterval);
@@ -79,34 +70,41 @@ namespace R3E
         {
             Startup.logger.Info("Starting Shared memory Worker Thread");
 
+            MemoryMappedFile? mmfile = null;
+            MemoryMappedViewAccessor? mmview = null;
+            Shared? data;
+
             var found = false;
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (await dataTimer.WaitForNextTickAsync(cancellationToken))
                 {
-                    if (!Mapped)
+                    if (mmview == null)
                     {
                         if (!found)
                             Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
 
-                        found = true;
-
-                        if (Map())
+                        if (Map(out mmfile, out mmview))
                         {
                             Startup.logger.Info("Memory mapped successfully");
+                            found = true;
                         }
                         else
                         {
-                            Startup.logger.Warn("Failed to map memory");
+                            Startup.logger.Warn("Failed to map memory, trying again in 1s");
                             Thread.Sleep(1000);
                         }
                     }
 
-                    if (Mapped && await Read())
+                    if (mmview != null && Read(mmview, out data))
                     {
                         _isRunning = true;
-                        OnDataReady?.Invoke(_data);
+                        if (data.HasValue)
+                        {
+                            _data = data.Value;
+                            OnDataReady?.Invoke(data.Value);
+                        }
                     }
                     else
                     {
@@ -117,7 +115,8 @@ namespace R3E
 
             Startup.logger.Info("Shared memory worker thread stopped");
 
-            _file = null;
+            mmfile?.Dispose();
+            mmview?.Dispose();
         }
 
         public void Dispose()
@@ -127,48 +126,59 @@ namespace R3E
             raceroomObserver.OnProcessStarted -= RaceRoomStarted;
             raceroomObserver.OnProcessStopped -= RaceRoomStopped;
 
-            if (_file != null)
-                _file.Dispose();
-
             dataTimer.Dispose();
-
-            _bufferHandle.Free();
         }
 
-        private bool Map()
+        private static bool Map(out MemoryMappedFile? mmfile, out MemoryMappedViewAccessor? mmview)
         {
+            mmfile = null;
+            mmview = null;
+
             try
             {
-                _file = MemoryMappedFile.OpenExisting(Constant.sharedMemoryName);
+                mmfile = MemoryMappedFile.OpenExisting(Constant.sharedMemoryName);
+                mmview = mmfile.CreateViewAccessor(0, SharedSize);
                 return true;
             }
             catch
             {
+                mmview?.Dispose();
+                mmview = null;
+
+                mmfile?.Dispose();
+                mmfile = null;
+
                 return false;
             }
         }
 
-        private async Task<bool> Read()
+        private static unsafe bool Read(MemoryMappedViewAccessor? view, out Shared? data)
         {
-            if (_file == null)
+            data = null;
+
+            if (view == null)
                 return false;
+
+            byte* ptr = null;
 
             try
             {
-                using var _view = _file.CreateViewStream();
-                await _view.ReadAsync(_buffer, 0, SharedSize);
+                view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
 
-                var res = Marshal.PtrToStructure(_bufferHandle.AddrOfPinnedObject(), SharedType);
+                var res = Marshal.PtrToStructure((IntPtr)ptr, SharedType);
                 if (res == null)
                     return false;
 
-                _data = (Shared)res;
+                data = (Shared)res;
                 return true;
             }
             catch (Exception e)
             {
                 Startup.logger.Error("Error reading shared memory", e);
                 return false;
+            }
+            finally {
+                view.SafeMemoryMappedViewHandle.ReleasePointer();
             }
         }
     }

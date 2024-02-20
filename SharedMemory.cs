@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using R3E.Data;
@@ -35,7 +34,7 @@ namespace R3E
             }
         }
 
-        public Shared? Data { get => _data;  }
+        public Shared? Data { get => _data; }
 
         public SharedMemory(ProcessObserver raceroomObserver, TimeSpan? refreshRate)
         {
@@ -85,10 +84,11 @@ namespace R3E
                         if (!found)
                             Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
 
+                        found = true;
+
                         if (Map(out mmfile, out mmview))
                         {
                             Startup.logger.Info("Memory mapped successfully");
-                            found = true;
                         }
                         else
                         {
@@ -97,14 +97,12 @@ namespace R3E
                         }
                     }
 
-                    if (mmview != null && Read(mmview, out data))
+                    if ((data = Read(mmview)).HasValue)
                     {
                         _isRunning = true;
-                        if (data.HasValue)
-                        {
-                            _data = data.Value;
-                            OnDataReady?.Invoke(data.Value);
-                        }
+                        _data = data;
+                        OnDataReady?.Invoke(data.Value);
+
                     }
                     else
                     {
@@ -152,12 +150,10 @@ namespace R3E
             }
         }
 
-        private static unsafe bool Read(MemoryMappedViewAccessor? view, out Shared? data)
+        private static unsafe Shared? Read(MemoryMappedViewAccessor? view)
         {
-            data = null;
-
             if (view == null)
-                return false;
+                return null;
 
             byte* ptr = null;
 
@@ -165,19 +161,22 @@ namespace R3E
             {
                 view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
 
+                if (ptr == null)
+                    return null;
+
                 var res = Marshal.PtrToStructure((IntPtr)ptr, SharedType);
                 if (res == null)
-                    return false;
+                    return null;
 
-                data = (Shared)res;
-                return true;
+                return (Shared)res;
             }
             catch (Exception e)
             {
                 Startup.logger.Error("Error reading shared memory", e);
-                return false;
+                return null;
             }
-            finally {
+            finally
+            {
                 view.SafeMemoryMappedViewHandle.ReleasePointer();
             }
         }

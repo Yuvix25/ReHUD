@@ -13,7 +13,7 @@
   },
   "scripts": {
     "prestart": "tsc && webpack --devtool source-map --config webpack.config.js",
-    "start": "electronize start  /args --inspect=9090",
+    "start": "electronize start /args --inspect=9090",
     "build": "npm run prestart && electronize build /target win"
   },
   "type": "module"

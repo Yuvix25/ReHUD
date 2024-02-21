@@ -2,10 +2,11 @@ using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using R3E.Data;
 using ReHUD;
+using PrecisionTiming;
 
 namespace R3E
 {
-    class SharedMemory : IDisposable
+    sealed class SharedMemory : IDisposable
     {
         static readonly int SharedSize = Marshal.SizeOf(typeof(Shared));
         static readonly Type SharedType = typeof(Shared);
@@ -13,15 +14,17 @@ namespace R3E
         private readonly ProcessObserver raceroomObserver;
         private TimeSpan timeInterval;
 
+        private readonly AutoResetEvent resetEvent;
+        private readonly PrecisionTimer dataTimer;
+
         private CancellationTokenSource cancellationTokenSource = new();
 
         private Shared? _data;
-        private volatile PeriodicTimer dataTimer;
 
         private volatile bool _isRunning = false;
         public bool IsRunning { get => _isRunning; }
 
-        public event Action<Shared> OnDataReady;
+        public event Func<Shared, Task>? OnDataReady;
 
         public long FrameRate
         {
@@ -29,8 +32,9 @@ namespace R3E
             set
             {
                 timeInterval = TimeSpan.FromMilliseconds(1000.0 / value);
-                dataTimer.Dispose();
-                dataTimer = new(timeInterval);
+                dataTimer.Stop();
+                dataTimer.SetPeriod(timeInterval.Milliseconds);
+                dataTimer.Start();
             }
         }
 
@@ -42,8 +46,11 @@ namespace R3E
             this.raceroomObserver.OnProcessStarted += RaceRoomStarted;
             this.raceroomObserver.OnProcessStopped += RaceRoomStopped;
 
+            resetEvent = new AutoResetEvent(false);
             timeInterval = refreshRate ?? TimeSpan.FromMilliseconds(16.6); // ~60fps
-            dataTimer = new(timeInterval);
+            dataTimer = new();
+            dataTimer.SetPeriod(timeInterval.Milliseconds);
+            dataTimer.SetAction(() => resetEvent.Set());
         }
 
         private void RaceRoomStarted()
@@ -74,42 +81,52 @@ namespace R3E
             Shared? data;
 
             var found = false;
-
+            dataTimer.Start();
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (await dataTimer.WaitForNextTickAsync(cancellationToken))
+                resetEvent.WaitOne();
+                resetEvent.Reset();
+                if (mmview == null)
                 {
-                    if (mmview == null)
+                    if (!found)
                     {
-                        if (!found)
-                            Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
-
-                        found = true;
-
-                        if (Map(out mmfile, out mmview))
-                        {
-                            Startup.logger.Info("Memory mapped successfully");
-                        }
-                        else
-                        {
-                            Startup.logger.Warn("Failed to map memory, trying again in 1s");
-                            Thread.Sleep(1000);
-                        }
+                        Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
                     }
 
-                    if ((data = Read(mmview)).HasValue)
-                    {
-                        _isRunning = true;
-                        _data = data;
-                        OnDataReady?.Invoke(data.Value);
+                    found = true;
 
+                    if (Map(out mmfile, out mmview))
+                    {
+                        Startup.logger.Info("Memory mapped successfully");
                     }
                     else
                     {
-                        _isRunning = false;
+                        Startup.logger.Warn("Failed to map memory, trying again in 1s");
+                        Thread.Sleep(1000);
                     }
                 }
+
+                data = Read(mmview);
+                if (data.HasValue)
+                {
+                    _isRunning = true;
+                    _data = data;
+                    var task = OnDataReady?.Invoke(data.Value);
+                    if (task != null)
+                    {
+                        await task;
+                    }
+                    else
+                    {
+                        Thread.Sleep(100);
+                    }
+                }
+                else
+                {
+                    _isRunning = false;
+                }
             }
+            dataTimer.Stop();
 
             Startup.logger.Info("Shared memory worker thread stopped");
 
@@ -124,7 +141,9 @@ namespace R3E
             raceroomObserver.OnProcessStarted -= RaceRoomStarted;
             raceroomObserver.OnProcessStopped -= RaceRoomStopped;
 
+            dataTimer.Stop();
             dataTimer.Dispose();
+            resetEvent.Dispose();
         }
 
         private static bool Map(out MemoryMappedFile? mmfile, out MemoryMappedViewAccessor? mmview)

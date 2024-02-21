@@ -34,9 +34,6 @@ public class Startup
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        //if (env.IsDevelopment())
-        //    Debugger.Launch();
-
         logFilePath = Path.Combine(JsonUserData.dataPath, "ReHUD.log");
         GlobalContext.Properties["LogFilePath"] = logFilePath;
 

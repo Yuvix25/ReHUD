@@ -113,7 +113,7 @@ public class Startup
                             Electron.IpcMain.Send(window, "port", BridgeSettings.WebPort);
                         }
                     });
-                    await CreateMainWindow(env);
+                    await CreateMainWindow();
                     await CreateSettingsWindow(env);
 
                     await Task.Delay(1000); // TODO
@@ -155,7 +155,7 @@ public class Startup
         return await Electron.WindowManager.CreateWindowAsync(options, loadUrl);
     }
 
-    private async Task CreateMainWindow(IWebHostEnvironment env)
+    private async Task CreateMainWindow()
     {
         await Electron.IpcMain.On("used-keys", (args) => {
             if (args == null)
@@ -188,9 +188,6 @@ public class Startup
             Electron.App.Quit();
             return;
         }
-
-        //if (env.IsDevelopment())
-        //    MainWindow.WebContents.OpenDevTools();
 
         MainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
         MainWindow.SetIgnoreMouseEvents(true);
@@ -407,8 +404,6 @@ public class Startup
 
         if (!env.IsDevelopment())
             SettingsWindow.RemoveMenu();
-        //else
-        //    SettingsWindow.WebContents.OpenDevTools();
 
         await Electron.IpcMain.On("restart-app", (args) =>
         {

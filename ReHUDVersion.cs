@@ -10,13 +10,11 @@ public class ReHUDVersion : UserData
     protected override string DataFilePath => "ReHUD.version";
     private Version version = DEFAULT_VERSION;
 
-    public override string Serialize()
-    {
+    public override string Serialize() {
         return version.ToString();
     }
 
-    protected override void Load(string? data)
-    {
+    protected override void Load(string? data) {
         version = TrimVersion(data);
     }
 
@@ -36,14 +34,11 @@ public class ReHUDVersion : UserData
         Save();
     }
 
-    private static void OnVersionChanged(Version previousVersion, Version version)
-    {
+    private static void OnVersionChanged(Version previousVersion, Version version) {
         Startup.logger.Info($"Upgrading ReHUD from v{previousVersion} to v{version}");
         var matchingActions = UpgradeActions.Where(x => x.Item1 > previousVersion && x.Item1 <= version);
-        foreach (var versionActions in matchingActions)
-        {
-            foreach (var action in versionActions.Item2)
-            {
+        foreach (var versionActions in matchingActions) {
+            foreach (var action in versionActions.Item2) {
                 Startup.logger.Info($"Running upgrade action v{versionActions.Item1}: {action.Item1}");
                 action.Item2();
             }
@@ -63,7 +58,7 @@ public class ReHUDVersion : UserData
                         Startup.logger.Info("Found HUD layout in settings, moving to separate file");
 
                         HudLayout hudLayoutData = HudLayout.AddHudLayout(new(true));
-                        
+
                         foreach (var element in hudLayout) {
                             if (element.Value is JArray elementData) {
                                 var id = element.Key;
@@ -85,8 +80,7 @@ public class ReHUDVersion : UserData
         }),
     };
 
-    public static Version TrimVersion(string? version)
-    {
+    public static Version TrimVersion(string? version) {
         if (version == null) return DEFAULT_VERSION;
         return Version.Parse(version.Split('v')[^1].Split('-')[0]);
     }

@@ -14,7 +14,7 @@ namespace ReHUD;
 
 public class Startup
 {
-    public static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
+    public static readonly ILog logger = LogManager.GetLogger(typeof(Startup));
     public static string? logFilePath;
 
     private IUpdateService updateService;
@@ -545,8 +545,7 @@ public class Startup
         }
     }
 
-    private static void EnableVRMode(bool enableVRMode)
-    {
+    private static void EnableVRMode(bool enableVRMode) {
         logger.Info("Setting main window background opacity: " + (enableVRMode ? "#FF" : "#00"));
         MainWindow?.SetBackgroundColor(enableVRMode ? BLACK_OPAQUE : BLACK_TRANSPARENT);
     }

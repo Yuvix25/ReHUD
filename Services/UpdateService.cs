@@ -3,13 +3,12 @@ using ElectronNET.API.Entities;
 using log4net;
 using ReHUD.Interfaces;
 using System.Net.Http.Headers;
-using System.Reflection;
 
 namespace ReHUD.Services
 {
     public class UpdateService : IUpdateService
     {
-        private static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
+        private static readonly ILog logger = LogManager.GetLogger(typeof(UpdateService));
 
         private const string githubUrl = "https://github.com/Yuvix25/ReHUD";
         private const string githubReleasesUrl = "releases/latest";

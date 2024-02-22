@@ -1,4 +1,5 @@
-﻿using ReHUD.Interfaces;
+﻿using log4net;
+using ReHUD.Interfaces;
 using System.Diagnostics;
 using System.Management;
 
@@ -6,6 +7,8 @@ namespace ReHUD.Utils
 {
     public class ProcessObserver : IProcessObserver, IDisposable
     {
+        public static readonly ILog logger = LogManager.GetLogger(typeof(ProcessObserver));
+
         private readonly List<string> processNames;
         private readonly ManagementEventWatcher startWatcher;
         private readonly ManagementEventWatcher stopWatcher;
@@ -15,9 +18,8 @@ namespace ReHUD.Utils
 
         public bool IsRunning { get => processNames.Any(processName => Process.GetProcessesByName(processName).Length > 0); }
 
-        public ProcessObserver(List<string> processNames)
-        {
-            Startup.logger.Info($"Creating process observer for {processNames.Count} process names: {string.Join(", ", processNames)}");
+        public ProcessObserver(List<string> processNames) {
+            logger.Info($"Creating process observer for {processNames.Count} process names: {string.Join(", ", processNames)}");
 
             this.processNames = processNames;
 
@@ -30,46 +32,39 @@ namespace ReHUD.Utils
             stopWatcher.EventArrived += ProcessStopped;
         }
 
-        private void ProcessStarted(object sender, EventArrivedEventArgs e)
-        {
-            Startup.logger.Info($"Got process start event for processes: {string.Join(", ", processNames)}");
+        private void ProcessStarted(object sender, EventArrivedEventArgs e) {
+            logger.Info($"Got process start event for processes: {string.Join(", ", processNames)}");
             OnProcessStarted?.Invoke();
         }
-        private void ProcessStopped(object sender, EventArrivedEventArgs e)
-        {
-            Startup.logger.Info($"Got process stop event for processes: {string.Join(", ", processNames)}");
+        private void ProcessStopped(object sender, EventArrivedEventArgs e) {
+            logger.Info($"Got process stop event for processes: {string.Join(", ", processNames)}");
             OnProcessStopped?.Invoke();
         }
 
-        public void Start()
-        {
-            Startup.logger.Info("Start Called on Process Observer");
+        public void Start() {
+            logger.Info("Start Called on Process Observer");
 
             startWatcher.Start();
             stopWatcher.Start();
 
-            if (IsRunning)
-            {
-                Startup.logger.Info("Process is already running when Start called, emitting OnProcessStarted event");
+            if (IsRunning) {
+                logger.Info("Process is already running when Start called, emitting OnProcessStarted event");
                 OnProcessStarted?.Invoke();
             }
-            else
-            {
-                Startup.logger.Info("Process is not yet running when Start called, waiting for WMI event");
+            else {
+                logger.Info("Process is not yet running when Start called, waiting for WMI event");
             }
         }
 
-        public void Stop()
-        {
-            Startup.logger.Info("Stop Called on Process Observer");
+        public void Stop() {
+            logger.Info("Stop Called on Process Observer");
 
             startWatcher.Stop();
             stopWatcher.Stop();
         }
 
-        public void Dispose()
-        {
-            Startup.logger.Info("Disposing Process Observer");
+        public void Dispose() {
+            logger.Info("Disposing Process Observer");
 
             startWatcher.Stop();
             stopWatcher.Stop();

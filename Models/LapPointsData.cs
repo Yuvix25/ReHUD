@@ -8,8 +8,7 @@ public class LapPointsData : CombinationUserData<LapPointsCombination>
 
     // combinations[trackLayoutId][classId];
 
-    protected override LapPointsCombination NewCombinationInstance()
-    {
+    protected override LapPointsCombination NewCombinationInstance() {
         return new LapPointsCombination();
     }
 }
@@ -23,10 +22,8 @@ public class LapPointsCombination
     [JsonProperty]
     private double? pointsPerMeter;
 
-    public void Set(double bestLapTime, double[] lapPoints, double pointsPerMeter)
-    {
-        if (this.bestLapTime == null || this.bestLapTime > bestLapTime)
-        {
+    public void Set(double bestLapTime, double[] lapPoints, double pointsPerMeter) {
+        if (this.bestLapTime == null || this.bestLapTime > bestLapTime) {
             this.bestLapTime = bestLapTime;
             this.lapPoints = lapPoints;
             this.pointsPerMeter = pointsPerMeter;
@@ -34,10 +31,8 @@ public class LapPointsCombination
         }
     }
 
-    public string Serialize()
-    {
-        return JsonConvert.SerializeObject(new
-        {
+    public string Serialize() {
+        return JsonConvert.SerializeObject(new {
             bestLapTime,
             lapPoints,
             pointsPerMeter

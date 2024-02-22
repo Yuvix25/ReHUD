@@ -5,8 +5,7 @@ namespace SignalRChat.Hubs
 {
     public class ReHUDHub : Hub
     {
-        public void Log(string level, double startTimestamp, double endTimestamp, string message)
-        {
+        public void Log(string level, double startTimestamp, double endTimestamp, string message) {
             try {
                 if (startTimestamp != -1) {
                     startTimestamp /= 1000;
@@ -29,20 +28,10 @@ namespace SignalRChat.Hubs
                             break;
                     }
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Console.WriteLine(e);
             }
-        }
-
-        public void SaveBestLap(int layoutId, int classId, double laptime, double[] points, double pointsPerMeter)
-        {
-            Startup.logger.Info($"SaveBestLap: layoutId={layoutId}, classId={classId}, laptime={laptime}, points={points.Length}, pointsPerMeter={pointsPerMeter}");
-            Startup.SaveBestLap(layoutId, classId, laptime, points, pointsPerMeter);
-        }
-
-        public string LoadBestLap(int layoutId, int classId)
-        {
-            return Startup.LoadBestLap(layoutId, classId);
         }
     }
 }

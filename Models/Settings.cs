@@ -1,7 +1,7 @@
-using System.Collections.Immutable;
 using Newtonsoft.Json;
+using System.Collections.Immutable;
 
-namespace ReHUD;
+namespace ReHUD.Models;
 
 public class Settings : JsonUserData
 {
@@ -11,20 +11,15 @@ public class Settings : JsonUserData
 
     public SettingsData Data => settings;
 
-    protected override void Load(string? data)
-    {
-        if (data == null)
-        {
+    protected override void Load(string? data) {
+        if (data == null) {
             settings = new SettingsData();
             return;
         }
         settings = new SettingsData(data);
     }
 
-    public override string Serialize()
-    {
-        return settings.Serialize();
-    }
+    public override string Serialize() => settings.Serialize();
 }
 
 [JsonObject(MemberSerialization.OptIn)]
@@ -51,27 +46,21 @@ public class SettingsData
     public SettingsData() {
         settings = new();
     }
-    public SettingsData(string data)
-    {
+    public SettingsData(string data) {
         settings = JsonConvert.DeserializeObject<Dictionary<string, object>>(data) ?? new();
-        foreach (var (key, value) in DefaultSettings)
-        {
-            if (!settings.ContainsKey(key))
-            {
+        foreach (var (key, value) in DefaultSettings) {
+            if (!settings.ContainsKey(key)) {
                 settings[key] = value;
             }
         }
     }
 
-    public string Serialize()
-    {
+    public string Serialize() {
         return JsonConvert.SerializeObject(settings);
     }
 
-    public void Set(string? key, object value)
-    {
-        if (key == null)
-        {
+    public void Set(string? key, object value) {
+        if (key == null) {
             Startup.logger.Error("Attempted to set null key in settings. Value: " + value.ToString());
             return;
         }
@@ -79,25 +68,21 @@ public class SettingsData
         settings[key] = value;
     }
 
-    public object? Get(string key)
-    {
-        return Contains(key) ? settings[key] : (DefaultSettings.ContainsKey(key) ? DefaultSettings[key] : null);
+    public object? Get(string key) {
+        return Contains(key) ? settings[key] : DefaultSettings.ContainsKey(key) ? DefaultSettings[key] : null;
     }
 
-    public object? Get(string key, object? orDefault)
-    {
+    public object? Get(string key, object? orDefault) {
         return Contains(key) ? settings[key] : orDefault;
     }
 
-    public object? Remove(string key)
-    {
+    public object? Remove(string key) {
         var value = Get(key);
         settings.Remove(key);
         return value;
     }
 
-    public bool Contains(string key)
-    {
+    public bool Contains(string key) {
         return settings.ContainsKey(key);
     }
 }
@@ -109,8 +94,7 @@ public class HudLayoutSettingsEntry
     public readonly string id;
     public bool active { get; set; }
 
-    public HudLayoutSettingsEntry(string id, bool active)
-    {
+    public HudLayoutSettingsEntry(string id, bool active) {
         this.id = id;
         this.active = active;
     }

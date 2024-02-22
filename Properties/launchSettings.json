@@ -1,37 +1,28 @@
 {
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:8612",
-      "sslPort": 44384
-    }
-  },
   "profiles": {
     "Electron.NET App": {
       "commandName": "Executable",
       "executablePath": "electronize",
-      "commandLineArgs": "start",
+      "commandLineArgs": "start /args --inspect=9090",
       "workingDirectory": "."
     },
-
     "http": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:5093",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5093"
     },
     "https": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:7041;http://localhost:5093",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7041;http://localhost:5093"
     },
     "IIS Express": {
       "commandName": "IISExpress",
@@ -39,6 +30,14 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    }
+  },
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:8612",
+      "sslPort": 44384
     }
   }
 }

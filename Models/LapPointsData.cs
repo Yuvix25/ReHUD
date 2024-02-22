@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace ReHUD;
+namespace ReHUD.Models;
 
 public class LapPointsData : CombinationUserData<LapPointsCombination>
 {

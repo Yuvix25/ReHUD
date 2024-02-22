@@ -1,9 +1,10 @@
-﻿using System.Diagnostics;
+﻿using ReHUD.Interfaces;
+using System.Diagnostics;
 using System.Management;
 
-namespace ReHUD
+namespace ReHUD.Utils
 {
-    public class ProcessObserver : IDisposable
+    public class ProcessObserver : IProcessObserver, IDisposable
     {
         private readonly List<string> processNames;
         private readonly ManagementEventWatcher startWatcher;
@@ -36,7 +37,7 @@ namespace ReHUD
         }
         private void ProcessStopped(object sender, EventArrivedEventArgs e)
         {
-            Startup.logger.Info($"Got process stop event for processes: {String.Join(", ", processNames)}");
+            Startup.logger.Info($"Got process stop event for processes: {string.Join(", ", processNames)}");
             OnProcessStopped?.Invoke();
         }
 

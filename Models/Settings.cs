@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using Newtonsoft.Json;
 
-namespace ReHUD;
+namespace ReHUD.Models;
 
 public class Settings : JsonUserData
 {
@@ -21,10 +21,7 @@ public class Settings : JsonUserData
         settings = new SettingsData(data);
     }
 
-    public override string Serialize()
-    {
-        return settings.Serialize();
-    }
+    public override string Serialize() => settings.Serialize();
 }
 
 [JsonObject(MemberSerialization.OptIn)]
@@ -48,7 +45,8 @@ public class SettingsData
 
     public IEnumerable<KeyValuePair<string, object>> Settings => settings;
 
-    public SettingsData() {
+    public SettingsData()
+    {
         settings = new();
     }
     public SettingsData(string data)
@@ -81,7 +79,7 @@ public class SettingsData
 
     public object? Get(string key)
     {
-        return Contains(key) ? settings[key] : (DefaultSettings.ContainsKey(key) ? DefaultSettings[key] : null);
+        return Contains(key) ? settings[key] : DefaultSettings.ContainsKey(key) ? DefaultSettings[key] : null;
     }
 
     public object? Get(string key, object? orDefault)

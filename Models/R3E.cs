@@ -204,7 +204,7 @@ namespace R3E
     namespace Data
     {
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct RaceDuration<T>
+        public struct RaceDuration<T>
         {
             public T race1;
             public T race2;
@@ -212,7 +212,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Vector3<T>
+        public struct Vector3<T>
         {
             public T x;
             public T y;
@@ -220,7 +220,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Orientation<T>
+        public struct Orientation<T>
         {
             public T pitch;
             public T yaw;
@@ -228,7 +228,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct SectorStarts<T>
+        public struct SectorStarts<T>
         {
             public T sector1;
             public T sector2;
@@ -236,7 +236,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct PlayerData
+        public struct PlayerData
         {
             // Virtual physics time
             // Unit: Ticks (1 tick = 1/400th of a second)
@@ -322,7 +322,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Flags
+        public struct Flags
         {
             // Whether yellow flag is currently active
             // -1 = no data
@@ -396,7 +396,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct CarDamage
+        public struct CarDamage
         {
             // Range: 0.0 - 1.0
             // Note: -1.0 = N/A
@@ -421,7 +421,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct TireData<T>
+        public struct TireData<T>
         {
             public T frontLeft;
             public T frontRight;
@@ -430,7 +430,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct PitMenuState
+        public struct PitMenuState
         {
             // Pit menu preset
             public Int32 preset;
@@ -451,7 +451,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct CutTrackPenalties
+        public struct CutTrackPenalties
         {
             public Int32 driveThrough;
             public Int32 stopAndGo;
@@ -461,7 +461,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct DRS
+        public struct DRS
         {
             // If DRS is equipped and allowed
             // 0 = No, 1 = Yes, -1 = N/A
@@ -479,7 +479,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct PushToPass
+        public struct PushToPass
         {
             public Int32 available;
             public Int32 engaged;
@@ -489,7 +489,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct TireTempInformation
+        public struct TireTempInformation
         {
             public TireTemperature<Single> currentTemp;
             public Single optimalTemp;
@@ -498,7 +498,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct BrakeTemp
+        public struct BrakeTemp
         {
             public Single currentTemp;
             public Single optimalTemp;
@@ -507,7 +507,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct TireTemperature<T>
+        public struct TireTemperature<T>
         {
             public T left;
             public T center;
@@ -515,7 +515,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct AidSettings
+        public struct AidSettings
         {
             // ABS; -1 = N/A, 0 = off, 1 = on, 5 = currently active
             public Int32 abs;
@@ -530,7 +530,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Sectors<T>
+        public struct Sectors<T>
         {
             public T sector1;
             public T sector2;
@@ -538,7 +538,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct DriverInfo
+        public struct DriverInfo
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
             public byte[] name; // UTF-8
@@ -558,7 +558,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct DriverData
+        public struct DriverData
         {
             public DriverInfo driverInfo;
             // Note: See the R3E.Constant.FinishStatus enum
@@ -664,7 +664,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Shared
+        public struct R3eData
         {
             //////////////////////////////////////////////////////////////////////////
             // Version

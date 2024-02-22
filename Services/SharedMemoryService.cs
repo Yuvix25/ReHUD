@@ -1,17 +1,18 @@
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using R3E.Data;
-using ReHUD;
 using PrecisionTiming;
+using ReHUD.Interfaces;
+using R3E;
 
-namespace R3E
+namespace ReHUD.Services
 {
-    sealed class SharedMemory : IDisposable
+    sealed class SharedMemoryService : ISharedMemoryService, IDisposable
     {
-        static readonly int SharedSize = Marshal.SizeOf(typeof(Shared));
-        static readonly Type SharedType = typeof(Shared);
+        static readonly int SharedSize = Marshal.SizeOf(typeof(R3eData));
+        static readonly Type SharedType = typeof(R3eData);
 
-        private readonly ProcessObserver raceroomObserver;
+        private readonly IRaceRoomObserver raceRoomObserver;
         private TimeSpan timeInterval;
 
         private readonly AutoResetEvent resetEvent;
@@ -19,16 +20,16 @@ namespace R3E
 
         private CancellationTokenSource cancellationTokenSource = new();
 
-        private Shared? _data;
+        private R3eData? _data;
 
         private volatile bool _isRunning = false;
         public bool IsRunning { get => _isRunning; }
 
-        public event Func<Shared, Task>? OnDataReady;
+        public event Action<R3eData>? OnDataReady;
 
         public long FrameRate
         {
-            get { return (long)(1000.0 / timeInterval.TotalMilliseconds); }
+            get => (long)(1000.0 / timeInterval.TotalMilliseconds);
             set
             {
                 timeInterval = TimeSpan.FromMilliseconds(1000.0 / value);
@@ -38,16 +39,16 @@ namespace R3E
             }
         }
 
-        public Shared? Data { get => _data; }
+        public R3eData? Data { get => _data; }
 
-        public SharedMemory(ProcessObserver raceroomObserver, TimeSpan? refreshRate)
+        public SharedMemoryService(IRaceRoomObserver raceRoomObserver)
         {
-            this.raceroomObserver = raceroomObserver;
-            this.raceroomObserver.OnProcessStarted += RaceRoomStarted;
-            this.raceroomObserver.OnProcessStopped += RaceRoomStopped;
+            this.raceRoomObserver = raceRoomObserver;
+            this.raceRoomObserver.OnProcessStarted += RaceRoomStarted;
+            this.raceRoomObserver.OnProcessStopped += RaceRoomStopped;
 
             resetEvent = new AutoResetEvent(false);
-            timeInterval = refreshRate ?? TimeSpan.FromMilliseconds(16.6); // ~60fps
+            timeInterval = TimeSpan.FromMilliseconds(16.6); // ~60fps
             dataTimer = new();
             dataTimer.SetPeriod(timeInterval.Milliseconds);
             dataTimer.SetAction(() => resetEvent.Set());
@@ -62,6 +63,7 @@ namespace R3E
 
             cancellationTokenSource = new();
             Task.Run(() => ProcessSharedMemory(cancellationTokenSource.Token), cancellationTokenSource.Token);
+            dataTimer.Start();
         }
 
         private void RaceRoomStopped()
@@ -69,6 +71,7 @@ namespace R3E
             Startup.logger.Info($"RaceRoom stopped, stopping shared memory worker");
 
             cancellationTokenSource.Cancel();
+            dataTimer.Stop();
             _isRunning = false;
         }
 
@@ -78,10 +81,9 @@ namespace R3E
 
             MemoryMappedFile? mmfile = null;
             MemoryMappedViewAccessor? mmview = null;
-            Shared? data;
+            R3eData? data;
 
             var found = false;
-            dataTimer.Start();
             while (!cancellationToken.IsCancellationRequested)
             {
                 resetEvent.WaitOne();
@@ -111,22 +113,13 @@ namespace R3E
                 {
                     _isRunning = true;
                     _data = data;
-                    var task = OnDataReady?.Invoke(data.Value);
-                    if (task != null)
-                    {
-                        await task;
-                    }
-                    else
-                    {
-                        Thread.Sleep(100);
-                    }
+                    OnDataReady?.Invoke(data.Value);
                 }
                 else
                 {
                     _isRunning = false;
                 }
             }
-            dataTimer.Stop();
 
             Startup.logger.Info("Shared memory worker thread stopped");
 
@@ -138,8 +131,8 @@ namespace R3E
         {
             cancellationTokenSource.Cancel();
 
-            raceroomObserver.OnProcessStarted -= RaceRoomStarted;
-            raceroomObserver.OnProcessStopped -= RaceRoomStopped;
+            raceRoomObserver.OnProcessStarted -= RaceRoomStarted;
+            raceRoomObserver.OnProcessStopped -= RaceRoomStopped;
 
             dataTimer.Stop();
             dataTimer.Dispose();
@@ -169,7 +162,7 @@ namespace R3E
             }
         }
 
-        private static unsafe Shared? Read(MemoryMappedViewAccessor? view)
+        private static unsafe R3eData? Read(MemoryMappedViewAccessor? view)
         {
             if (view == null)
                 return null;
@@ -187,7 +180,7 @@ namespace R3E
                 if (res == null)
                     return null;
 
-                return (Shared)res;
+                return (R3eData)res;
             }
             catch (Exception e)
             {

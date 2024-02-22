@@ -1,8 +1,9 @@
 using Newtonsoft.Json;
 
-namespace ReHUD;
+namespace ReHUD.Models;
 
-public abstract class UserData {
+public abstract class UserData
+{
     public static readonly string dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD");
 
     public virtual string SubPath { get; } = "";
@@ -26,11 +27,15 @@ public abstract class UserData {
         WriteDataFile(DataFilePath, Serialize());
     }
 
-    public virtual bool Delete() {
-        try {
+    public virtual bool Delete()
+    {
+        try
+        {
             File.Delete(PathTo(DataFilePath));
             return true;
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             Startup.logger.Error($"Failed to delete file {DataFilePath}: {e}");
             return false;
         }
@@ -80,7 +85,7 @@ public abstract class CombinationUserData<C> : JsonUserData
     [JsonProperty]
     protected Dictionary<int, Dictionary<int, C>> combinations;
 
-    protected CombinationUserData() : this(new Dictionary<int, Dictionary<int, C>>()){  }
+    protected CombinationUserData() : this(new Dictionary<int, Dictionary<int, C>>()) { }
     protected CombinationUserData(Dictionary<int, Dictionary<int, C>> combinations)
     {
         this.combinations = combinations;

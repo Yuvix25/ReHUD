@@ -4,9 +4,10 @@ using log4net;
 using log4net.Config;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using R3E;
+using ReHUD.Extensions;
+using ReHUD.Interfaces;
+using ReHUD.Models;
 using SignalRChat.Hubs;
-using System.Net.Http.Headers;
 using System.Reflection;
 
 namespace ReHUD;
@@ -14,12 +15,12 @@ namespace ReHUD;
 public class Startup
 {
     public static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
-    string? logFilePath;
+    public static string? logFilePath;
 
-    private static readonly List<string> raceroomProcessNames = new() { "RRRE", "RRRE64" };
-
-    private ProcessObserver raceroomObserver;
-    private SharedMemory sharedMemory;
+    private IUpdateService updateService;
+    private IRaceRoomObserver raceroomObserver;
+    private ISharedMemoryService sharedMemoryService;
+    private IR3eDataService r3EDataService;
 
     public Startup(IConfiguration configuration) {
         Configuration = configuration;
@@ -27,29 +28,22 @@ public class Startup
 
     public IConfiguration Configuration { get; }
 
-    // This method gets called by the runtime. Use this method to add services to the container.
-    public void ConfigureServices(IServiceCollection services) {
-        services.AddSignalR();
-        services.AddRazorPages();
-    }
-
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env) {
-        logFilePath = Path.Combine(JsonUserData.dataPath, "ReHUD.log");
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IUpdateService updateService, IRaceRoomObserver raceRoomObserver, ISharedMemoryService sharedMemoryService, IR3eDataService r3EDataService) {
+        logFilePath = Path.Combine(UserData.dataPath, "ReHUD.log");
         GlobalContext.Properties["LogFilePath"] = logFilePath;
 
         var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
         XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
-        raceroomObserver = new(raceroomProcessNames);
-        sharedMemory = new(raceroomObserver, null);
-
-        raceroomObserver.Start();
+        this.updateService = updateService;
+        this.raceroomObserver = raceRoomObserver;
+        this.sharedMemoryService = sharedMemoryService;
+        this.r3EDataService = r3EDataService;
 
         version.Load();
-        _ = AppVersion().ContinueWith(async (t) => {
+        _ = updateService.GetAppVersion().ContinueWith(async (t) => {
             await version.Update(t.Result);
-            lapPointsData.Load();
             settings.Load();
             await LoadSettings();
 
@@ -97,6 +91,8 @@ public class Startup
         if (HybridSupport.IsElectronActive) {
             Electron.App.Ready += async () => {
                 try {
+                    r3EDataService.Load();
+
                     await Electron.IpcMain.On("get-port", (args) => {
                         var windows = new[] { MainWindow, SettingsWindow }.Where(x => x != null);
 
@@ -106,6 +102,8 @@ public class Startup
                     });
                     await CreateMainWindow();
                     await CreateSettingsWindow(env);
+
+                    raceroomObserver.Start();
 
                     await Task.Delay(1000); // TODO
                     if (settings.DidLoad) {
@@ -123,8 +121,6 @@ public class Startup
     public static BrowserWindow? MainWindow { get; private set; }
     public static BrowserWindow? SettingsWindow { get; private set; }
 
-    private const string githubUrl = "https://github.com/Yuvix25/ReHUD";
-    private const string githubReleasesUrl = "releases/latest";
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
     private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file named 'ReHUD.log' in C:\\Users\\<username>\\Documents\\ReHUD";
 
@@ -132,11 +128,7 @@ public class Startup
     private const string BLACK_TRANSPARENT = "#00000000";
 
     internal static readonly ReHUDVersion version = new();
-    internal static readonly FuelData fuelData = new();
-    internal static readonly LapPointsData lapPointsData = new();
     internal static readonly Settings settings = new();
-
-    private string[]? usedKeys = null;
 
     private static async Task<BrowserWindow> CreateWindowAsync(BrowserWindowOptions options, string loadUrl = "/") {
         loadUrl = "http://localhost:" + BridgeSettings.WebPort + loadUrl;
@@ -148,7 +140,7 @@ public class Startup
             if (args == null)
                 return;
 
-            usedKeys = ((JArray)args).Select(x => (string?)x).Where(x => x != null).ToArray()!;
+            r3EDataService.UsedKeys = ((JArray)args).Select(x => (string?)x).Where(x => x != null).ToArray()!;
         });
 
         MainWindow = await CreateWindowAsync(new BrowserWindowOptions() {
@@ -172,6 +164,8 @@ public class Startup
             Electron.App.Quit();
             return;
         }
+
+        r3EDataService.HUDWindow = MainWindow;
 
         MainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
         MainWindow.SetIgnoreMouseEvents(true);
@@ -286,10 +280,8 @@ public class Startup
         });
 
         await Electron.IpcMain.On("request-layout-visibility", (args) => {
-            isShown = null;
+            r3EDataService.HUDShown = null;
         });
-
-        RunLoop(MainWindow);
 
         Electron.App.BeforeQuit += async (QuitEventArgs args) => {
             args.PreventDefault();
@@ -301,20 +293,6 @@ public class Startup
         };
         MainWindow.OnClosed += () => Electron.App.Quit();
     }
-
-    public static void SaveBestLap(int layoutId, int classId, double laptime, double[] points, double pointsPerMeter) {
-        LapPointsCombination combination = lapPointsData.GetCombination(layoutId, classId);
-        combination.Set(laptime, points, pointsPerMeter);
-
-        lapPointsData.Save();
-    }
-    public static string LoadBestLap(int layoutId, int classId) {
-        LapPointsCombination? combination = lapPointsData.GetCombination(layoutId, classId, false);
-        if (combination == null)
-            return "{}";
-        return combination.Serialize();
-    }
-
 
     private static void SendHudLayout() {
         var layout = GetHudLayout();
@@ -330,15 +308,12 @@ public class Startup
         }
     }
 
-
     private async Task InitSettingsWindow() {
         Electron.IpcMain.Send(MainWindow, "settings", settings.Serialize());
         Electron.IpcMain.Send(SettingsWindow, "settings", settings.Serialize());
-        Electron.IpcMain.Send(SettingsWindow, "version", await AppVersion());
+        Electron.IpcMain.Send(SettingsWindow, "version", await updateService.GetAppVersion());
     }
 
-
-    private bool enteredEditMode = false;
     public static bool IsInEditMode { get; private set; }
 
     private async Task CreateSettingsWindow(IWebHostEnvironment env) {
@@ -367,7 +342,7 @@ public class Startup
         });
 
         await Electron.IpcMain.On("check-for-updates", async (data) => {
-            await CheckForUpdates();
+            await updateService.CheckForUpdates();
         });
 
         await Electron.IpcMain.On("lock-overlay", async (data) => {
@@ -382,27 +357,19 @@ public class Startup
 
                     logger.Info("Entering edit mode");
 
-                    enteredEditMode = true;
+                    r3EDataService.SetEnteredEditMode();
                     IsInEditMode = true;
 
-                    if (!sharedMemory.IsRunning) {
-                        var extraData = new ExtraData {
-                            forceUpdateAll = true,
-                            rawData = new R3E.Data.Shared {
-                                driverData = Array.Empty<R3E.Data.DriverData>(),
-                            },
-                            timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                        };
-                        logger.Info("Sending empty data for edit mode");
-                        await IpcCommunication.Invoke(MainWindow, "r3eData", extraData.Serialize(usedKeys));
+                    if (!sharedMemoryService.IsRunning) {
+                        await r3EDataService.SendEmptyData();
                     }
                 }
             }
             else {
-                isShown = null;
+                r3EDataService.HUDShown = null;
                 IsInEditMode = false;
 
-                if (!sharedMemory.IsRunning) {
+                if (!sharedMemoryService.IsRunning) {
                     Electron.IpcMain.Send(MainWindow, "hide");
                 }
             }
@@ -481,64 +448,6 @@ public class Startup
         }
     }
 
-    private string? appVersion;
-    private async Task<string> AppVersion() {
-        return appVersion ??= await Electron.App.GetVersionAsync();
-    }
-
-
-
-    private async Task CheckForUpdates() {
-        string currentVersion = await AppVersion();
-        logger.Info("Checking for updates (current version: v" + currentVersion + ")");
-        string? remoteUrl = await GetRedirectedUrl(githubUrl + "/" + githubReleasesUrl);
-        if (remoteUrl == null) {
-            logger.Error("Could not get remote URL for checking updates");
-            return;
-        }
-
-        string remoteVersionText = remoteUrl.Split('/')[^1];
-
-        Version current = ReHUDVersion.TrimVersion(currentVersion);
-        Version remote = ReHUDVersion.TrimVersion(remoteVersionText);
-
-        if (current.CompareTo(remote) < 0) {
-            logger.Info("Update available: " + remoteVersionText);
-
-            await ShowMessageBox("A new version is available: " + remoteVersionText, new string[] { "Show me", "Cancel" }, "Update available", MessageBoxType.info).ContinueWith((t) => {
-                if (t.Result.Response == 0) {
-                    Electron.Shell.OpenExternalAsync(remoteUrl);
-                }
-            });
-
-            return;
-        }
-        logger.Info("No updates available");
-    }
-
-    public static async Task<string?> GetRedirectedUrl(string url) {
-        //this allows you to set the settings so that we can get the redirect url
-        var handler = new HttpClientHandler() {
-            AllowAutoRedirect = false
-        };
-        string? redirectedUrl = null;
-
-        using (HttpClient client = new(handler))
-        using (HttpResponseMessage response = await client.GetAsync(url))
-        using (HttpContent content = response.Content) {
-            // ... Read the response to see if we have the redirected url
-            if (response.StatusCode == System.Net.HttpStatusCode.Found) {
-                HttpResponseHeaders headers = response.Headers;
-                if (headers != null && headers.Location != null) {
-                    redirectedUrl = headers.Location.AbsoluteUri;
-                }
-            }
-        }
-
-        return redirectedUrl;
-    }
-
-
     public static async Task<MessageBoxResult> ShowMessageBox(BrowserWindow? window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error) {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
         if (window == null)
@@ -606,8 +515,8 @@ public class Startup
                     await LoadMonitor(value.ToString());
                     break;
                 case "framerate":
-                    if (IsInt(value))
-                        sharedMemory.FrameRate = (long)value;
+                    if (value.IsInt())
+                        sharedMemoryService.FrameRate = (long)value;
                     break;
                 case "hardwareAcceleration":
                     if (value is bool hardwareAcceleration)
@@ -640,15 +549,6 @@ public class Startup
     {
         logger.Info("Setting main window background opacity: " + (enableVRMode ? "#FF" : "#00"));
         MainWindow?.SetBackgroundColor(enableVRMode ? BLACK_OPAQUE : BLACK_TRANSPARENT);
-    }
-
-    private static bool IsInt(object value) {
-        return value is long
-            || value is ulong
-            || value is int
-            || value is uint
-            || value is short
-            || value is ushort;
     }
 
     private static async Task LoadMonitor(string? value = null) {
@@ -710,89 +610,6 @@ public class Startup
         Electron.IpcMain.Send(SettingsWindow, "discard-name-change", layout.Name);
     }
 
-    bool userDataClearedForMultiplier = false;
-
-    bool? isShown = null;
-
-    private void RunLoop(BrowserWindow window) {
-        fuelData.Load();
-
-        Thread.Sleep(1000);
-
-        int iter = 0;
-        ExtraData extraData = new() {
-            forceUpdateAll = false,
-        };
-
-        sharedMemory.OnDataReady += async (data) => {
-            extraData.timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            if (data.fuelUseActive != 1 && !userDataClearedForMultiplier) {
-                userDataClearedForMultiplier = true;
-                fuelData.Save();
-                fuelData.Clear();
-            }
-            else if (data.fuelUseActive == 1 && userDataClearedForMultiplier) {
-                userDataClearedForMultiplier = false;
-                fuelData.Clear();
-                fuelData.Load();
-            }
-
-            extraData.rawData = data;
-            extraData.rawData.numCars = Math.Max(data.numCars, data.position); // Bug in shared memory, sometimes numCars is updated in delay, this partially fixes it
-            extraData.rawData.driverData = extraData.rawData.driverData.Take(extraData.rawData.numCars).ToArray();
-            if (data.layoutId != -1 && data.vehicleInfo.modelId != -1 && iter % sharedMemory.FrameRate == 0) {
-                FuelCombination combination = fuelData.GetCombination(data.layoutId, data.vehicleInfo.modelId);
-                extraData.fuelPerLap = combination.GetAverageFuelUsage();
-                extraData.fuelLastLap = combination.GetLastLapFuelUsage();
-                extraData.averageLapTime = combination.GetAverageLapTime();
-                extraData.bestLapTime = combination.GetBestLapTime();
-                Tuple<int, double> lapData = Utilities.GetEstimatedLapCount(data, combination);
-                extraData.estimatedRaceLapCount = lapData.Item1;
-                extraData.lapsUntilFinish = lapData.Item2;
-                iter = 0;
-            }
-            iter++;
-
-            try {
-                SaveData(data);
-            }
-            catch (Exception e) {
-                logger.Error("Error saving data", e);
-            }
-
-            lastLap = data.completedLaps;
-            bool notDriving = data.gameInMenus == 1 || (data.gamePaused == 1 && data.gameInReplay == 0) || data.sessionType == -1;
-            if (enteredEditMode) {
-                extraData.forceUpdateAll = true;
-                await IpcCommunication.Invoke(window, "r3eData", extraData.Serialize(usedKeys));
-                extraData.forceUpdateAll = false;
-                enteredEditMode = false;
-            }
-            else {
-                await IpcCommunication.Invoke(window, "r3eData", extraData.Serialize(usedKeys));
-            }
-
-            if (notDriving) {
-                if (window != null && (isShown ?? true)) {
-                    Electron.IpcMain.Send(window, "hide");
-                    isShown = false;
-                }
-
-                recordingData = false;
-
-                if (data.sessionType == -1) {
-                    lastLap = -1;
-                    lastFuel = -1;
-                }
-            }
-            else if (window != null && !(isShown ?? false)) {
-                Electron.IpcMain.Send(window, "show");
-                window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
-                isShown = true;
-            }
-        };
-    }
-
     public static Task<Display[]> GetDisplays() {
         return Electron.Screen.GetAllDisplaysAsync();
     }
@@ -806,38 +623,5 @@ public class Startup
 
     public static async Task<Display?> GetDisplayById(string id) {
         return Array.Find(await GetDisplays(), x => x.Id == id);
-    }
-
-
-    private bool recordingData = false;
-    private double lastFuel = -1;
-    private int lastLap = -1;
-    private void SaveData(R3E.Data.Shared data) {
-        if (lastLap == -1 || lastLap == data.completedLaps || fuelData == null)
-            return;
-
-        if (!recordingData) {
-            recordingData = true;
-            lastFuel = data.fuelLeft;
-            return;
-        }
-
-        var fuelNow = data.vehicleInfo.engineType == 1 ? data.batterySoC : data.fuelLeft;
-
-        int modelId = data.vehicleInfo.modelId;
-        int layoutId = data.layoutId;
-        FuelCombination combo = fuelData.GetCombination(layoutId, modelId);
-
-        if (data.lapTimePreviousSelf > 0)
-            combo.AddLapTime(data.lapTimePreviousSelf);
-
-        if (data.fuelUseActive >= 1 && lastFuel != -1) {
-            combo.AddFuelUsage(lastFuel - fuelNow, data.lapTimePreviousSelf > 0);
-        }
-
-        if (data.fuelUseActive <= 1)
-            fuelData.Save();
-
-        lastFuel = fuelNow;
     }
 }

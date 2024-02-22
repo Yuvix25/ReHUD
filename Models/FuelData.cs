@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace ReHUD;
+namespace ReHUD.Models;
 
 public class FuelData : CombinationUserData<FuelCombination>
 {
@@ -18,7 +18,7 @@ public class FuelData : CombinationUserData<FuelCombination>
 public class FuelCombination
 {
     private const int MAX_DATA_SIZE = 20;
-    
+
     [JsonProperty]
     private readonly LinkedList<double> fuelUsage = new();
     [JsonProperty]

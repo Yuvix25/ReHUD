@@ -1,15 +1,17 @@
 using System.Diagnostics;
+using R3E.Data;
+using ReHUD.Models;
 
-namespace R3E
+namespace ReHUD.Utils
 {
     public static class Utilities
     {
-        public static Single RpsToRpm(Single rps)
+        public static float RpsToRpm(float rps)
         {
-            return rps * (60 / (2 * (Single)Math.PI));
+            return rps * (60 / (2 * (float)Math.PI));
         }
 
-        public static Single MpsToKph(Single mps)
+        public static float MpsToKph(float mps)
         {
             return mps * 3.6f;
         }
@@ -22,7 +24,7 @@ namespace R3E
         /// <summary>
         /// Returns either the estimated total number of laps and number of laps left, or null if the data is not available. <total, left>
         /// </summary>
-        internal static Tuple<int, double> GetEstimatedLapCount(Data.Shared data, ReHUD.FuelCombination combination)
+        internal static Tuple<int, double> GetEstimatedLapCount(R3eData data, FuelCombination combination)
         {
             double fraction = data.lapDistanceFraction;
 
@@ -30,10 +32,10 @@ namespace R3E
             double leaderCurrentLaptime = data.lapTimeCurrentSelf;
             int leaderCompletedLaps = data.completedLaps;
 
-            Data.DriverData? leader_ = GetLeader(data);
+            DriverData? leader_ = GetLeader(data);
             if (leader_ != null)
             {
-                Data.DriverData leader = leader_.Value;
+                DriverData leader = leader_.Value;
                 if (leader.finishStatus == 1)
                 {
                     return new Tuple<int, double>(data.completedLaps + 1, 1 - fraction);
@@ -53,7 +55,7 @@ namespace R3E
             }
 
 
-            if (leaderCompletedLaps == -1 || (leaderCompletedLaps == -1 && leaderFraction == -1))
+            if (leaderCompletedLaps == -1 || leaderCompletedLaps == -1 && leaderFraction == -1)
             {
                 return new Tuple<int, double>(-1, -1);
             }
@@ -114,9 +116,9 @@ namespace R3E
             return new Tuple<int, double>(res + data.completedLaps, res - fraction);
         }
 
-        internal static Data.DriverData? GetLeader(Data.Shared data)
+        internal static DriverData? GetLeader(R3eData data)
         {
-            foreach (Data.DriverData leader in data.driverData)
+            foreach (DriverData leader in data.driverData)
             {
                 if (leader.place == 1)
                 {

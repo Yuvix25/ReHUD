@@ -1,6 +1,6 @@
 ﻿namespace ReHUD.Interfaces
 {
-    public interface IRaceRoomObserver : IProcessObserver
+    public interface IRaceRoomObserver : IProcessObserver, IDisposable
     {
     }
 }

@@ -8,8 +8,7 @@ public class FuelData : CombinationUserData<FuelCombination>
 
     // combinations[trackLayoutId][carId];
 
-    protected override FuelCombination NewCombinationInstance()
-    {
+    protected override FuelCombination NewCombinationInstance() {
         return new FuelCombination();
     }
 }
@@ -30,48 +29,40 @@ public class FuelCombination
     private double averageLapTime = -1;
     private double lastFuel = -1;
 
-    public void AddFuelUsage(double fuelUsage, bool valid)
-    {
+    public void AddFuelUsage(double fuelUsage, bool valid) {
         if (fuelUsage <= 0)
             return;
 
         lastFuel = fuelUsage;
 
-        if (valid)
-        {
+        if (valid) {
             averageFuelUsage = -1;
             this.fuelUsage.AddLast(fuelUsage);
-            if (this.fuelUsage.Count > MAX_DATA_SIZE)
-            {
+            if (this.fuelUsage.Count > MAX_DATA_SIZE) {
                 this.fuelUsage.RemoveFirst();
             }
         }
     }
-    public void AddFuelUsage(double fuelUsage)
-    {
+    public void AddFuelUsage(double fuelUsage) {
         AddFuelUsage(fuelUsage, true);
     }
 
-    public void AddLapTime(double lapTime)
-    {
+    public void AddLapTime(double lapTime) {
         if (lapTime <= 0)
             return;
 
         averageLapTime = -1;
         lapTimes.AddLast(lapTime);
-        if (lapTimes.Count > MAX_DATA_SIZE)
-        {
+        if (lapTimes.Count > MAX_DATA_SIZE) {
             lapTimes.RemoveFirst();
         }
 
-        if (bestLapTime == -1 || lapTime < bestLapTime)
-        {
+        if (bestLapTime == -1 || lapTime < bestLapTime) {
             bestLapTime = lapTime;
         }
     }
 
-    public double GetAverageFuelUsage()
-    {
+    public double GetAverageFuelUsage() {
         if (averageFuelUsage != -1)
             return averageFuelUsage;
 
@@ -79,24 +70,21 @@ public class FuelCombination
             return -1;
 
         double sum = 0;
-        foreach (double fuel in fuelUsage)
-        {
+        foreach (double fuel in fuelUsage) {
             sum += fuel;
         }
         averageFuelUsage = sum / fuelUsage.Count;
         return averageFuelUsage;
     }
 
-    public double GetLastLapFuelUsage()
-    {
+    public double GetLastLapFuelUsage() {
         if (fuelUsage.Count > 0)
             return lastFuel;
 
         return -1;
     }
 
-    public double GetAverageLapTime()
-    {
+    public double GetAverageLapTime() {
         if (averageLapTime != -1)
             return averageLapTime;
 
@@ -104,16 +92,14 @@ public class FuelCombination
             return -1;
 
         double sum = 0;
-        foreach (double lapTime in lapTimes)
-        {
+        foreach (double lapTime in lapTimes) {
             sum += lapTime;
         }
         averageLapTime = sum / lapTimes.Count;
         return averageLapTime;
     }
 
-    public double GetBestLapTime()
-    {
+    public double GetBestLapTime() {
         return bestLapTime;
     }
 }

@@ -6,13 +6,12 @@ using ReHUD.Extensions;
 using ReHUD.Interfaces;
 using ReHUD.Models;
 using ReHUD.Utils;
-using System.Reflection;
 
 namespace ReHUD.Services
 {
     public class R3eDataService : IR3eDataService, IDisposable
     {
-        public static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
+        public static readonly ILog logger = LogManager.GetLogger(typeof(R3eDataService));
 
         private R3eData data;
         private R3eExtraData extraData;
@@ -190,7 +189,7 @@ namespace ReHUD.Services
                 await Task.WhenAll(saveDataTask(), updateHUDTask(), updateHUDStateTask());
             }
 
-            logger.Info("Shared R3eDataService worker thread stopped");
+            logger.Info("R3eDataService worker thread stopped");
         }
 
         private void SaveData(R3eData data) {

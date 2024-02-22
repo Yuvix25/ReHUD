@@ -1,14 +1,17 @@
+using log4net;
+using PrecisionTiming;
+using R3E;
+using R3E.Data;
+using ReHUD.Interfaces;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
-using R3E.Data;
-using PrecisionTiming;
-using ReHUD.Interfaces;
-using R3E;
 
 namespace ReHUD.Services
 {
     sealed class SharedMemoryService : ISharedMemoryService, IDisposable
     {
+        public static readonly ILog logger = LogManager.GetLogger(typeof(SharedMemoryService));
+
         static readonly int SharedSize = Marshal.SizeOf(typeof(R3eData));
         static readonly Type SharedType = typeof(R3eData);
 
@@ -27,11 +30,9 @@ namespace ReHUD.Services
 
         public event Action<R3eData>? OnDataReady;
 
-        public long FrameRate
-        {
+        public long FrameRate {
             get => (long)(1000.0 / timeInterval.TotalMilliseconds);
-            set
-            {
+            set {
                 timeInterval = TimeSpan.FromMilliseconds(1000.0 / value);
                 dataTimer.Stop();
                 dataTimer.SetPeriod(timeInterval.Milliseconds);
@@ -41,94 +42,84 @@ namespace ReHUD.Services
 
         public R3eData? Data { get => _data; }
 
-        public SharedMemoryService(IRaceRoomObserver raceRoomObserver)
-        {
+        public SharedMemoryService(IRaceRoomObserver raceRoomObserver) {
             this.raceRoomObserver = raceRoomObserver;
+
             this.raceRoomObserver.OnProcessStarted += RaceRoomStarted;
             this.raceRoomObserver.OnProcessStopped += RaceRoomStopped;
 
             resetEvent = new AutoResetEvent(false);
             timeInterval = TimeSpan.FromMilliseconds(16.6); // ~60fps
             dataTimer = new();
+
             dataTimer.SetPeriod(timeInterval.Milliseconds);
             dataTimer.SetAction(() => resetEvent.Set());
         }
 
-        private void RaceRoomStarted()
-        {
-            Startup.logger.Info($"RaceRoom started, starting shared memory worker");
+        private void RaceRoomStarted() {
+            logger.Info($"RaceRoom started, starting shared memory worker");
 
             cancellationTokenSource.Cancel();
             cancellationTokenSource.Dispose();
 
             cancellationTokenSource = new();
-            Task.Run(() => ProcessSharedMemory(cancellationTokenSource.Token), cancellationTokenSource.Token);
             dataTimer.Start();
+            Task.Run(() => ProcessSharedMemory(cancellationTokenSource.Token), cancellationTokenSource.Token);
         }
 
-        private void RaceRoomStopped()
-        {
-            Startup.logger.Info($"RaceRoom stopped, stopping shared memory worker");
+        private void RaceRoomStopped() {
+            logger.Info($"RaceRoom stopped, stopping shared memory worker");
 
             cancellationTokenSource.Cancel();
             dataTimer.Stop();
             _isRunning = false;
         }
 
-        private async Task ProcessSharedMemory(CancellationToken cancellationToken)
-        {
-            Startup.logger.Info("Starting Shared memory Worker Thread");
+        private async Task ProcessSharedMemory(CancellationToken cancellationToken) {
+            logger.Info("Starting Shared memory Worker Thread");
 
             MemoryMappedFile? mmfile = null;
             MemoryMappedViewAccessor? mmview = null;
             R3eData? data;
 
             var found = false;
-            while (!cancellationToken.IsCancellationRequested)
-            {
+            while (!cancellationToken.IsCancellationRequested) {
                 resetEvent.WaitOne();
                 resetEvent.Reset();
-                if (mmview == null)
-                {
-                    if (!found)
-                    {
-                        Startup.logger.Info("Found RRRE.exe, mapping shared memory...");
+                if (mmview == null) {
+                    if (!found) {
+                        logger.Info("Found RRRE.exe, mapping shared memory...");
                     }
 
                     found = true;
 
-                    if (Map(out mmfile, out mmview))
-                    {
-                        Startup.logger.Info("Memory mapped successfully");
+                    if (Map(out mmfile, out mmview)) {
+                        logger.Info("Memory mapped successfully");
                     }
-                    else
-                    {
-                        Startup.logger.Warn("Failed to map memory, trying again in 1s");
+                    else {
+                        logger.Warn("Failed to map memory, trying again in 1s");
                         Thread.Sleep(1000);
                     }
                 }
 
                 data = Read(mmview);
-                if (data.HasValue)
-                {
+                if (data.HasValue) {
                     _isRunning = true;
                     _data = data;
                     OnDataReady?.Invoke(data.Value);
                 }
-                else
-                {
+                else {
                     _isRunning = false;
                 }
             }
 
-            Startup.logger.Info("Shared memory worker thread stopped");
+            logger.Info("Stopped shared memory worker thread");
 
             mmfile?.Dispose();
             mmview?.Dispose();
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             cancellationTokenSource.Cancel();
 
             raceRoomObserver.OnProcessStarted -= RaceRoomStarted;
@@ -139,19 +130,16 @@ namespace ReHUD.Services
             resetEvent.Dispose();
         }
 
-        private static bool Map(out MemoryMappedFile? mmfile, out MemoryMappedViewAccessor? mmview)
-        {
+        private static bool Map(out MemoryMappedFile? mmfile, out MemoryMappedViewAccessor? mmview) {
             mmfile = null;
             mmview = null;
 
-            try
-            {
+            try {
                 mmfile = MemoryMappedFile.OpenExisting(Constant.sharedMemoryName);
                 mmview = mmfile.CreateViewAccessor(0, SharedSize);
                 return true;
             }
-            catch
-            {
+            catch {
                 mmview?.Dispose();
                 mmview = null;
 
@@ -162,15 +150,13 @@ namespace ReHUD.Services
             }
         }
 
-        private static unsafe R3eData? Read(MemoryMappedViewAccessor? view)
-        {
+        private static unsafe R3eData? Read(MemoryMappedViewAccessor? view) {
             if (view == null)
                 return null;
 
             byte* ptr = null;
 
-            try
-            {
+            try {
                 view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
 
                 if (ptr == null)
@@ -182,13 +168,11 @@ namespace ReHUD.Services
 
                 return (R3eData)res;
             }
-            catch (Exception e)
-            {
-                Startup.logger.Error("Error reading shared memory", e);
+            catch (Exception e) {
+                logger.Error("Error reading shared memory", e);
                 return null;
             }
-            finally
-            {
+            finally {
                 view.SafeMemoryMappedViewHandle.ReleasePointer();
             }
         }

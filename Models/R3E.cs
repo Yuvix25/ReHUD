@@ -654,7 +654,7 @@ namespace R3E
             // DisqualifyPenaltyIgnoredBlueFlag = 13,
             // DisqualifyPenaltyMax = 14
             public Int32 penaltyReason;
-	
+
             // -1 unavailable, 0 = ignition off, 1 = ignition on but not running, 2 = ignition on and running
             public Int32 engineState;
 
@@ -729,7 +729,7 @@ namespace R3E
 
             // If the session is time based, lap based or time based with an extra lap at the end
             public Int32 sessionLengthFormat;
- 
+
             // Unit: Meter per second (m/s)
             public Single sessionPitSpeedLimit;
 
@@ -1048,7 +1048,7 @@ namespace R3E
             public Int32 tireTypeRear;
             // Which subtype of tires the car has
             // Note: See the R3E.Constant.TireSubtype enum
-			public Int32 tireSubtypeFront;
+            public Int32 tireSubtypeFront;
             public Int32 tireSubtypeRear;
 
             // Current brake temperature (-1.0 = N/A)

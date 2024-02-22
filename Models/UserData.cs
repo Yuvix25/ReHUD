@@ -14,54 +14,44 @@ public abstract class UserData
 
     public bool DidLoad { get; private set; } = false;
 
-    public void Load()
-    {
+    public void Load() {
         DidLoad = true;
         Load(ReadDataFile(DataFilePath));
     }
 
     protected abstract void Load(string? data);
 
-    public virtual void Save()
-    {
+    public virtual void Save() {
         WriteDataFile(DataFilePath, Serialize());
     }
 
-    public virtual bool Delete()
-    {
-        try
-        {
+    public virtual bool Delete() {
+        try {
             File.Delete(PathTo(DataFilePath));
             return true;
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             Startup.logger.Error($"Failed to delete file {DataFilePath}: {e}");
             return false;
         }
     }
 
-    public string PathTo(string name)
-    {
+    public string PathTo(string name) {
         return Path.Combine(dataPath, SubPath, name);
     }
 
-    private string? ReadDataFile(string name)
-    {
-        try
-        {
+    private string? ReadDataFile(string name) {
+        try {
             var path = PathTo(name);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             return File.ReadAllText(path);
         }
-        catch
-        {
+        catch {
             return DEFAULT_WHEN_EMPTY;
         }
     }
 
-    private void WriteDataFile(string name, string data)
-    {
+    private void WriteDataFile(string name, string data) {
         File.WriteAllText(PathTo(name), data);
     }
 }
@@ -70,8 +60,7 @@ public abstract class UserData
 public abstract class JsonUserData : UserData
 {
     protected override string DEFAULT_WHEN_EMPTY => "{}";
-    public override string Serialize()
-    {
+    public override string Serialize() {
         return JsonConvert.SerializeObject(this);
     }
 }
@@ -86,27 +75,21 @@ public abstract class CombinationUserData<C> : JsonUserData
     protected Dictionary<int, Dictionary<int, C>> combinations;
 
     protected CombinationUserData() : this(new Dictionary<int, Dictionary<int, C>>()) { }
-    protected CombinationUserData(Dictionary<int, Dictionary<int, C>> combinations)
-    {
+    protected CombinationUserData(Dictionary<int, Dictionary<int, C>> combinations) {
         this.combinations = combinations;
     }
 
-    public C? GetCombination(int id1, int id2, bool createIfMissing)
-    {
-        if (!combinations.ContainsKey(id1))
-        {
-            if (!createIfMissing)
-            {
+    public C? GetCombination(int id1, int id2, bool createIfMissing) {
+        if (!combinations.ContainsKey(id1)) {
+            if (!createIfMissing) {
                 return default;
             }
             combinations.Add(id1, new Dictionary<int, C>());
         }
 
         Dictionary<int, C> layoutCombos = combinations[id1];
-        if (!layoutCombos.ContainsKey(id2))
-        {
-            if (!createIfMissing)
-            {
+        if (!layoutCombos.ContainsKey(id2)) {
+            if (!createIfMissing) {
                 return default;
             }
             layoutCombos.Add(id2, NewCombinationInstance());
@@ -115,35 +98,28 @@ public abstract class CombinationUserData<C> : JsonUserData
         return layoutCombos[id2];
     }
 
-    public C GetCombination(int id1, int id2)
-    {
+    public C GetCombination(int id1, int id2) {
         return GetCombination(id1, id2, true)!;
     }
 
-    public C SetCombination(int id1, int id2, C combination)
-    {
-        if (!combinations.ContainsKey(id1))
-        {
+    public C SetCombination(int id1, int id2, C combination) {
+        if (!combinations.ContainsKey(id1)) {
             combinations.Add(id1, new Dictionary<int, C>());
         }
 
         Dictionary<int, C> layoutCombos = combinations[id1];
-        if (!layoutCombos.ContainsKey(id2))
-        {
+        if (!layoutCombos.ContainsKey(id2)) {
             layoutCombos.Add(id2, combination);
         }
-        else
-        {
+        else {
             layoutCombos[id2] = combination;
         }
 
         return combination;
     }
 
-    protected override void Load(string? data)
-    {
-        if (data == null)
-        {
+    protected override void Load(string? data) {
+        if (data == null) {
             combinations = new Dictionary<int, Dictionary<int, C>>();
             return;
         }
@@ -157,8 +133,7 @@ public abstract class CombinationUserData<C> : JsonUserData
             combinations = loadedData.combinations;
     }
 
-    public void Clear()
-    {
+    public void Clear() {
         combinations.Clear();
     }
 }

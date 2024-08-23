@@ -327,7 +327,7 @@ public class Startup
     private async Task CreateSettingsWindow(IWebHostEnvironment env) {
         SettingsWindow = await CreateWindowAsync(new BrowserWindowOptions() {
             Width = 800,
-            Height = 600,
+            Height = 640,
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
             WebPreferences = new WebPreferences() {
                 EnableRemoteModule = true,

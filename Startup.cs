@@ -20,7 +20,7 @@ public class Startup
     private IUpdateService updateService;
     private IRaceRoomObserver raceroomObserver;
     private ISharedMemoryService sharedMemoryService;
-    private IR3eDataService r3EDataService;
+    private IR3EDataService r3eDataService;
 
     public Startup(IConfiguration configuration) {
         Configuration = configuration;
@@ -29,7 +29,7 @@ public class Startup
     public IConfiguration Configuration { get; }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IUpdateService updateService, IRaceRoomObserver raceRoomObserver, ISharedMemoryService sharedMemoryService, IR3eDataService r3EDataService) {
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IUpdateService updateService, IRaceRoomObserver raceRoomObserver, ISharedMemoryService sharedMemoryService, IR3EDataService r3eDataService) {
         logFilePath = Path.Combine(UserData.dataPath, "ReHUD.log");
         GlobalContext.Properties["LogFilePath"] = logFilePath;
 
@@ -39,7 +39,7 @@ public class Startup
         this.updateService = updateService;
         this.raceroomObserver = raceRoomObserver;
         this.sharedMemoryService = sharedMemoryService;
-        this.r3EDataService = r3EDataService;
+        this.r3eDataService = r3eDataService;
 
         version.Load();
         _ = updateService.GetAppVersion().ContinueWith(async (t) => {
@@ -91,7 +91,7 @@ public class Startup
         if (HybridSupport.IsElectronActive) {
             Electron.App.Ready += async () => {
                 try {
-                    r3EDataService.Load();
+                    r3eDataService.Load();
 
                     await Electron.IpcMain.On("get-port", (args) => {
                         var windows = new[] { MainWindow, SettingsWindow }.Where(x => x != null);
@@ -140,7 +140,7 @@ public class Startup
             if (args == null)
                 return;
 
-            r3EDataService.UsedKeys = ((JArray)args).Select(x => (string?)x).Where(x => x != null).ToArray()!;
+            r3eDataService.UsedKeys = ((JArray)args).Select(x => (string?)x).Where(x => x != null).ToArray()!;
         });
 
         MainWindow = await CreateWindowAsync(new BrowserWindowOptions() {
@@ -160,12 +160,12 @@ public class Startup
 
         bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => { });
         if (!gotLock) {
-            await ShowMessageBox(MainWindow, anotherInstanceMessage, "Error", MessageBoxType.error);
+            await ShowMessageBox(MainWindow, anotherInstanceMessage, ERROR_TITLE, MessageBoxType.error);
             Electron.App.Quit();
             return;
         }
 
-        r3EDataService.HUDWindow = MainWindow;
+        r3eDataService.HUDWindow = MainWindow;
 
         MainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
         MainWindow.SetIgnoreMouseEvents(true);
@@ -288,7 +288,7 @@ public class Startup
         });
 
         await Electron.IpcMain.On("request-layout-visibility", (args) => {
-            r3EDataService.HUDShown = null;
+            r3eDataService.HUDShown = null;
         });
 
         Electron.App.BeforeQuit += async (QuitEventArgs args) => {
@@ -365,16 +365,16 @@ public class Startup
 
                     logger.Info("Entering edit mode");
 
-                    r3EDataService.SetEnteredEditMode();
+                    r3eDataService.SetEnteredEditMode();
                     IsInEditMode = true;
 
                     if (!sharedMemoryService.IsRunning) {
-                        await r3EDataService.SendEmptyData();
+                        await r3eDataService.SendEmptyData();
                     }
                 }
             }
             else {
-                r3EDataService.HUDShown = null;
+                r3eDataService.HUDShown = null;
                 IsInEditMode = false;
 
                 if (!sharedMemoryService.IsRunning) {
@@ -456,19 +456,21 @@ public class Startup
         }
     }
 
-    public static async Task<MessageBoxResult> ShowMessageBox(BrowserWindow? window, string message, string title = "Error", MessageBoxType type = MessageBoxType.error) {
+    public static readonly string ERROR_TITLE = "Error";
+
+    public static async Task<MessageBoxResult> ShowMessageBox(BrowserWindow? window, string message, string? title = null, MessageBoxType type = MessageBoxType.error) {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
         if (window == null)
             return await Electron.Dialog.ShowMessageBoxAsync(options);
         return await Electron.Dialog.ShowMessageBoxAsync(window, options);
     }
 
-    public static async Task<MessageBoxResult> ShowMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error) {
+    public static async Task<MessageBoxResult> ShowMessageBox(string message, string? title = null, MessageBoxType type = MessageBoxType.error) {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
         return await Electron.Dialog.ShowMessageBoxAsync(options);
     }
 
-    public static async Task<MessageBoxResult> ShowMessageBox(string message, string[] buttons, string title = "Error", MessageBoxType type = MessageBoxType.error) {
+    public static async Task<MessageBoxResult> ShowMessageBox(string message, string[] buttons, string? title = null, MessageBoxType type = MessageBoxType.error) {
         MessageBoxOptions options = PrepareMessageBox(message, title, type);
         options.Buttons = buttons;
         return await Electron.Dialog.ShowMessageBoxAsync(options);
@@ -478,10 +480,10 @@ public class Startup
         Electron.App.Quit();
     }
 
-    private static MessageBoxOptions PrepareMessageBox(string message, string title = "Error", MessageBoxType type = MessageBoxType.error) {
+    private static MessageBoxOptions PrepareMessageBox(string message, string? title = null, MessageBoxType type = MessageBoxType.error) {
         MessageBoxOptions options = new(message) {
             Type = type,
-            Title = title,
+            Title = title ?? ERROR_TITLE,
         };
 
         switch (type) {

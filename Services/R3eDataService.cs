@@ -9,17 +9,17 @@ using ReHUD.Utils;
 
 namespace ReHUD.Services
 {
-    public class R3eDataService : IR3eDataService, IDisposable
+    public class R3EDataService : IR3EDataService, IDisposable
     {
-        public static readonly ILog logger = LogManager.GetLogger(typeof(R3eDataService));
+        public static readonly ILog logger = LogManager.GetLogger(typeof(R3EDataService));
 
-        private R3eData data;
-        private R3eExtraData extraData;
-        private FuelData fuelData;
-        private LapPointsData lapPointsData;
+        private R3EData data;
+        private R3EExtraData extraData;
+        private readonly FuelData fuelData;
+        private readonly LapPointsData lapPointsData;
 
-        private IRaceRoomObserver raceRoomObserver;
-        private ISharedMemoryService sharedMemoryService;
+        private readonly IRaceRoomObserver raceRoomObserver;
+        private readonly ISharedMemoryService sharedMemoryService;
 
         private readonly AutoResetEvent resetEvent;
         private CancellationTokenSource cancellationTokenSource = new();
@@ -27,7 +27,7 @@ namespace ReHUD.Services
         private volatile bool _isRunning = false;
         public bool IsRunning { get => _isRunning; }
 
-        public R3eExtraData Data { get => extraData; }
+        public R3EExtraData Data { get => extraData; }
         public FuelData FuelData { get => fuelData; }
         public LapPointsData LapPointsData { get => lapPointsData; }
 
@@ -43,7 +43,7 @@ namespace ReHUD.Services
         private double lastFuel = -1;
         private volatile int lastLap = -1;
 
-        public R3eDataService(IRaceRoomObserver raceRoomObserver, ISharedMemoryService sharedMemoryService) {
+        public R3EDataService(IRaceRoomObserver raceRoomObserver, ISharedMemoryService sharedMemoryService) {
             this.raceRoomObserver = raceRoomObserver;
             this.sharedMemoryService = sharedMemoryService;
 
@@ -74,36 +74,36 @@ namespace ReHUD.Services
         public void Dispose() {
             cancellationTokenSource.Cancel();
 
-            this.raceRoomObserver.OnProcessStarted -= RaceRoomStarted;
-            this.raceRoomObserver.OnProcessStopped -= RaceRoomStopped;
+            raceRoomObserver.OnProcessStarted -= RaceRoomStarted;
+            raceRoomObserver.OnProcessStopped -= RaceRoomStopped;
 
             resetEvent.Dispose();
         }
 
         private void RaceRoomStarted() {
-            logger.Info($"RaceRoom started, starting R3eDataService worker");
+            logger.Info("RaceRoom started, starting R3EDataService worker");
 
             cancellationTokenSource.Cancel();
             cancellationTokenSource.Dispose();
 
             cancellationTokenSource = new();
-            Task.Run(() => ProcessR3eData(cancellationTokenSource.Token), cancellationTokenSource.Token);
+            Task.Run(() => ProcessR3EData(cancellationTokenSource.Token), cancellationTokenSource.Token);
         }
 
         private void RaceRoomStopped() {
-            logger.Info($"RaceRoom stopped, stopping R3eDataService worker");
+            logger.Info("RaceRoom stopped, stopping R3EDataService worker");
 
             cancellationTokenSource.Cancel();
             _isRunning = false;
         }
 
-        private void OnDataReady(R3eData data) {
+        private void OnDataReady(R3EData data) {
             this.data = data;
             resetEvent.Set();
         }
 
-        private async Task ProcessR3eData(CancellationToken cancellationToken) {
-            logger.Info("Starting R3eDataService worker");
+        private async Task ProcessR3EData(CancellationToken cancellationToken) {
+            logger.Info("Starting R3EDataService worker");
 
             int iter = 0;
             var userDataClearedForMultiplier = false;
@@ -189,10 +189,10 @@ namespace ReHUD.Services
                 await Task.WhenAll(saveDataTask(), updateHUDTask(), updateHUDStateTask());
             }
 
-            logger.Info("R3eDataService worker thread stopped");
+            logger.Info("R3EDataService worker thread stopped");
         }
 
-        private void SaveData(R3eData data) {
+        private void SaveData(R3EData data) {
             if (lastLap == -1 || lastLap == data.completedLaps || fuelData == null)
                 return;
 
@@ -239,15 +239,15 @@ namespace ReHUD.Services
         }
 
         public async Task SendEmptyData() {
-            var extraData = new R3eExtraData {
+            var emptyData = new R3EExtraData {
                 forceUpdateAll = true,
-                rawData = new R3eData {
+                rawData = new R3EData {
                     driverData = Array.Empty<DriverData>(),
                 },
                 timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             };
             logger.Info("Sending empty data for edit mode");
-            await IpcCommunication.Invoke(window, "r3eData", extraData.Serialize(usedKeys));
+            await IpcCommunication.Invoke(window, "r3eData", emptyData.Serialize(usedKeys));
         }
     }
 }

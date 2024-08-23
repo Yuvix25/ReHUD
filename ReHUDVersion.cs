@@ -35,11 +35,11 @@ public class ReHUDVersion : UserData
     }
 
     private static void OnVersionChanged(Version previousVersion, Version version) {
-        Startup.logger.Info($"Upgrading ReHUD from v{previousVersion} to v{version}");
+        Startup.logger.InfoFormat("Upgrading ReHUD from v{0} to v{1}", previousVersion, version);
         var matchingActions = UpgradeActions.Where(x => x.Item1 > previousVersion && x.Item1 <= version);
         foreach (var versionActions in matchingActions) {
             foreach (var action in versionActions.Item2) {
-                Startup.logger.Info($"Running upgrade action v{versionActions.Item1}: {action.Item1}");
+                Startup.logger.InfoFormat("Running upgrade action v{0}: {1}", versionActions.Item1, action.Item1);
                 action.Item2();
             }
         }
@@ -74,7 +74,7 @@ public class ReHUDVersion : UserData
                         Startup.settings.Save();
                     }
                 } catch (Exception e) {
-                    Startup.logger.Error("Failed to move HUD layout to separate file: " + e);
+                    Startup.logger.Error("Failed to move HUD layout to separate file", e);
                 }
             }),
         }),

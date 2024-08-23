@@ -17,7 +17,7 @@ public static class Program
             CreateWebHostBuilder(args).Build().Run();
         }
         catch (Exception ex) {
-            Console.WriteLine($"An error occurred: {ex.Message}");
+            Console.WriteLine("An error occurred: {0}", ex.Message);
             Console.WriteLine(ex.StackTrace);
         }
     }
@@ -46,7 +46,7 @@ public static class Program
                 services.AddSingleton<IProcessObserverFactory, ProcessObserverFactory>();
                 services.AddSingleton<IRaceRoomObserver, RaceRoomObserver>();
                 services.AddSingleton<ISharedMemoryService, SharedMemoryService>();
-                services.AddSingleton<IR3eDataService, R3eDataService>();
+                services.AddSingleton<IR3EDataService, R3EDataService>();
                 services.AddSingleton<IUpdateService, UpdateService>();
             });
 }

@@ -3,9 +3,9 @@ using R3E.Data;
 
 namespace ReHUD.Models;
 
-public struct R3eExtraData
+public struct R3EExtraData
 {
-    public R3eData rawData;
+    public R3EData rawData;
 
     // difference to RawData.FuelPerLap is that it averages instead of taking the maximum, and is also based on data from previous sessions.
     public double fuelPerLap;
@@ -40,7 +40,7 @@ public struct R3eExtraData
                     }
                 }
                 catch (Exception e) {
-                    Startup.logger.Error($"Failed to serialize shared memory key '{key}': {e}");
+                    Startup.logger.Error($"Failed to serialize shared memory key '{key}'", e);
                     throw;
                 }
             }

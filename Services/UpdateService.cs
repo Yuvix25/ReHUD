@@ -21,7 +21,7 @@ namespace ReHUD.Services
 
         public async Task CheckForUpdates() {
             string currentVersion = await GetAppVersion();
-            logger.Info("Checking for updates (current version: v" + currentVersion + ")");
+            logger.InfoFormat("Checking for updates (current version: v{0})", currentVersion);
             string? remoteUrl = await GetRedirectedUrl(githubUrl + "/" + githubReleasesUrl);
             if (remoteUrl == null) {
                 logger.Error("Could not get remote URL for checking updates");
@@ -34,7 +34,7 @@ namespace ReHUD.Services
             Version remote = ReHUDVersion.TrimVersion(remoteVersionText);
 
             if (current.CompareTo(remote) < 0) {
-                logger.Info("Update available: " + remoteVersionText);
+                logger.InfoFormat("Update available: {0}", remoteVersionText);
 
                 await Startup.ShowMessageBox("A new version is available: " + remoteVersionText, new string[] { "Show me", "Cancel" }, "Update available", MessageBoxType.info).ContinueWith((t) => {
                     if (t.Result.Response == 0) {

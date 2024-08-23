@@ -1,5 +1,4 @@
 import EventListener from './EventListener.js';
-import HubCommunication from './HubCommunication.js';
 import Hud from './Hud.js';
 import SettingsValue from './SettingsValue.js';
 import { RELATIVE_SAFE_MODE, base64EncodedUint8ArrayToString, valueIsValid } from './consts.js';
@@ -810,6 +809,7 @@ export class Logger {
       if (pool.isFlooding(messageIdentifier) || level !== LogLevel.ERROR) {
         pool.log(messageIdentifier, fullMessage);
       } else {
+        pool.log(messageIdentifier, Logger.getStackTrace());
         Logger.getMappedStackTrace().then((stack) => {
           try {
             const caller_line = stack.split('\n')[8];
@@ -933,6 +933,7 @@ export function enableLogging(ipc: import('electron').IpcRenderer, filename: str
     return false;
   };
   window.addEventListener('unhandledrejection', (e) => {
+    console.log(e.reason);
     console.error(JSON.stringify(e.reason));
   });
   window.addEventListener('securitypolicyviolation', (e) => {

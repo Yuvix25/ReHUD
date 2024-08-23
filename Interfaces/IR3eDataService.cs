@@ -3,9 +3,9 @@ using ReHUD.Models;
 
 namespace ReHUD.Interfaces
 {
-    public interface IR3eDataService : IDisposable
+    public interface IR3EDataService : IDisposable
     {
-        public R3eExtraData Data { get; }
+        public R3EExtraData Data { get; }
         public FuelData FuelData { get; }
         public LapPointsData LapPointsData { get; }
 

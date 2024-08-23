@@ -1,5 +1,6 @@
 /* ========================================== Types ========================================== */
 
+import {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
 import IShared, { EFinishStatus, ESessionPhase, IDriverData, ISectors } from './r3eTypes.js';
 
 export interface IExtendedShared {
@@ -245,7 +246,12 @@ export function validOrDefault(val: any, defaultVal: any) {
 }
 
 export function valueIsValidAssertNull(val: number) {
-  if (val == null) throw new Error('value is null');
+  if (val == null) {
+    if (!GracePeriodBetweenPresets.isInGracePeriod) {
+      throw new Error('value is null');
+    }
+    return false;
+  }
   return val != -1;
 }
 

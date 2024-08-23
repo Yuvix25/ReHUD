@@ -43,6 +43,7 @@ import AlltimeBestLap from './hudElements/AlltimeBestLap.js';
 import PitTimer from './hudElements/PitTimer.js';
 import CompletedLaps from './hudElements/CompletedLaps.js';
 import IpcCommunication from './IpcCommunication.js';
+import {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
 
 enableLogging(ipcRenderer, 'index.js');
 
@@ -179,6 +180,7 @@ function loadLayout(layout?: HudLayoutElements) {
     onDomReady(() => _loadLayout(layout));
 }
 function _loadLayout(layout?: HudLayoutElements) {
+    GracePeriodBetweenPresets.isInGracePeriod = true;
     if (layout == undefined)
         layout = hud.layoutElements;
 
@@ -227,6 +229,7 @@ function _loadLayout(layout?: HudLayoutElements) {
     }
 
     layoutLoaded = true;
+    setTimeout(() => GracePeriodBetweenPresets.isInGracePeriod = false, GracePeriodBetweenPresets.DURATION);
 }
 
 function requestLayout() {

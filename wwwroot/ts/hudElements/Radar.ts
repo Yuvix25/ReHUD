@@ -33,7 +33,7 @@ export default class Radar extends HudElementWithHideDelay {
         const pointerStartRange = radarRange * 1.1; 
 
         const radarOpacity = SettingsValue.get(RADAR_OPACITY);
-        const radarFadeRange = radarRange * SettingsValue.get(RADAR_FADE_RANGE);
+        const radarFadeRange = radarRange + SettingsValue.get(RADAR_FADE_RANGE);
 
         let backgroundImage = !radarLowDetail ? 'radial-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.4) ),url("/icons/radar-grid.png")' : '';
         radar.style.backgroundImage = backgroundImage;
@@ -98,8 +98,8 @@ export default class Radar extends HudElementWithHideDelay {
                 const pointerRotation = getRadarPointerRotation(distance, driver.relativePosition.x, driver.relativePosition.z);
                 const pointerOpacity = ((distance - radarFadeRange) / (radarRange - radarFadeRange));
 
-                child.style.borderRadius = '0px';
                 child.style.backgroundColor = 'red';
+                child.style.borderRadius = '0px';
                 child.style.left = '50%';
                 child.style.top = '50%';
                 child.style.width = `${width}px`;
@@ -116,6 +116,7 @@ export default class Radar extends HudElementWithHideDelay {
                 child.style.height = `${height}px`;
                 child.style.translate = 'none'
                 child.style.transform = `rotate(${rotation}rad)`;
+                child.style.opacity = '1';
             }
 
             if (myPlace == driver.place) {

@@ -29,7 +29,7 @@ public class Startup
     public IConfiguration Configuration { get; }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IUpdateService updateService, IRaceRoomObserver raceRoomObserver, ISharedMemoryService sharedMemoryService, IR3EDataService r3eDataService) {
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IUpdateService updateService, IRaceRoomObserver raceroomObserver, ISharedMemoryService sharedMemoryService, IR3EDataService r3eDataService) {
         logFilePath = Path.Combine(UserData.dataPath, "ReHUD.log");
         GlobalContext.Properties["LogFilePath"] = logFilePath;
 
@@ -37,7 +37,7 @@ public class Startup
         XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
         this.updateService = updateService;
-        this.raceroomObserver = raceRoomObserver;
+        this.raceroomObserver = raceroomObserver;
         this.sharedMemoryService = sharedMemoryService;
         this.r3eDataService = r3eDataService;
 
@@ -103,7 +103,7 @@ public class Startup
                     await CreateMainWindow();
                     await CreateSettingsWindow(env);
 
-                    raceroomObserver.Start();
+                    this.raceroomObserver.Start();
 
                     await Task.Delay(1000); // TODO
                     if (settings.DidLoad) {
@@ -327,7 +327,7 @@ public class Startup
     private async Task CreateSettingsWindow(IWebHostEnvironment env) {
         SettingsWindow = await CreateWindowAsync(new BrowserWindowOptions() {
             Width = 800,
-            Height = 640,
+            Height = 830,
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
             WebPreferences = new WebPreferences() {
                 EnableRemoteModule = true,

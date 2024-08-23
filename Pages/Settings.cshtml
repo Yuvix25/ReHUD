@@ -48,7 +48,13 @@
     </choice-setting>
 
     <slider-setting key="radarRange" min="0" max="30" step="1" value="12">Radar Range (m)</slider-setting>
+    <slider-setting key="radarFadeRange" min="0" max="30" step="0.1" value="2" tooltip="Additional range beyond the normal range where the radar will fade in. The is also the range in which cars will show as pointers.">Radar Fade Range (m)</slider-setting>
+    <slider-setting key="radarOpacity" min="0.1" max="1" step="0.1" value="0.8">Radar Opacity</slider-setting>
     <slider-setting key="radarBeepVolume" min="0" max="3" step="0.01" value="1">Radar Beep Volume</slider-setting>
+    <toggle-setting key="radarLowDetail">Simplified Radar</toggle-setting>
+    <toggle-setting key="radarPointer" tooltip="If enabled, cars which are within the fade range will be shown as pointers in the outer ring of the radar.">Radar Pointers</toggle-setting>
+
+    <slider-setting key="p2pReadyVolume" min="0" max="3" step="0.01" value="1">Push to Pass Beep Volume</slider-setting>
 
     <slider-setting key="positionBarCellCount" min="3" max="51" step="2" value="13">Position Bar Cell Count</slider-setting>
 
@@ -62,9 +68,10 @@
 
 
     <toggle-setting key="relativeSafeMode" tooltip="Enabling this option will mean that the relative will only work with saved best lap data, and will not save new ones.">Relative Safe Mode</toggle-setting>
-    <toggle-setting key="check-for-updates">Check for Updates</toggle-setting>
 
     <toggle-setting key="hardwareAcceleration" restart-to-apply="true" tooltip="If your ReHUD window has a black background instead of a transparent one, try disabling this option.">Hardware Acceleration</toggle-setting>
+
+    <toggle-setting key="check-for-updates">Check for Updates</toggle-setting>
 </div>
 
 <div id="layout-tab" class="main-tabs tabcontent">

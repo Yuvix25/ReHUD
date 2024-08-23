@@ -178,10 +178,15 @@ public class Startup
             if (args == null || args.ToString() == null)
                 return;
 
+            if (IsInEditMode) {
+                logger.Warn("Cannot set HUD layout while in edit mode");
+                return;
+            }
+
             string argsString = args.ToString()!;
 
             HudLayout? layout;
-            if (argsString.Length > 0 && argsString[0] == '{') {
+            if (argsString.Length > 0 && argsString[0] == '{') { // update existing (active) layout
                 try {
                     Dictionary<string, HudElement>? layoutElements = JsonConvert.DeserializeObject<Dictionary<string, HudElement>>(argsString);
                     if (layoutElements == null) {
@@ -194,33 +199,36 @@ public class Startup
                         layout = HudLayout.AddHudLayout(new HudLayout(true));
                     }
                     layout.UpdateElements(layoutElements);
+                    UpdateActiveLayout(layout);
                 }
                 catch (Exception e) {
                     logger.Error("Error deserializing HUD layout", e);
                     return;
                 }
             }
-            else {
+            else { // switch to existing layout
                 layout = HudLayout.GetHudLayout(argsString);
-                if (layout != null) HudLayout.SetActiveLayout(layout);
+                if (layout != null) {
+                    HudLayout.SetActiveLayout(layout);
+                    SendHudLayout(layout, false);
+                }
             }
             if (layout == null) {
                 logger.Error("Invalid HUD layout: " + args);
                 return;
             }
-            SetHudLayout(layout);
         });
 
         await Electron.IpcMain.On("load-replay-preset", (args) => {
             var layout = HudLayout.LoadReplayLayout();
             if (layout != null) {
-                SetHudLayout(layout, true, false);
+                UpdateActiveLayout(layout, true);
             }
         });
         await Electron.IpcMain.On("unload-replay-preset", (args) => {
             var layout = HudLayout.UnloadReplayLayout();
             if (layout != null) {
-                SetHudLayout(layout, true);
+                UpdateActiveLayout(layout, true);
             }
         });
 
@@ -575,12 +583,12 @@ public class Startup
         }
     }
 
-    private static void SetHudLayout(HudLayout layout, bool sendToSettings = false, bool removeBefore = true) {
+    private static void UpdateActiveLayout(HudLayout layout, bool sendToSettings = false) {
         if (IsInEditMode) {
-            logger.Info("Cannot set HUD layout while in edit mode");
+            logger.Warn("Cannot set HUD layout while in edit mode");
             return;
         }
-        layout = HudLayout.UpdateActiveHudLayout(layout, removeBefore);
+        layout = HudLayout.UpdateActiveHudLayout(layout);
         layout.Save();
         SendHudLayout(layout, sendToSettings);
     }

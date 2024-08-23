@@ -32,3 +32,11 @@ export default class SharedMemorySupplier {
         ipcRenderer.send('used-keys', this.usedKeys);
     }
 }
+
+/**
+ * When switching presets, it takes a few moments for the backend to update its keylist and send the correct data, hiding errors in the meantime.
+ */
+export class GracePeriodBetweenPresets {
+    public static readonly DURATION = 500;
+    public static isInGracePeriod = true;
+}

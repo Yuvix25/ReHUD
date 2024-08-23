@@ -240,11 +240,11 @@ public class HudLayout : JsonUserData
         }
     }
 
-    public static bool SetActiveLayout(HudLayout layout, bool setActive = true, bool clearBeforeReplay = true)
+    public static bool SetActiveLayout(HudLayout layout, bool setActive = true)
     {
         Startup.logger.Info($"Setting active layout to {layout.Name}");
         if (Startup.IsInEditMode) {
-            Startup.logger.Info("Not setting active layout because we're in edit mode");
+            Startup.logger.Warn("Not setting active layout because we're in edit mode");
             return false;
         }
         if (ExistsAndIsDifferent(layout) != null)
@@ -253,10 +253,6 @@ public class HudLayout : JsonUserData
             return false;
         }
         ActiveHudLayout = layout;
-        if (clearBeforeReplay)
-        {
-            BeforeReplayHudLayout = null;
-        }
         SetSingularBoolForLayout(layout, "active", setActive);
         return true;
     }
@@ -292,7 +288,7 @@ public class HudLayout : JsonUserData
         if (ReplayHudLayout != null)
         {
             var before = ActiveHudLayout;
-            var res = SetActiveLayout(ReplayHudLayout, true, false);
+            var res = SetActiveLayout(ReplayHudLayout, true);
             if (!res) return null;
             BeforeReplayHudLayout = before;
             Startup.logger.Info($"Loaded replay layout: {ReplayHudLayout.Name}");
@@ -304,9 +300,10 @@ public class HudLayout : JsonUserData
     {
         if (BeforeReplayHudLayout != null)
         {
-            var layout = BeforeReplayHudLayout; // needed because BeforeReplayHudLayout is set to null in SetActiveLayout
+            var layout = BeforeReplayHudLayout;
             var res = SetActiveLayout(layout);
             if (!res) return null;
+            BeforeReplayHudLayout = null;
             Startup.logger.Info($"Loaded normal layout: {layout.Name}");
             return layout;
         }
@@ -354,13 +351,12 @@ public class HudLayout : JsonUserData
         return layouts.ContainsKey(name) ? layouts[name] : null;
     }
 
-    public static HudLayout? UpdateActiveHudLayout(HudLayout newLayout, bool removeBefore = true)
+    public static HudLayout UpdateActiveHudLayout(HudLayout newLayout)
     {
         HudLayout layout = ActiveHudLayout ?? throw new InvalidOperationException("No active HUD layout");
         layout.CopyFrom(newLayout);
-        var res = SetActiveLayout(layout, true, removeBefore);
 
-        return res ? layout : ActiveHudLayout;
+        return layout;
     }
 
 

@@ -9,7 +9,7 @@ import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtende
 import IShared from './r3eTypes.js';
 import {AudioController, Logger} from "./utils.js";
 import {HudLayoutElements} from './settingsPage.js';
-import SharedMemorySupplier from './SharedMemorySupplier.js';
+import SharedMemorySupplier, {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
 import EventEmitter from './EventEmitter.js';
 import HubCommunication from './HubCommunication.js';
 
@@ -124,7 +124,9 @@ export default class Hud extends EventListener {
         try {
             action._execute(data);
         } catch (e) {
-            console.error('Error while executing action \'' + action.toString() + '\'', e.toString(), await Logger.mapStackTraceAsync(e.stack));
+            if (!GracePeriodBetweenPresets.isInGracePeriod) {
+                console.error('Error while executing action \'' + action.toString() + '\'', e.toString(), await Logger.mapStackTraceAsync(e.stack));
+            }
         }
     }
 

@@ -6,7 +6,7 @@ namespace ReHUD.Utils
     {
         private static readonly List<string> RaceRoomProcessNames = new() { "RRRE", "RRRE64" };
 
-        private IProcessObserver processObserver;
+        private readonly IProcessObserver processObserver;
 
         public event Action OnProcessStarted;
         public event Action OnProcessStopped;
@@ -14,7 +14,7 @@ namespace ReHUD.Utils
         public bool IsRunning => processObserver.IsRunning;
 
         public RaceRoomObserver(IProcessObserverFactory processObserverFactory) {
-            this.processObserver = processObserverFactory.GetObserver(RaceRoomProcessNames);
+            processObserver = processObserverFactory.GetObserver(RaceRoomProcessNames);
 
             processObserver.OnProcessStarted += ProcessStarted;
             processObserver.OnProcessStopped += ProcessStopped;

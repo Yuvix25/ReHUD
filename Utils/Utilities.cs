@@ -21,7 +21,7 @@ namespace ReHUD.Utils
         /// <summary>
         /// Returns either the estimated total number of laps and number of laps left, or null if the data is not available. <total, left>
         /// </summary>
-        internal static Tuple<int, double> GetEstimatedLapCount(R3eData data, FuelCombination combination) {
+        internal static Tuple<int, double> GetEstimatedLapCount(R3EData data, FuelCombination combination) {
             double fraction = data.lapDistanceFraction;
 
             double leaderFraction = fraction;
@@ -97,7 +97,7 @@ namespace ReHUD.Utils
             return new Tuple<int, double>(res + data.completedLaps, res - fraction);
         }
 
-        internal static DriverData? GetLeader(R3eData data) {
+        internal static DriverData? GetLeader(R3EData data) {
             foreach (DriverData leader in data.driverData) {
                 if (leader.place == 1) {
                     return leader;

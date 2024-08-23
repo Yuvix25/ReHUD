@@ -31,7 +31,7 @@ public abstract class UserData
             return true;
         }
         catch (Exception e) {
-            Startup.logger.Error($"Failed to delete file {DataFilePath}: {e}");
+            Startup.logger.Error($"Failed to delete file {DataFilePath}", e);
             return false;
         }
     }

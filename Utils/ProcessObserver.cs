@@ -16,10 +16,10 @@ namespace ReHUD.Utils
         public event Action OnProcessStarted;
         public event Action OnProcessStopped;
 
-        public bool IsRunning { get => processNames.Any(processName => Process.GetProcessesByName(processName).Length > 0); }
+        public bool IsRunning { get => processNames.Exists(processName => Process.GetProcessesByName(processName).Length > 0); }
 
         public ProcessObserver(List<string> processNames) {
-            logger.Info($"Creating process observer for {processNames.Count} process names: {string.Join(", ", processNames)}");
+            logger.InfoFormat("Creating process observer for {0} process names: {1}", processNames.Count, string.Join(", ", processNames));
 
             this.processNames = processNames;
 
@@ -33,11 +33,12 @@ namespace ReHUD.Utils
         }
 
         private void ProcessStarted(object sender, EventArrivedEventArgs e) {
-            logger.Info($"Got process start event for processes: {string.Join(", ", processNames)}");
+            logger.InfoFormat("Got process start event for processes: {0}", string.Join(", ", processNames));
             OnProcessStarted?.Invoke();
         }
+
         private void ProcessStopped(object sender, EventArrivedEventArgs e) {
-            logger.Info($"Got process stop event for processes: {string.Join(", ", processNames)}");
+            logger.InfoFormat("Got process stop event for processes: {0}", string.Join(", ", processNames));
             OnProcessStopped?.Invoke();
         }
 

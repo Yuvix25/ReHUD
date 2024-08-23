@@ -4,10 +4,10 @@ namespace ReHUD.Interfaces
 {
     public interface ISharedMemoryService : IDisposable
     {
-        public R3eData? Data { get; }
+        public R3EData? Data { get; }
         public long FrameRate { get; set; }
         public bool IsRunning { get; }
 
-        public event Action<R3eData> OnDataReady;
+        public event Action<R3EData> OnDataReady;
     }
 }

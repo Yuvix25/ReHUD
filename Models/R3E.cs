@@ -664,7 +664,7 @@ namespace R3E
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct R3eData
+        public struct R3EData
         {
             //////////////////////////////////////////////////////////////////////////
             // Version

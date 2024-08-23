@@ -26,10 +26,10 @@ static class IpcCommunication {
 
                     var diff = timeNow - array[0].ToObject<long>();
                     if (diff > DELAY_WARNING) {
-                        Startup.logger.Warn($"IPC responded in {diff}ms");
+                        Startup.logger.WarnFormat("IPC responded in {0}ms", diff);
                     }
                     if (diff > DELAY_ERROR) {
-                        Startup.logger.Error($"IPC responded in {diff}ms");
+                        Startup.logger.ErrorFormat("IPC responded in {0}ms", diff);
                     }
                     if (array.Count > 1) {
                         promise.SetResult(array[1]);

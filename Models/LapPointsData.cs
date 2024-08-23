@@ -27,7 +27,7 @@ public class LapPointsCombination
             this.bestLapTime = bestLapTime;
             this.lapPoints = lapPoints;
             this.pointsPerMeter = pointsPerMeter;
-            Startup.logger.Info($"New best lap time: {bestLapTime}");
+            Startup.logger.InfoFormat("New best lap time: {0}", bestLapTime);
         }
     }
 

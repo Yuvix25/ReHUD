@@ -19,6 +19,9 @@ export default class EventEmitter extends NamedEntity {
     public static readonly GAME_RESUMED_EVENT = 'gameResumed';
     public static readonly SESSION_CHANGED_EVENT = 'sessionChanged';
     public static readonly SESSION_PHASE_CHANGED_EVENT = 'sessionPhaseChanged';
+    public static readonly P2P_DEACTIVATION_EVENT = 'p2pDeactivation';
+    public static readonly P2P_ACTIVATION_EVENT = 'p2pActivation';
+    public static readonly P2P_READY_EVENT = 'p2pReady';
     public static readonly CAR_CHANGED_EVENT = 'carChanged';
     public static readonly TRACK_CHANGED_EVENT = 'trackChanged';
     public static readonly MAIN_DRIVER_CHANGED_EVENT = 'mainDriverChanged'; // emitted by the driver manager
@@ -160,7 +163,19 @@ export default class EventEmitter extends NamedEntity {
             if (data.gamePaused == 0 && this.previousData.gamePaused == 1) {
               this.emit(EventEmitter.GAME_RESUMED_EVENT, null, data);
             }
+
+            if(data.pushToPass.waitTimeLeft > 0 && this.previousData.pushToPass.waitTimeLeft == 0) {
+                this.emit(EventEmitter.P2P_DEACTIVATION_EVENT, null, data)
+            }
+
+            if(data.pushToPass.engagedTimeLeft > 0 && this.previousData.pushToPass.engagedTimeLeft == 0) {
+                this.emit(EventEmitter.P2P_ACTIVATION_EVENT, null, data)
+            }
             
+            if(data.pushToPass.waitTimeLeft == 0 && this.previousData.pushToPass.waitTimeLeft > 0 && data.gameInMenus != 1 || data.pushToPass.amountLeft > 0 && this.previousData.pushToPass.amountLeft == 0) {
+                this.emit(EventEmitter.P2P_READY_EVENT, null, data)
+            }
+
             for (const uid of Object.keys(newDriverMap)) {
                 const driver = newDriverMap[uid];
                 const driverPrevious = this.uidMapPrevious[uid];

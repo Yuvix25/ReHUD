@@ -33,5 +33,16 @@ namespace SignalRChat.Hubs
                 Console.WriteLine(e);
             }
         }
+
+        public void SaveBestLap(int layoutId, int classId, double laptime, double[] points, double pointsPerMeter)
+        {
+            Startup.logger.Info($"SaveBestLap: layoutId={layoutId}, classId={classId}, laptime={laptime}, points={points.Length}, pointsPerMeter={pointsPerMeter}");
+            Startup.SaveBestLap(layoutId, classId, laptime, points, pointsPerMeter);
+        }
+
+        public string LoadBestLap(int layoutId, int classId)
+        {
+            return Startup.LoadBestLap(layoutId, classId);
+        }
     }
 }

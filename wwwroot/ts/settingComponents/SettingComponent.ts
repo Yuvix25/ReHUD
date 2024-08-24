@@ -146,7 +146,7 @@ export default abstract class SettingComponent extends HTMLElement {
             }
             if (this.restartToApply) {
                 this.restartButton = document.createElement('button');
-                this.restartButton.innerText = 'Restart to apply changes';
+                this.restartButton.innerText = 'Restart to apply';
                 this.restartButton.classList.add('restart-button');
                 this.restartButton.classList.add('hidden');
                 this.restartButton.addEventListener('click', () => {

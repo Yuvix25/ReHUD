@@ -179,7 +179,7 @@ namespace ReHUD.Services
                     }
                     else if (window != null && !(hudShown ?? false)) {
                         Electron.IpcMain.Send(window, "show");
-                        window.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
+                        window.SetAlwaysOnTop(!Startup.IsInVrMode, OnTopLevel.screenSaver);
                         hudShown = true;
                     }
                 };

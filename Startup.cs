@@ -41,6 +41,29 @@ public class Startup
         this.sharedMemoryService = sharedMemoryService;
         this.r3eDataService = r3eDataService;
 
+        if (env.IsDevelopment()) {
+            app.UseDeveloperExceptionPage();
+        }
+        else {
+            app.UseExceptionHandler("/Error");
+            app.UseHsts();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseStaticFiles();
+
+        app.UseRouting();
+
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints => {
+            endpoints.MapHub<ReHUDHub>("/ReHUDHub");
+            endpoints.MapRazorPages();
+        });
+
+        Electron.App.CommandLine.AppendSwitch("enable-transparent-visuals");
+
+
         version.Load();
         _ = updateService.GetAppVersion().ContinueWith(async (t) => {
             await version.Update(t.Result);
@@ -64,57 +87,30 @@ public class Startup
             catch (Exception e) {
                 logger.Error("Error loading preset", e);
             }
-        });
 
-        if (env.IsDevelopment()) {
-            app.UseDeveloperExceptionPage();
-        }
-        else {
-            app.UseExceptionHandler("/Error");
-            app.UseHsts();
-        }
+            if (HybridSupport.IsElectronActive) {
+                Electron.App.Ready += async () => {
+                    try {
+                        r3eDataService.Load();
 
-        app.UseHttpsRedirection();
-        app.UseStaticFiles();
+                        await Electron.IpcMain.On("get-port", (args) => {
+                            var windows = new[] { MainWindow, SettingsWindow }.Where(x => x != null);
 
-        app.UseRouting();
+                            foreach (var window in windows) {
+                                Electron.IpcMain.Send(window, "port", BridgeSettings.WebPort);
+                            }
+                        });
+                        await CreateMainWindow();
+                        await CreateSettingsWindow(env);
 
-        app.UseAuthorization();
-
-        app.UseEndpoints(endpoints => {
-            endpoints.MapHub<ReHUDHub>("/ReHUDHub");
-            endpoints.MapRazorPages();
-        });
-
-        Electron.App.CommandLine.AppendSwitch("enable-transparent-visuals");
-
-        if (HybridSupport.IsElectronActive) {
-            Electron.App.Ready += async () => {
-                try {
-                    r3eDataService.Load();
-
-                    await Electron.IpcMain.On("get-port", (args) => {
-                        var windows = new[] { MainWindow, SettingsWindow }.Where(x => x != null);
-
-                        foreach (var window in windows) {
-                            Electron.IpcMain.Send(window, "port", BridgeSettings.WebPort);
-                        }
-                    });
-                    await CreateMainWindow();
-                    await CreateSettingsWindow(env);
-
-                    this.raceroomObserver.Start();
-
-                    await Task.Delay(1000); // TODO
-                    if (settings.DidLoad) {
-                        await LoadSettings();
+                        this.raceroomObserver.Start();
                     }
-                }
-                catch (Exception e) {
-                    logger.Error("Error creating windows", e);
-                }
-            };
-        }
+                    catch (Exception e) {
+                        logger.Error("Error creating windows", e);
+                    }
+                };
+            }
+        });
     }
 
 
@@ -135,6 +131,10 @@ public class Startup
         return await Electron.WindowManager.CreateWindowAsync(options, loadUrl);
     }
 
+    // Should only be set once because changes only take effect after a restart
+    // TODO: Move to settings service once implemented
+    public static bool IsInVrMode { get; private set; }
+
     private async Task CreateMainWindow() {
         await Electron.IpcMain.On("used-keys", (args) => {
             if (args == null)
@@ -143,6 +143,8 @@ public class Startup
             r3eDataService.UsedKeys = ((JArray)args).Select(x => (string?)x).Where(x => x != null).ToArray()!;
         });
 
+        IsInVrMode = (settings.Data.Get("vrMode") as bool?) ?? false;
+
         MainWindow = await CreateWindowAsync(new BrowserWindowOptions() {
             Resizable = false,
             Fullscreen = true,
@@ -150,7 +152,7 @@ public class Startup
             Movable = false,
             Frame = false,
             Transparent = true,
-            BackgroundColor = BLACK_TRANSPARENT,
+            BackgroundColor = IsInVrMode ? BLACK_OPAQUE : BLACK_TRANSPARENT,
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
             WebPreferences = new WebPreferences() {
                 EnableRemoteModule = true,
@@ -167,7 +169,7 @@ public class Startup
 
         r3eDataService.HUDWindow = MainWindow;
 
-        MainWindow.SetAlwaysOnTop(true, OnTopLevel.screenSaver);
+        MainWindow.SetAlwaysOnTop(!IsInVrMode, OnTopLevel.screenSaver);
         MainWindow.SetIgnoreMouseEvents(true);
 
         await Electron.IpcMain.On("get-hud-layout", (args) => {
@@ -382,11 +384,8 @@ public class Startup
                 }
             }
 
-            if (MainWindow != null) {
-                MainWindow.SetIgnoreMouseEvents(locked);
-                MainWindow.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
-            }
-            SettingsWindow.SetAlwaysOnTop(!locked, OnTopLevel.screenSaver);
+            MainWindow?.SetIgnoreMouseEvents(locked);
+            SettingsWindow.SetAlwaysOnTop(!IsInVrMode && !locked, OnTopLevel.screenSaver);
 
             if (locked && save) // save
             {
@@ -507,8 +506,9 @@ public class Startup
 
         await LoadSettings(key, value);
 
-        if (SettingsWindow != null && sendToWindow)
+        if (SettingsWindow != null && sendToWindow) {
             Electron.IpcMain.Send(SettingsWindow, "settings", settings.Serialize());
+        }
     }
 
     public async Task LoadSettings(string? key = null, object? value = null) {
@@ -557,7 +557,7 @@ public class Startup
 
     private static void SetVRMode(bool vrMode) {
         logger.InfoFormat("Setting main window background opacity: {0}", vrMode ? "#FF" : "#00");
-        MainWindow?.SetBackgroundColor(vrMode ? BLACK_OPAQUE : BLACK_TRANSPARENT);
+        // Can't use BrowserWindow.SetBackgroundColor because it doesn't work for some reason, forcing restarts instead.
     }
 
     private static async Task LoadMonitor(string? value = null) {

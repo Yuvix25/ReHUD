@@ -54,6 +54,7 @@ export default class HubCommunication {
                     for (const invoke of this.invokeQueue) {
                         invoke();
                     }
+                    this.invokeQueue = [];
                     this.didLoad = true;
                     resolve();
                 })
@@ -75,6 +76,12 @@ export default class HubCommunication {
 
         return new Promise<any>((resolve, reject) => {
             this.invokeQueue.push(() => {
+                if (this.hubConnection.state != signalR.HubConnectionState.Connected) {
+                    const reason = `Hub connection is in '${this.hubConnection.state}' state, cannot invoke '${event}'`;
+                    console.log(reason);
+                    reject(new Error(reason));
+                    return;
+                }
                 this.hubConnection
                   .invoke(event, ...args)
                   .then((value) => resolve(value))

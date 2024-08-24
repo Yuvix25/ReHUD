@@ -28,6 +28,8 @@ I started this project following the recent increase in the number of bugs in Ra
  - Position bar
  - Session status
  - Pit timer
+ - Live rake visualizer
+ - DRS and P2P indicators
  - Live on-track relative display*
  - Settings window:
     - Element scale and rearrangement*
@@ -38,7 +40,6 @@ _\* work in progress_
 
 ## Planned Features
  - Manual rolling start
- - Ride height gadget
  - Input graphs
  - Fuel calculator
  - Advanced telemetry

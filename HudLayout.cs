@@ -236,7 +236,6 @@ public class HudLayout : JsonUserData
         if (ActiveHudLayout == null && layouts.Count > 0)
         {
             SetActiveLayout(layouts.Values.First());
-            layouts.Values.First().Save();
         }
     }
 
@@ -281,6 +280,7 @@ public class HudLayout : JsonUserData
                 hudLayout.Save();
             }
         }
+        layout.Save();
     }
 
     public static HudLayout? LoadReplayLayout()

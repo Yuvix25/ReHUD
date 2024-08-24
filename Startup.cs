@@ -15,7 +15,7 @@ namespace ReHUD;
 public class Startup
 {
     public static readonly ILog logger = LogManager.GetLogger(typeof(Startup));
-    public static string? logFilePath;
+    private static string? logFilePath;
 
     private IUpdateService updateService;
     private IRaceRoomObserver raceroomObserver;
@@ -57,7 +57,7 @@ public class Startup
                         HudLayout.SetActiveLayout(layout);
                     }
                     else {
-                        logger.Warn("Could not find preset: " + preset);
+                        logger.WarnFormat("Could not find preset: {0}", preset);
                     }
                 }
             }
@@ -190,7 +190,7 @@ public class Startup
                 try {
                     Dictionary<string, HudElement>? layoutElements = JsonConvert.DeserializeObject<Dictionary<string, HudElement>>(argsString);
                     if (layoutElements == null) {
-                        logger.Error("Invalid HUD layout: " + args);
+                        logger.ErrorFormat("Invalid HUD layout: {0}", args);
                         return;
                     }
                     layout = HudLayout.ActiveHudLayout;
@@ -214,7 +214,7 @@ public class Startup
                 }
             }
             if (layout == null) {
-                logger.Error("Invalid HUD layout: " + args);
+                logger.ErrorFormat("Invalid HUD layout: {0}", args);
                 return;
             }
         });
@@ -222,13 +222,13 @@ public class Startup
         await Electron.IpcMain.On("load-replay-preset", (args) => {
             var layout = HudLayout.LoadReplayLayout();
             if (layout != null) {
-                UpdateActiveLayout(layout, true);
+                SendHudLayout(layout);
             }
         });
         await Electron.IpcMain.On("unload-replay-preset", (args) => {
             var layout = HudLayout.UnloadReplayLayout();
             if (layout != null) {
-                UpdateActiveLayout(layout, true);
+                SendHudLayout(layout);
             }
         });
 
@@ -410,7 +410,7 @@ public class Startup
             if (array.Count == 2 && array[0] != null && array[0].Type == JTokenType.String)
                 _ = SaveSetting(array[0].ToString(), ConvertJToken(array[1])!, false);
             else
-                logger.Error("Invalid setting when attempting 'set-setting': " + arg);
+                logger.ErrorFormat("Invalid setting when attempting 'set-setting': {0}", arg);
         });
 
 
@@ -532,9 +532,9 @@ public class Startup
                     if (value is bool hardwareAcceleration)
                         SetHardwareAccelerationEnabled(hardwareAcceleration);
                     break;
-                case "enableVRMode":
-                    if (value is bool enableVRMode)
-                        EnableVRMode(enableVRMode);
+                case "vrMode":
+                    if (value is bool vrMode)
+                        SetVRMode(vrMode);
                     break;
             }
         }
@@ -542,7 +542,7 @@ public class Startup
 
     private static readonly string[] hardwareAccelerationSettings = new string[] { "disable-gpu-compositing", "disable-gpu", "disable-software-rasterizer" };
     private static void SetHardwareAccelerationEnabled(bool enabled) {
-        logger.Info("Setting hardware acceleration: " + enabled);
+        logger.InfoFormat("Setting hardware acceleration: {0}", enabled);
         if (enabled) {
             foreach (var setting in hardwareAccelerationSettings) {
                 Electron.App.CommandLine.RemoveSwitch(setting);
@@ -555,16 +555,16 @@ public class Startup
         }
     }
 
-    private static void EnableVRMode(bool enableVRMode) {
-        logger.Info("Setting main window background opacity: " + (enableVRMode ? "#FF" : "#00"));
-        MainWindow?.SetBackgroundColor(enableVRMode ? BLACK_OPAQUE : BLACK_TRANSPARENT);
+    private static void SetVRMode(bool vrMode) {
+        logger.InfoFormat("Setting main window background opacity: {0}", vrMode ? "#FF" : "#00");
+        MainWindow?.SetBackgroundColor(vrMode ? BLACK_OPAQUE : BLACK_TRANSPARENT);
     }
 
     private static async Task LoadMonitor(string? value = null) {
         if (MainWindow == null)
             return;
         var monitorId = value ?? await GetMainWindowDisplay();
-        logger.Info("Loading monitor: " + monitorId);
+        logger.InfoFormat("Loading monitor: {0}", monitorId);
         if (monitorId == null)
             return;
         var monitor = await GetDisplayById(monitorId);

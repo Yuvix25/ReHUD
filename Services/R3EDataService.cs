@@ -140,8 +140,6 @@ namespace ReHUD.Services
                 }
                 iter++;
 
-                lastLap = data.completedLaps;
-
                 Func<Task> saveDataTask = () => {
                     try {
                         SaveData(data);
@@ -187,14 +185,17 @@ namespace ReHUD.Services
                 };
 
                 await Task.WhenAll(saveDataTask(), updateHUDTask(), updateHUDStateTask());
+
+                lastLap = data.completedLaps;
             }
 
             logger.Info("R3EDataService worker thread stopped");
         }
 
         private void SaveData(R3EData data) {
-            if (lastLap == -1 || lastLap == data.completedLaps || fuelData == null)
+            if (lastLap == -1 || lastLap == data.completedLaps || fuelData == null) {
                 return;
+            }
 
             if (!recordingData) {
                 recordingData = true;

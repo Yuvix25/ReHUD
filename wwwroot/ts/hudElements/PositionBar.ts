@@ -144,6 +144,7 @@ export default class PositionBar extends HudElement {
                     positionBarCell.style.backgroundColor = null;
                 }
                 nameElement.textContent = nameFormat(driver.driverInfo.name);
+                nameElement.style.color = (driver !== me && driver.inPitlane) ? 'gray' : 'white';
 
                 const myTime = validNumberOrDefault(me.sectorTimeBestSelf.sector3, null);
 

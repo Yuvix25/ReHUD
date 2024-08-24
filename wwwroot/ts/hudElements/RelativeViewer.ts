@@ -185,6 +185,9 @@ export default class RelativeViewer extends HudElement {
             const reputation = rankedData?.Reputation.toFixed(0) ?? '70';
             insertCell(row, rating + '/' + reputation, 'ranked');
 
+            const pitCell = insertCell(row, 'PIT', 'pit');
+            pitCell.style.opacity = driver.inPitlane ? '1' : '0';
+
             const deltaRaw = mergedDeltas[i][1];
             if (typeof deltaRaw === 'number' && deltaRaw.toFixed(1) === '0.0')
                 zeroDeltaCount++;

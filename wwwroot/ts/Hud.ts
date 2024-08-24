@@ -5,7 +5,7 @@ import SettingsValue from "./SettingsValue.js";
 import DriverManager from "./actions/DriverManager.js";
 import RankedData from "./actions/RankedData.js";
 import TireManager from './actions/TireManager.js';
-import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, P2P_READY_VOLUME, RADAR_LOW_DETAIL, RADAR_OPACITY, RADAR_POINTER, RADAR_FADE_RANGE, FRAMERATE, HARDWARE_ACCELERATION, ENABLE_VR_MODE} from "./consts.js";
+import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, P2P_READY_VOLUME, RADAR_LOW_DETAIL, RADAR_OPACITY, RADAR_POINTER, RADAR_FADE_RANGE, FRAMERATE, HARDWARE_ACCELERATION, VR_MODE} from "./consts.js";
 import IShared from './r3eTypes.js';
 import {AudioController, Logger} from "./utils.js";
 import {HudLayoutElements} from './settingsPage.js';
@@ -118,7 +118,7 @@ export default class Hud extends EventListener {
         new SettingsValue(SHOW_DELTA_ON_INVALID_LAPS, false);
         new SettingsValue(FRAMERATE, 60);
         new SettingsValue(HARDWARE_ACCELERATION, true);
-        new SettingsValue(ENABLE_VR_MODE, false);
+        new SettingsValue(VR_MODE, false);
 
         new EventEmitter('EventEmitter'); //TODO: currently this is needed to get the shared memory keys it's using, need to un-staticify it maybe
         SharedMemorySupplier.informBackend();

@@ -96,7 +96,7 @@ export default class Radar extends HudElementWithHideDelay {
 
             if (radarPointerToggle && distance > pointerStartRange) {
                 const pointerRotation = getRadarPointerRotation(distance, driver.relativePosition.x, driver.relativePosition.z);
-                const pointerOpacity = ((distance - radarFadeRange) / (radarRange - radarFadeRange));
+                const pointerOpacity = Math.pow((distance - radarFadeRange) / (radarRange - radarFadeRange), 1/2); // fade slower at the beginning
 
                 child.style.backgroundColor = 'red';
                 child.style.borderRadius = '0px';

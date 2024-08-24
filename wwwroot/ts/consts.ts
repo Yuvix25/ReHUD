@@ -34,7 +34,7 @@ export const SHOW_DELTA_ON_INVALID_LAPS = 'showDeltaOnInvalidLaps';
 export const FRAMERATE = 'framerate';
 export const HARDWARE_ACCELERATION = 'hardwareAcceleration';
 export const HUD_LAYOUT = 'hudLayout';
-export const ENABLE_VR_MODE = 'enableVRMode';
+export const VR_MODE = 'vrMode';
 export const P2P_READY_VOLUME = 'p2pReadyVolume';
 
 export const DEFAULT_RENDER_CYCLE = 30;

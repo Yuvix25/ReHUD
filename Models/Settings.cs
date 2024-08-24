@@ -39,7 +39,7 @@ public class SettingsData
         .Add("relativeSafeMode", false)
         .Add("check-for-updates", true)
         .Add("hardwareAcceleration", true)
-        .Add("enableVRMode", false);
+        .Add("vrMode", false);
 
     public IEnumerable<KeyValuePair<string, object>> Settings => settings;
 

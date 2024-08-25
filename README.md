@@ -98,4 +98,6 @@ This project is built using Electron.NET, which is a .NET wrapper for Electron. 
 ## Special Thanks
  - [Tobias Naumann](https://twitch.tv/DasBreitschwert) - for being an early tester and providing me with a lot of great feedback.
  - [Rich Weatherill](https://www.youtube.com/@trippsix_motorsport) - for designing the ReHUD icon.
- - [OtterNas3](https://www.twitch.tv/otternas3n) - for creating [OtterHud](https://forum.kw-studios.com/index.php?threads/otterhud-a-custom-webhud-with-additional-features.13152/) - the inspiration for this project, and an amazing HUD for RaceRoom.
+ - [OtterNas3](https://www.twitch.tv/otternas3n) - for creating [OtterHud](https://forum.kw-studios.com/index.php?threads/otterhud-a-custom-webhud-with-additional-features.13152/) - the inspiration for this project and an amazing HUD for RaceRoom.
+ - [Rich Evans](https://github.com/rcbevans) - for helping with the development and introducing significant performance improvements.
+ - [Colin Blankenburg](https://github.com/Colin-Blankenburg) - for helping with the development and doing lots of testing.

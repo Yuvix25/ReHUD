@@ -329,7 +329,11 @@ IpcCommunication.handle('r3eData', async (event, data_: string) => {
         (driver.driverInfo as IExtendedDriverInfo).uid = computeUid(driver.driverInfo);
     }
 
-    EventEmitter.cycle(data.rawData);
+    try {
+        EventEmitter.cycle(data.rawData);
+    } catch (e) {
+        console.error('Error in EventEmitter.cycle', e);
+    }
     hud.render(data, data.forceUpdateAll, isShown);
 
     const now = Date.now();

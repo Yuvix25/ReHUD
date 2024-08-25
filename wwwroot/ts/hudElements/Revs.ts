@@ -12,8 +12,7 @@ export default class Revs extends HudElement {
             // @ts-ignore
             document.getElementById(id).value = current;
         } catch (e) {
-            console.error(e);
-            console.error(`error setting value of '${id}' to ${current} (revs)`);
+            console.error(`Error setting value of '${id}' to ${current} (revs)`, e);
             return null;
         }
         // @ts-ignore

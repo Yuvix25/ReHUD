@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using ReHUD.Extensions;
 using ReHUD.Interfaces;
 using ReHUD.Models;
+using ReHUD.Utils;
 using SignalRChat.Hubs;
 using System.Reflection;
 
@@ -66,11 +67,20 @@ public class Startup
 
         version.Load();
         _ = updateService.GetAppVersion().ContinueWith(async (t) => {
-            await version.Update(t.Result);
-            settings.Load();
-            await LoadSettings();
+            try {
+                await version.Update(t.Result);
+                settings.Load();
+                await LoadSettings();
+            } catch (Exception e) {
+                logger.Error("Error loading settings", e);
+                await QuitApp(e);
+            }
 
-            HudLayout.LoadHudLayouts();
+            try {
+                HudLayout.LoadHudLayouts();
+            } catch (Exception e) {
+                logger.Error("Error loading HUD layouts", e);
+            }
 
             try {
                 string preset = await Electron.App.CommandLine.GetSwitchValueAsync("preset");
@@ -118,7 +128,7 @@ public class Startup
     public static BrowserWindow? SettingsWindow { get; private set; }
 
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
-    private const string logFilePathWarning = "Log file path could not be determined. Try searching for a file named 'ReHUD.log' in C:\\Users\\<username>\\Documents\\ReHUD";
+    private readonly string logFilePathWarning = $"Log file path could not be determined. Try searching for a file named 'ReHUD.log' in '{UserData.dataPath}'";
 
     private const string BLACK_OPAQUE = "#FF000000";
     private const string BLACK_TRANSPARENT = "#00000000";
@@ -162,8 +172,7 @@ public class Startup
 
         bool gotLock = await Electron.App.RequestSingleInstanceLockAsync((args, arg) => { });
         if (!gotLock) {
-            await ShowMessageBox(MainWindow, anotherInstanceMessage, ERROR_TITLE, MessageBoxType.error);
-            Electron.App.Quit();
+            await QuitApp(anotherInstanceMessage);
             return;
         }
 
@@ -475,7 +484,15 @@ public class Startup
         return await Electron.Dialog.ShowMessageBoxAsync(options);
     }
 
-    public static void QuitApp() {
+    public async static Task QuitApp(string? message = null) {
+        if (message != null) {
+            await ShowMessageBox(message);
+        }
+        Electron.App.Quit();
+    }
+
+    public async static Task QuitApp(Exception e) {
+        await ShowMessageBox($"An unexpected error occured. Please report this to the developer in the forum or on Discord, along with the log file.\n\n{e.Message}\n{e.StackTrace}");
         Electron.App.Quit();
     }
 
@@ -526,7 +543,7 @@ public class Startup
                     break;
                 case "framerate":
                     if (value.IsInt())
-                        sharedMemoryService.FrameRate = (long)value;
+                        sharedMemoryService.FrameRate = Utilities.SafeCastToLong(value);
                     break;
                 case "hardwareAcceleration":
                     if (value is bool hardwareAcceleration)

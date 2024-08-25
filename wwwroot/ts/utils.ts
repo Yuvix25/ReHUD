@@ -791,6 +791,10 @@ export class Logger {
     }
   }
 
+  private static async errorToString(error: Error): Promise<string> {
+    return await Logger.mapStackTraceAsync(error.stack);
+  }
+
   log(
     message: string,
     level: LogLevel = LogLevel.INFO,
@@ -814,19 +818,27 @@ export class Logger {
     const pool = this.messagePools[level];
     const loggerInstance = this;
 
-    return function (...args: any[]) {
+    return async function (...args: any[]) {
       let origin = loggerInstance.filename;
 
       const messageIdentifier = JSON.stringify(args[0]);
-      const message = args.map((x) => JSON.stringify(x)).join(' ');
+      let messages = [];
+      for (const arg of args) {
+        if (arg instanceof Error) {
+          messages.push(await Logger.errorToString(arg));
+        } else {
+          messages.push(JSON.stringify(arg));
+        }
+      }
+      const message = messages.join(' ');
       let fullMessage = `${origin}: ${message}`;
 
       if (pool.isFlooding(messageIdentifier) || level !== LogLevel.ERROR) {
         pool.log(messageIdentifier, fullMessage);
       } else {
-        pool.log(messageIdentifier, Logger.getStackTrace());
-        Logger.getMappedStackTrace().then((stack) => {
+        if (!args.some((x) => x instanceof Error)) {
           try {
+            const stack = await Logger.getMappedStackTrace();
             const caller_line = stack.split('\n')[8];
             if (caller_line == undefined) {
               throw new Error('stacktrace too short');
@@ -834,10 +846,10 @@ export class Logger {
             const index = caller_line.indexOf('at ');
             origin = caller_line.slice(index + 1, caller_line.length) ?? origin;
           } catch (e) {}
+        }
 
-          fullMessage = `${origin}: ${message}`;
-          pool.log(messageIdentifier, fullMessage);
-        });
+        fullMessage = `${origin}: ${message}`;
+        pool.log(messageIdentifier, fullMessage);
       }
     };
   }
@@ -948,8 +960,7 @@ export function enableLogging(ipc: import('electron').IpcRenderer, filename: str
     return false;
   };
   window.addEventListener('unhandledrejection', (e) => {
-    console.log(e.reason);
-    console.error(JSON.stringify(e.reason));
+    console.error(e.reason);
   });
   window.addEventListener('securitypolicyviolation', (e) => {
     const message = `Blocked '${e.blockedURI}' from ${e.documentURI}:${e.lineNumber} (${e.violatedDirective})`;

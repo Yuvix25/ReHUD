@@ -54,6 +54,7 @@ public class HudLayout : JsonUserData
     [JsonProperty]
     private readonly Dictionary<string, HudElement> elements = new();
     public static readonly string subPath = "LayoutPresets";
+    public static string FullPath => Path.Combine(dataPath, subPath);
     public override string SubPath => subPath;
     protected override string DataFilePath => Name + ".json";
 
@@ -381,10 +382,7 @@ public class HudLayout : JsonUserData
                 return layoutName;
             }
         }
-        Startup.ShowMessageBox("You have too many HUD layouts. Please remove some of them.").ContinueWith(_ =>
-        {
-            Startup.QuitApp();
-        });
+        _ = Startup.QuitApp($"You have too many HUD layouts. Please remove some of them from your '{FullPath}' folder.");
 
         return null;
     }

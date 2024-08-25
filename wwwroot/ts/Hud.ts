@@ -133,7 +133,7 @@ export default class Hud extends EventListener {
             action._execute(data);
         } catch (e) {
             if (!GracePeriodBetweenPresets.isInGracePeriod) {
-                console.error('Error while executing action \'' + action.toString() + '\'', e.toString(), await Logger.mapStackTraceAsync(e.stack));
+                console.error('Error while executing action \'' + action.toString() + '\'', e.toString(), e);
             }
         }
     }
@@ -142,7 +142,7 @@ export default class Hud extends EventListener {
         const start = Date.now();
         const diffStart = start - data.timestamp;
         if (diffStart > Hud.DELAY_DROP_THRESHOLD) {
-            console.error('Data was received with a delay of', diffStart + 'ms', 'dropping frame');
+            console.error('Data was received with a delay of', diffStart + 'ms dropping frame');
             return;
         } else if (diffStart > Hud.DELAY_WARNING_THRESHOLD) {
             console.warn('Data was received with a delay of', diffStart + 'ms');

@@ -23,8 +23,7 @@ public class ReHUDVersion : UserData
         var compare = this.version.CompareTo(newVersion);
         if (compare == 0) return;
         if (compare > 0) {
-            await Startup.ShowMessageBox("Cannot downgrade ReHUD version.\nIf you wish to downgrade, please remove the Documents/ReHUD folder first.\nThis will reset all settings and saved user data, such as fuel consumption, tire wear and laptimes.");
-            Startup.QuitApp();
+            await Startup.QuitApp($"Cannot downgrade ReHUD version.\nIf you wish to downgrade, please remove your '{dataPath}' folder first.\nThis will reset all settings and saved user data, such as fuel consumption, tire wear and laptimes.");
             return;
         }
 

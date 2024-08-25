@@ -105,5 +105,23 @@ namespace ReHUD.Utils
             }
             return null;
         }
+
+        public static long SafeCastToLong(object value) {
+            if (value is int v) {
+                return v;
+            }
+            else if (value is long v1) {
+                return v1;
+            }
+            else if (value is uint v2) {
+                return v2;
+            }
+            else if (value is ulong v3) {
+                return (long)v3;
+            }
+            else {
+                throw new InvalidCastException($"Cannot cast {value.GetType()} to long");
+            }
+        }
     }
 }

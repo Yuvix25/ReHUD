@@ -41,7 +41,7 @@ export default class EventEmitter extends NamedEntity {
         return acc;
     }, {});
 
-    override sharedMemoryKeys: string[] = ['sessionType', 'sessionPhase', 'vehicleInfo', 'layoutId', 'driverData', 'playerName', 'gameInReplay', 'controlType', 'gamePaused', 'layoutLength'];
+    override sharedMemoryKeys: string[] = ['sessionType', 'sessionPhase', 'vehicleInfo', 'layoutId', 'driverData', 'playerName', 'gameInReplay', 'gameInMenus', 'gamePaused', 'controlType', 'layoutLength', 'pushToPass'];
 
     override isEnabled(): boolean {
         return true;

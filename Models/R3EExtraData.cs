@@ -1,5 +1,6 @@
 using Newtonsoft.Json.Linq;
 using R3E.Data;
+using ReHUD.Models.LapData;
 
 namespace ReHUD.Models;
 
@@ -8,12 +9,14 @@ public struct R3EExtraData
     public R3EData rawData;
 
     // difference to RawData.FuelPerLap is that it averages instead of taking the maximum, and is also based on data from previous sessions.
-    public double fuelPerLap;
-    public double fuelLastLap;
-    public double averageLapTime;
-    public double bestLapTime;
-    public int estimatedRaceLapCount;
-    public double lapsUntilFinish;
+    public double? fuelPerLap;
+    public double? fuelLastLap;
+    public TireWear? tireWearPerLap;
+    public TireWear? tireWearLastLap;
+    public double? averageLapTime;
+    public double? bestLapTime;
+    public int? estimatedRaceLapCount;
+    public double? lapsUntilFinish;
     public bool forceUpdateAll;
 
     public double timestamp;

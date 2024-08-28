@@ -7,14 +7,14 @@ import RankedData from "./actions/RankedData.js";
 import TireManager from './actions/TireManager.js';
 import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, P2P_READY_VOLUME, RADAR_LOW_DETAIL, RADAR_OPACITY, RADAR_POINTER, RADAR_FADE_RANGE, FRAMERATE, HARDWARE_ACCELERATION, VR_MODE} from "./consts.js";
 import IShared from './r3eTypes.js';
-import {AudioController, Logger} from "./utils.js";
+import {AudioController} from "./utils.js";
 import {HudLayoutElements} from './settingsPage.js';
 import SharedMemorySupplier, {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
 import EventEmitter from './EventEmitter.js';
 import HubCommunication from './HubCommunication.js';
 
 export default class Hud extends EventListener {
-    public static readonly PROCESSING_WARNING_THRESHOLD = 9;
+    public static readonly PROCESSING_WARNING_THRESHOLD = 35;
     public static readonly DELAY_WARNING_THRESHOLD = 200;
     public static readonly DELAY_DROP_THRESHOLD = 5000;
 

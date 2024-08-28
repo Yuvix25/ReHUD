@@ -1,6 +1,6 @@
 import {ipcRenderer} from "electron";
 import Action from "../Action.js";
-import {IExtendedShared, sessionPhaseNotDriving, valueIsValidAssertNull} from "../consts.js";
+import {IExtendedShared, sessionPhaseNotDriving, valueIsValidAssertUndefined} from "../consts.js";
 import IShared, {ESession, IDriverData} from "../r3eTypes.js";
 import {Driver, IExtendedDriverData, getUid} from "../utils.js";
 import EventEmitter from '../EventEmitter.js';
@@ -64,15 +64,17 @@ export default class DriverManager extends Action {
         if (uid in this.drivers) {
             const prevSectors = driver.sectorTimePreviousSelf;
             let shouldSaveBestLap = false;
-            if (isMainDriver && valueIsValidAssertNull(data.lapTimePreviousSelf))
+            if (isMainDriver && valueIsValidAssertUndefined(data.lapTimePreviousSelf)) {
                 shouldSaveBestLap = this.drivers[uid].endLap(data.lapTimePreviousSelf, data.completedLaps, data.sessionType);
-            else if (valueIsValidAssertNull(prevSectors.sector3))
+            } else if (valueIsValidAssertUndefined(prevSectors.sector3)) {
                 shouldSaveBestLap = this.drivers[uid].endLap(prevSectors.sector3, driver.completedLaps, data.sessionType);
-            else
+            } else {
                 shouldSaveBestLap = this.drivers[uid].endLap(null, driver.completedLaps, data.sessionType);
+            }
 
-            if (shouldSaveBestLap && !data.gameInMenus && !data.gameInReplay && !data.gamePaused)
+            if (shouldSaveBestLap && !data.gameInMenus && !data.gameInReplay && !data.gamePaused) {
                 this.drivers[uid].saveBestLap(data.layoutId, driver.driverInfo.classId);
+            }
         }
 
         if (driver.place == 1 && (data.sessionTimeRemaining == 0 || this._leaderCrossedSFLineAt0 > 0)) {

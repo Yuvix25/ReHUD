@@ -3,7 +3,7 @@ import {
   IExtendedShared,
   addObjects,
   multiplyObject,
-  valueIsValidAssertNull,
+  valueIsValidAssertUndefined,
 } from '../consts.js';
 import IShared, { ESession, IDriverData, ITireData } from '../r3eTypes.js';
 
@@ -113,7 +113,7 @@ export default class TireManager extends Action {
     }
     return (
       this.state.tireWearLevel > 0 &&
-      Object.values(data.tireWear).every(valueIsValidAssertNull) &&
+      Object.values(data.tireWear).every(valueIsValidAssertUndefined) &&
       this.lastLapValid &&
       !data.gameInReplay &&
       !data.gamePaused

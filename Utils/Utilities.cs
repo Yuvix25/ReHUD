@@ -21,7 +21,7 @@ namespace ReHUD.Utils
         /// <summary>
         /// Returns either the estimated total number of laps and number of laps left, or null if the data is not available. <total, left>
         /// </summary>
-        internal static Tuple<int, double> GetEstimatedLapCount(R3EData data, FuelCombination combination) {
+        internal static Tuple<int?, double?> GetEstimatedLapCount(R3EData data, double? bestLaptime) {
             double fraction = data.lapDistanceFraction;
 
             double leaderFraction = fraction;
@@ -32,7 +32,7 @@ namespace ReHUD.Utils
             if (leader_ != null) {
                 DriverData leader = leader_.Value;
                 if (leader.finishStatus == 1) {
-                    return new Tuple<int, double>(data.completedLaps + 1, 1 - fraction);
+                    return new(data.completedLaps + 1, 1 - fraction);
                 }
 
                 if (leader.completedLaps != -1) {
@@ -48,7 +48,7 @@ namespace ReHUD.Utils
 
 
             if (leaderCompletedLaps == -1 || leaderCompletedLaps == -1 && leaderFraction == -1) {
-                return new Tuple<int, double>(-1, -1);
+                return new(null, null);
             }
 
 
@@ -66,10 +66,10 @@ namespace ReHUD.Utils
                     referenceLap = data.lapTimeBestSelf;
                 }
                 else {
-                    referenceLap = combination.GetBestLapTime();
-                    if (referenceLap == -1) {
-                        return new Tuple<int, double>(-1, -1);
+                    if (bestLaptime == null) {
+                        return new(null, null);
                     }
+                    referenceLap = bestLaptime.Value;
                 }
 
                 if (leaderCurrentLaptime != -1) {
@@ -82,11 +82,11 @@ namespace ReHUD.Utils
             else {
                 int sessionLaps = data.numberOfLaps;
                 if (sessionLaps == -1) {
-                    return new Tuple<int, double>(-1, -1);
+                    return new(null, null);
                 }
 
                 if (leaderCompletedLaps == -1) {
-                    return new Tuple<int, double>(sessionLaps, 0);
+                    return new(sessionLaps, 0);
                 }
                 res = sessionLaps - leaderCompletedLaps;
             }
@@ -94,7 +94,7 @@ namespace ReHUD.Utils
                     (leaderFraction < fraction ? 1 : 0) +
                     (data.sessionLengthFormat == 2 ? 1 : 0);
 
-            return new Tuple<int, double>(res + data.completedLaps, res - fraction);
+            return new(res + data.completedLaps, res - fraction);
         }
 
         internal static DriverData? GetLeader(R3EData data) {

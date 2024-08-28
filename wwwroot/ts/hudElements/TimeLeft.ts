@@ -1,5 +1,5 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {SESSION_TYPES, getSessionType, valueIsValidAssertNull} from "../consts.js";
+import {SESSION_TYPES, getSessionType, valueIsValidAssertUndefined} from "../consts.js";
 import {ESessionPhase} from "../r3eTypes.js";
 
 export default class TimeLeft extends HudElement {
@@ -37,10 +37,10 @@ export default class TimeLeft extends HudElement {
         }
 
 
-        if (!valueIsValidAssertNull(timeLeft) && raceNumberOfLaps >= 0) {
+        if (!valueIsValidAssertUndefined(timeLeft) && raceNumberOfLaps >= 0) {
             sessionType = 4;
 
-            if (!valueIsValidAssertNull(myLaps))
+            if (!valueIsValidAssertUndefined(myLaps))
                 myLaps = 0;
 
             showLapsLeft(`${myLaps + 1}/${raceNumberOfLaps}`);

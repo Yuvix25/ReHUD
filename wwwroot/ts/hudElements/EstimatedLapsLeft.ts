@@ -1,5 +1,5 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {valueIsValidAssertNull, NA, finished} from "../consts.js";
+import {valueIsValidAssertUndefined, NA, finished, valuesAreValid} from "../consts.js";
 import IShared, {EFinishStatus, ESession, IDriverData} from "../r3eTypes.js";
 
 export default class EstimatedLapsLeft extends HudElement {
@@ -8,16 +8,16 @@ export default class EstimatedLapsLeft extends HudElement {
     private crossedFinishLine: number = 0;
 
     protected override render(sessionType: ESession, finishStatus: EFinishStatus, completedLaps: number, fraction: number, sessionLengthFormat: number, totalLaps: number): string | Hide {
-        if (sessionType !== ESession.Race || !valueIsValidAssertNull(totalLaps) || finished(finishStatus) || !valueIsValidAssertNull(sessionLengthFormat)) {
+        if (sessionType !== ESession.Race || !valuesAreValid(totalLaps, sessionLengthFormat) || finished(finishStatus)) {
             return this.hide(NA);
         }
 
         this.crossedFinishLine = Math.max(this.crossedFinishLine, completedLaps);
 
-        if (!valueIsValidAssertNull(fraction)) {
+        if (!valueIsValidAssertUndefined(fraction)) {
             fraction = 0;
         }
-        if (this.crossedFinishLine == 0 || !valueIsValidAssertNull(completedLaps)) {
+        if (this.crossedFinishLine == 0 || !valueIsValidAssertUndefined(completedLaps)) {
             completedLaps = 0;
             totalLaps--; // in the backend, completedLaps is 0 before the start, so you get an extra lap calculated (the one you'll "complete" when crossing the start line)
         } else {

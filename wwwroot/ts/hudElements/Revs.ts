@@ -1,11 +1,11 @@
 import HudElement from "./HudElement.js";
-import {valueIsValidAssertNull} from "../consts.js";
+import {valueIsValidAssertUndefined} from "../consts.js";
 
 export default class Revs extends HudElement {
     override sharedMemoryKeys: string[] = ['engineRps', 'maxEngineRps', 'upshiftRps', 'pitLimiter'];
 
     protected override render(current: number, max: number, upshift: number, pitLimiter: number, id: string): null {
-        if (!valueIsValidAssertNull(current) || !valueIsValidAssertNull(max))
+        if (!valueIsValidAssertUndefined(current) || !valueIsValidAssertUndefined(max))
             return null;
 
         try {

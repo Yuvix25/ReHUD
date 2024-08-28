@@ -1,5 +1,5 @@
 import HudElement, {Hide, Style} from "./HudElement.js";
-import {DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, valueIsValidAssertNull} from "../consts.js";
+import {DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, valueIsValidAssertUndefined} from "../consts.js";
 import IShared, {IDriverData} from "../r3eTypes.js";
 import {DeltaManager, Driver} from "../utils.js";
 import SettingsValue from "../SettingsValue.js";
@@ -36,7 +36,7 @@ export default class Delta extends HudElement {
             currentLapValid = 1;
         }
 
-        if (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000 || !valueIsValidAssertNull(currentLapValid) || currentLapValid === 0) {
+        if (timeDeltaBestSelf == null || timeDeltaBestSelf == -1000 || !valueIsValidAssertUndefined(currentLapValid) || currentLapValid === 0) {
             DeltaManager.clear();
             return this.hide('0.000');
         }

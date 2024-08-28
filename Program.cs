@@ -1,6 +1,8 @@
 using ElectronNET.API;
+using Microsoft.EntityFrameworkCore;
 using ReHUD.Factories;
 using ReHUD.Interfaces;
+using ReHUD.Models.LapData;
 using ReHUD.Services;
 using ReHUD.Utils;
 using System.Diagnostics;
@@ -43,6 +45,8 @@ public static class Program
                 services.AddLogging();
                 services.AddSignalR();
                 services.AddRazorPages();
+                services.AddDbContext<LapDataContext>(options => options.UseSqlite($"Data Source={ILapDataService.DATA_PATH}"), ServiceLifetime.Singleton);
+                services.AddSingleton<ILapDataService, LapDataService>();
                 services.AddSingleton<IProcessObserverFactory, ProcessObserverFactory>();
                 services.AddSingleton<IRaceRoomObserver, RaceRoomObserver>();
                 services.AddSingleton<ISharedMemoryService, SharedMemoryService>();

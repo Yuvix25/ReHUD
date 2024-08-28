@@ -1,6 +1,6 @@
 import HudElement from "./HudElement.js";
 import SettingsValue from "../SettingsValue.js";
-import {validOrDefault, convertPressure, PRESSURE_UNITS, NA, valueIsValidAssertNull, lerpRGB3} from "../consts.js";
+import {validOrDefault, convertPressure, PRESSURE_UNITS, NA, valueIsValidAssertUndefined, lerpRGB3} from "../consts.js";
 import {IBrakeTemp, ITireData, ITireTemp} from "../r3eTypes.js";
 
 export default class Tires extends HudElement {
@@ -62,13 +62,13 @@ export default class Tires extends HudElement {
 
                 text.innerText = `${Math.round(temp)}°`;
 
-                if (!valueIsValidAssertNull(optimal) || !valueIsValidAssertNull(cold) || !valueIsValidAssertNull(hot) || !valueIsValidAssertNull(temp)) {
+                if (!valueIsValidAssertUndefined(optimal) || !valueIsValidAssertUndefined(cold) || !valueIsValidAssertUndefined(hot) || !valueIsValidAssertUndefined(temp)) {
                     this.root.style.setProperty(`--${name}-${i}-color`, 'var(--temp-color-normal)');
                     continue;
                 }
                 this.root.style.setProperty(`--${name}-${i}-color`, lerpRGB3([0, 0, 200], [0, 200, 0], [200, 0, 0], (optimal - cold) / (hot - cold), (temp - cold) / (hot - cold)));
 
-                if (!valueIsValidAssertNull(optimalBrake) || !valueIsValidAssertNull(coldBrake) || !valueIsValidAssertNull(hotBrake) || !valueIsValidAssertNull(currentBrake)) {
+                if (!valueIsValidAssertUndefined(optimalBrake) || !valueIsValidAssertUndefined(coldBrake) || !valueIsValidAssertUndefined(hotBrake) || !valueIsValidAssertUndefined(currentBrake)) {
                     this.root.style.setProperty(`--${name}-brake-color`, 'var(--temp-color-normal)');
                     continue;
                 }

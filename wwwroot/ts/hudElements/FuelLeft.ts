@@ -1,5 +1,5 @@
 import HudElement from "./HudElement.js";
-import {valueIsValidAssertNull, NA} from "../consts.js";
+import {valueIsValidAssertUndefined, NA} from "../consts.js";
 import {EEngineType, IDriverInfo} from '../r3eTypes.js';
 
 export default class FuelLeft extends HudElement {
@@ -9,6 +9,6 @@ export default class FuelLeft extends HudElement {
     if (vehicleInfo.engineType === EEngineType.Electric) {
         fuelLeft = battery;
     }
-    return valueIsValidAssertNull(fuelLeft) ? `${fuelLeft.toFixed(1)}` : NA;
+    return valueIsValidAssertUndefined(fuelLeft) ? `${fuelLeft.toFixed(1)}` : NA;
   }
 }

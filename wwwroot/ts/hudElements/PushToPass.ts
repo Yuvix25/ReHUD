@@ -1,5 +1,5 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {valueIsValid, NA, valueIsValidAssertNull} from "../consts.js";
+import {valueIsValid, NA, valueIsValidAssertUndefined} from "../consts.js";
 import IShared, {IPushToPass} from "../r3eTypes.js";
 
 export default class Rake extends HudElement {
@@ -19,7 +19,7 @@ export default class Rake extends HudElement {
     }
 
     protected override render(p2p: IPushToPass): string | Hide {
-        if (!valueIsValidAssertNull(p2p.available)) {
+        if (!valueIsValidAssertUndefined(p2p.available)) {
             return this.hide(NA);
         }
 

@@ -1,5 +1,5 @@
 import HudElement from "./HudElement.js";
-import {valueIsValidAssertNull} from "../consts.js";
+import {valueIsValidAssertUndefined} from "../consts.js";
 import {IAidSettings} from "../r3eTypes.js";
 
 export default class Assists extends HudElement {
@@ -12,8 +12,8 @@ export default class Assists extends HudElement {
         let tc = assists.tc;
         let abs = assists.abs;
 
-        tc = valueIsValidAssertNull(tc) ? tc : 0;
-        abs = valueIsValidAssertNull(abs) ? abs : 0;
+        tc = valueIsValidAssertUndefined(tc) ? tc : 0;
+        abs = valueIsValidAssertUndefined(abs) ? abs : 0;
 
         if (tc == 0 && abs == 0) {
             tcElement.style.display = 'none';

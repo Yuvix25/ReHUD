@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 namespace ReHUD;
 
 static class IpcCommunication {
-    public static readonly int DELAY_WARNING = 20;
+    public static readonly int DELAY_WARNING = 100;
     public static readonly int DELAY_ERROR = 500;
 
     /// <summary>

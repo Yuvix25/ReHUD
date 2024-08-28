@@ -195,7 +195,7 @@ export function finishedBadly(finishStatus: EFinishStatus) {
 export function getSessionType(
   sessionType: keyof typeof SESSION_TYPES
 ): (typeof SESSION_TYPES)[keyof typeof SESSION_TYPES] {
-  if (valueIsValidAssertNull(sessionType) && 0 <= sessionType && sessionType <= 4) {
+  if (valueIsValidAssertUndefined(sessionType) && 0 <= sessionType && sessionType <= 4) {
     return SESSION_TYPES[sessionType];
   }
   return SESSION_TYPES[5];
@@ -253,23 +253,23 @@ export function validOrDefault(val: any, defaultVal: any) {
   return val;
 }
 
-export function valueIsValidAssertNull(val: number) {
-  if (val == null) {
+export function valueIsValidAssertUndefined(val: number) {
+  if (val === undefined) {
     if (!GracePeriodBetweenPresets.isInGracePeriod) {
       throw new Error('value is null');
     }
     return false;
   }
-  return val != -1;
+  return valueIsValid(val);
 }
 
 export function valueIsValid(val: number) {
   return val != -1 && val != null;
 }
 
-export function allValuesAreValid(...values: number[]) {
+export function valuesAreValid(...values: number[]) {
   for (const val of values) {
-    if (!valueIsValidAssertNull(val)) return false;
+    if (!valueIsValidAssertUndefined(val)) return false;
   }
   return true;
 }

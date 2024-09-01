@@ -6,9 +6,10 @@ import {
   valueIsValidAssertUndefined,
 } from '../consts.js';
 import IShared, { ESession, IDriverData, ITireData } from '../r3eTypes.js';
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class TireManager extends Action {
-  override sharedMemoryKeys: string[] = ['tireWear', 'vehicleInfo', 'layoutId', 'tireWearActive', 'gameInReplay', 'gamePaused', 'currentLapValid'];
+  override sharedMemoryKeys: SharedMemoryKey[] = ['tireWear', 'vehicleInfo', 'layoutId', 'tireWearActive', 'gameInReplay', 'gamePaused', 'currentLapValid'];
   override isEnabled(): boolean {
     return true;
   }
@@ -30,17 +31,17 @@ export default class TireManager extends Action {
   }
 
   protected override onNewLap(
-    data: IShared,
+    data: IExtendedShared,
     driver: IDriverData,
     isMainDriver: boolean
   ): void {
     if (!isMainDriver) return;
 
-    if (this.checkState(data)) {
+    if (this.checkState(data.rawData)) {
       if (this.lastWear != null) {
         const wear = addObjects(
           this.lastWear,
-          multiplyObject(data.tireWear, -1)
+          multiplyObject(data.rawData.tireWear, -1)
         ); // last - current
         if (Object.values(wear).some((v) => v < 0)) {
           return;
@@ -64,30 +65,30 @@ export default class TireManager extends Action {
       }
     }
 
-    this.lastWear = data.tireWear;
+    this.lastWear = data.rawData.tireWear;
 
     this.lastLapValid = true;
   }
 
   protected override onPitlaneEntrance(
-    data: IShared,
+    data: IExtendedShared,
     driver: IDriverData,
     isMainDriver: boolean
   ): void {
-    if (isMainDriver) this.clearState(data, false);
+    if (isMainDriver) this.clearState(data.rawData, false);
   }
   protected override onPositionJump(
-    data: IShared,
+    data: IExtendedShared,
     driver: IDriverData,
     isMainDriver: boolean
   ): void {
-    if (isMainDriver) this.clearState(data, false);
+    if (isMainDriver) this.clearState(data.rawData, false);
   }
   protected override onSessionChange(
-    data: IShared,
+    data: IExtendedShared,
     lastSession: ESession
   ): void {
-    this.clearState(data, false);
+    this.clearState(data.rawData, false);
   }
 
   private clearState(data: IShared, clearAverage: boolean = true): void {

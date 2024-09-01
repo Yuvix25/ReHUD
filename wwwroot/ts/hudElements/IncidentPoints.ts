@@ -1,8 +1,9 @@
 import HudElement, {Hide, Style} from "./HudElement.js";
 import {valueIsValidAssertUndefined, NA, INC_POINTS_RED_THRESHOLD} from "../consts.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class IncidentPoints extends HudElement {
-    override sharedMemoryKeys: string[] = ['incidentPoints', 'maxIncidentPoints'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['incidentPoints', 'maxIncidentPoints'];
 
     protected override render(incidentPoints: number, maxIncidentPoints: number): string | Style | null | Hide {
         if (maxIncidentPoints === 0)

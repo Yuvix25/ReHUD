@@ -1,8 +1,9 @@
 import {Hide, HudElementWithHideDelay} from './HudElement.js';
 import {NA, valueIsValidAssertUndefined} from '../consts.js';
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class PitTimer extends HudElementWithHideDelay {
-  override sharedMemoryKeys: string[] = ['pitTotalDuration', 'pitElapsedTime'];
+  override sharedMemoryKeys: SharedMemoryKey[] = ['pitTotalDuration', 'pitElapsedTime'];
 
   private lastValidTotal: number = null;
 

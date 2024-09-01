@@ -1,9 +1,10 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {valueIsValidAssertUndefined, NA, finished, valuesAreValid} from "../consts.js";
+import {valueIsValidAssertUndefined, NA, finished, valuesAreValid, IExtendedShared} from "../consts.js";
 import IShared, {EFinishStatus, ESession, IDriverData} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class EstimatedLapsLeft extends HudElement {
-    override sharedMemoryKeys: string[] = ['sessionType', 'finishStatus', 'completedLaps', 'lapDistanceFraction', 'sessionLengthFormat', '+estimatedRaceLapCount'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['sessionType', 'finishStatus', 'completedLaps', 'lapDistanceFraction', 'sessionLengthFormat', '+estimatedRaceLapCount'];
 
     private crossedFinishLine: number = 0;
 
@@ -32,16 +33,16 @@ export default class EstimatedLapsLeft extends HudElement {
         return `${(totalLaps - completedLaps).toFixed(1)}/${totalLaps}`;
     }
 
-    protected override onNewLap(data: IShared, driver: IDriverData, isMainDriver: boolean): void {
+    protected override onNewLap(data: IExtendedShared, driver: IDriverData, isMainDriver: boolean): void {
         if (isMainDriver) {
             this.crossedFinishLine++;
         }
     }
-    protected override onSessionChange(data: IShared, lastSession: ESession): void {
+    protected override onSessionChange(data: IExtendedShared, lastSession: ESession): void {
         this.crossedFinishLine = 0;
     }
 
-    protected override onMainDriverChange(data: IShared, lastMainDriver: IDriverData): void {
+    protected override onMainDriverChange(data: IExtendedShared, lastMainDriver: IDriverData): void {
         this.crossedFinishLine = 0;
     }
 }

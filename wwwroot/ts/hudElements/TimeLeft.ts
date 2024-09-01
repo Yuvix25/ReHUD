@@ -1,9 +1,10 @@
 import HudElement, {Hide} from "./HudElement.js";
 import {SESSION_TYPES, getSessionType, valueIsValidAssertUndefined} from "../consts.js";
 import {ESessionPhase} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class TimeLeft extends HudElement {
-    override sharedMemoryKeys: string[] = ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps', 'sessionPhase'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['sessionTimeRemaining', 'numberOfLaps', 'sessionType', 'completedLaps', 'sessionPhase'];
 
     protected override render(timeLeft: number, raceNumberOfLaps: number, sessionType: keyof typeof SESSION_TYPES, myLaps: number, sessionPhase: ESessionPhase): null | Hide {
         const timeLeftElement = document.getElementById('time-left');

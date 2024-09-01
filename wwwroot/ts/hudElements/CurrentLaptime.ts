@@ -1,9 +1,10 @@
 import HudElement, {Style} from "./HudElement.js";
 import {laptimeFormat, valueIsValidAssertUndefined} from "../consts.js";
 import {Driver} from '../utils.js';
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class CurrentLaptime extends HudElement {
-    override sharedMemoryKeys: string[] = ['lapTimeCurrentSelf'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['lapTimeCurrentSelf'];
 
     protected override render(laptime: number): Style {
         if (!valueIsValidAssertUndefined(laptime)) {

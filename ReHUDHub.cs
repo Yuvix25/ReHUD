@@ -41,26 +41,37 @@ namespace SignalRChat.Hubs
             return Context.GetHttpContext()?.RequestServices.GetService<IR3EDataService>();
         }
 
-        public void SaveBestLap(int layoutId, int classId, double laptime, double[] points, double pointsPerMeter)
+        public void SaveBestLap(int lapId, double[] points, double pointsPerMeter)
         {
-            Startup.logger.InfoFormat("SaveBestLap: layoutId={0}, classId={1}, laptime={2}, points={3}, pointsPerMeter={4}", layoutId, classId, laptime, points.Length, pointsPerMeter);
+            Startup.logger.InfoFormat("SaveBestLap: lapId={0}, points={1}, pointsPerMeter={2}", lapId, points.Length, pointsPerMeter);
             var r3eDataService = GetR3EDataService();
             if (r3eDataService == null) {
                 Startup.logger.Error("SaveBestLap: r3eDataService is null");
                 return;
             }
-            r3eDataService.SaveBestLap(layoutId, classId, laptime, points, pointsPerMeter);
+
+            try {
+                r3eDataService.SaveBestLap(lapId, points, pointsPerMeter);
+            } catch (Exception e) {
+                Startup.logger.Error("SaveBestLap: Failed to save best lap", e);
+            }
         }
 
-        public string LoadBestLap(int layoutId, int classId)
+        public string LoadBestLap(int layoutId, int carId, int classPerformanceIndex)
         {
-            Startup.logger.InfoFormat("LoadBestLap: layoutId={0}, classId={1}", layoutId, classId);
+            Startup.logger.InfoFormat("LoadBestLap: layoutId={0}, carId={1}, classPerformanceIndex={2}", layoutId, carId, classPerformanceIndex);
             var r3eDataService = GetR3EDataService();
             if (r3eDataService == null) {
                 Startup.logger.Error("LoadBestLap: r3eDataService is null");
                 return "{}";
             }
-            return r3eDataService.LoadBestLap(layoutId, classId);
+
+            try {
+                return r3eDataService.LoadBestLap(layoutId, carId, classPerformanceIndex);
+            } catch (Exception e) {
+                Startup.logger.Error("LoadBestLap: Failed to load best lap", e);
+                return "{}";
+            }
         }
     }
 }

@@ -940,10 +940,20 @@ export default interface IShared {
      */
     ptpNumActivationsTotal: number;
 
-    /** Reserved data */
-    vehicleUnused1: number;
-    vehicleUnused2: number;
-    vehicleUnused3: IOrientation;
+    /**
+     * Battery state of charge
+     * Range: 0.0 - 100.0 (-1.0 = N/A)
+     */
+    batterySoC: number;
+
+    /**
+     * Brake water tank (-1.0 = N/A)
+     * Unit: Liters (l)
+     */
+    waterLeft: number;
+
+
+    vehicleUnused1: IOrientation;
 
     //////////////////////////////////////////////////////////////////////////
     /** Tires */
@@ -1006,8 +1016,14 @@ export default interface IShared {
 
     /** Reserved data */
 
-    tireUnused1: number;
-    tireUnused2: ITireData<number>;
+    /** -1.0 = N/A, 0.0 -> 100.0 percent */
+    tractionControlPercent: number;
+
+    /**
+     * Which type of material under player car tires (tarmac, gravel, etc.)
+     * Note: See the R3E.Constant.MtrlType enum
+     */
+    tireOnMtrl: ITireData<number>;
 
     // Tire load (N)
     // -1.0 = N/A

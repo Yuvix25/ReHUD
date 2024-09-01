@@ -1,9 +1,10 @@
 import HudElement from "./HudElement.js";
 import {valueIsValidAssertUndefined} from "../consts.js";
 import {IAidSettings} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class Assists extends HudElement {
-    override sharedMemoryKeys: string[] = ['aidSettings'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['aidSettings'];
 
     protected override render(assists: IAidSettings): null {
         const tcElement = document.getElementById('tc-icon');

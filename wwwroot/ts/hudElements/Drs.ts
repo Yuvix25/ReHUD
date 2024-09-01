@@ -1,9 +1,10 @@
 import HudElement, {Hide} from "./HudElement.js";
 import {NA} from "../consts.js";
 import {IDrs} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class Rake extends HudElement {
-    override sharedMemoryKeys: string[] = ['drs'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['drs'];
 
     protected override render(drs: IDrs): string | Hide {
         if (drs.equipped == 0) {

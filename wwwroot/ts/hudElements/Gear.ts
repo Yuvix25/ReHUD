@@ -1,9 +1,10 @@
 import {TRUCK_CLASS_ID} from '../consts.js';
 import {EEngineType, IDriverInfo} from '../r3eTypes.js';
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 import HudElement from "./HudElement.js";
 
 export default class Gear extends HudElement {
-    override sharedMemoryKeys: string[] = ['gear', 'vehicleInfo'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['gear', 'vehicleInfo'];
 
     private static readonly normalGearMap = new Map<number, string>([
         [-1, 'R'],

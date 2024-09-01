@@ -101,8 +101,6 @@ public class Startup
             if (HybridSupport.IsElectronActive) {
                 Electron.App.Ready += async () => {
                     try {
-                        r3eDataService.Load();
-
                         await Electron.IpcMain.On("get-port", (args) => {
                             var windows = new[] { MainWindow, SettingsWindow }.Where(x => x != null);
 

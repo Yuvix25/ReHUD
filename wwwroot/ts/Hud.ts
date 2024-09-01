@@ -12,6 +12,7 @@ import {HudLayoutElements} from './settingsPage.js';
 import SharedMemorySupplier, {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
 import EventEmitter from './EventEmitter.js';
 import HubCommunication from './HubCommunication.js';
+import {SharedMemoryKey} from './SharedMemoryConsumer.js';
 
 export default class Hud extends EventListener {
     public static readonly PROCESSING_WARNING_THRESHOLD = 35;
@@ -20,7 +21,7 @@ export default class Hud extends EventListener {
 
     public static readonly hub: HubCommunication = new HubCommunication();
 
-    override sharedMemoryKeys: string[] = ['+timestamp', 'player'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['+timestamp', 'player'];
     override isEnabled(): boolean {
         return true;
     }
@@ -173,10 +174,10 @@ export default class Hud extends EventListener {
         return Hud.data.rawData.player.gameSimulationTime;
     }
     
-    protected override onEnteredReplay(data: IShared): void {
+    protected override onEnteredReplay(data: IExtendedShared): void {
         ipcRenderer.send('load-replay-preset');
     }
-    protected override onLeftReplay(data: IShared): void {
+    protected override onLeftReplay(data: IExtendedShared): void {
         ipcRenderer.send('unload-replay-preset');
     }
 }

@@ -1,7 +1,8 @@
+import {IExtendedShared} from './consts.js';
 import EventEmitter from "./EventEmitter.js";
 import Hud from "./Hud";
 import NamedEntity from "./NamedEntity.js";
-import IShared, {ESession, ESessionPhase, IDriverData, IPushToPass} from "./r3eTypes.js";
+import {ESession, ESessionPhase, IDriverData, IPushToPass} from "./r3eTypes.js";
 
 export default abstract class EventListener extends NamedEntity {
     protected hud: Hud;
@@ -33,19 +34,19 @@ export default abstract class EventListener extends NamedEntity {
 
     protected onHud(): void {}
 
-    protected onNewLap(data: IShared, driver: IDriverData, isMainDriver: boolean) { }
-    protected onPositionJump(data: IShared, driver: IDriverData, isMainDriver: boolean) { }
-    protected onPitlaneEntrance(data: IShared, driver: IDriverData, isMainDriver: boolean) { }
-    protected onSessionChange(data: IShared, lastSession: ESession) { }
-    protected onSessionPhaseChange(data: IShared, lastSessionPhase: ESessionPhase) { }
-    protected onCarChange(data: IShared, lastModelId: number) { }
-    protected onTrackChange(data: IShared, lastLayoutId: number) { }
-    protected onMainDriverChange(data: IShared, lastMainDriver: IDriverData) { }
-    protected onGamePause(data: IShared) { }
-    protected onGameResume(data: IShared) { }
-    protected onEnteredReplay(data: IShared) { }
-    protected onLeftReplay(data: IShared) { }
-    protected onPushToPassDeactivation(data: IShared, pushToPass: IPushToPass) { }
-    protected onPushToPassActivation(data: IShared, pushToPass: IPushToPass) { }
-    protected onPushToPassReady(data: IShared) { }
+    protected onNewLap(extendedData: IExtendedShared, driver: IDriverData, isMainDriver: boolean) { }
+    protected onPositionJump(extendedData: IExtendedShared, driver: IDriverData, isMainDriver: boolean) { }
+    protected onPitlaneEntrance(extendedData: IExtendedShared, driver: IDriverData, isMainDriver: boolean) { }
+    protected onSessionChange(extendedData: IExtendedShared, lastSession: ESession) { }
+    protected onSessionPhaseChange(extendedData: IExtendedShared, lastSessionPhase: ESessionPhase) { }
+    protected onCarChange(extendedData: IExtendedShared, lastModelId: number) { }
+    protected onTrackChange(extendedData: IExtendedShared, lastLayoutId: number) { }
+    protected onMainDriverChange(extendedData: IExtendedShared, lastMainDriver: IDriverData) { }
+    protected onGamePause(extendedData: IExtendedShared) { }
+    protected onGameResume(extendedData: IExtendedShared) { }
+    protected onEnteredReplay(extendedData: IExtendedShared) { }
+    protected onLeftReplay(extendedData: IExtendedShared) { }
+    protected onPushToPassDeactivation(extendedData: IExtendedShared, pushToPass: IPushToPass) { }
+    protected onPushToPassActivation(extendedData: IExtendedShared, pushToPass: IPushToPass) { }
+    protected onPushToPassReady(extendedData: IExtendedShared) { }
 }

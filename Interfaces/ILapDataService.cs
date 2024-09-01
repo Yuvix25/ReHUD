@@ -8,15 +8,18 @@ namespace ReHUD.Interfaces
         public static readonly string DATA_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ReHUD", "UserData.db");
         public static readonly int MAX_ENTRIES = 20;
 
+        public void SaveChanges();
         public IDbContextTransaction BeginTransaction();
-        public CombinationSummary GetCombinationSummary(int trackLayoutId, int carId);
-        public LapLogWithTelemetry? GetBestLapLog(int trackLayoutId, int carId);
-        public LapLogWithTelemetry? GetBestLapLog(int trackLayoutId, int carId, int classPerformanceIndex);
 
-        public void LogContext(LapContext context);
-        public bool LogLap(LapLog lap);
-        public bool RemoveLogWithContext<T>(T log) where T : LogWithContext;
-        public void LogTireWear(TireWearLog tireWearLog);
-        public void LogFuelUsage(FuelUsageLog fuelUsageLog);
+        public LapContext GetLapContextOrCreate(int trackLayoutId, int carId, int classPerformanceIndex);
+        public void AddContext(LapContext context);
+        public LapData LogLap(LapContext context, bool valid, double lapTime);
+        public void Log(LapPointer entry);
+        public bool RemoveLapPointer<T>(T pointer) where T : LapPointer;
+
+        public CombinationSummary GetCombinationSummary(int trackLayoutId, int carId);
+        public LapData? GetLap(int lapId);
+        public LapData? GetBestLap(int trackLayoutId, int carId);
+        public LapData? GetBestLap(int trackLayoutId, int carId, int classPerformanceIndex);
     }
 }

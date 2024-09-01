@@ -142,18 +142,6 @@ export default abstract class HudElement extends Action {
             element.innerText = textValue;
     }
 
-    private getInputs(data: any): any[] {
-        const values = [];
-        for (const valueName of this.sharedMemoryKeys) {
-            if (valueName.startsWith('+')) {
-                values.push(data[valueName.slice(1)]);
-                continue;
-            }
-            values.push(data.rawData[valueName]);
-        }
-        return values;
-    }
-
     protected hide(alt?: string): string | Hide {
         if (!this.hud.isInEditMode()) {
             return HudElement.HIDE;

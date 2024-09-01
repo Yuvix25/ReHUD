@@ -1,15 +1,17 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {LAST_LAP_SECTORS_TIME_ON_SCREEN, laptimeFormat, mapSectorTimes, valueIsValidAssertUndefined} from "../consts.js";
+import {IExtendedShared, LAST_LAP_SECTORS_TIME_ON_SCREEN, laptimeFormat, mapSectorTimes, valueIsValidAssertUndefined} from "../consts.js";
 import IShared, {IDriverData, ISectorStarts, ISectors} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class SectorTimes extends HudElement {
-    override sharedMemoryKeys: string[] = ['sectorTimesSessionBestLap', 'sectorTimesBestSelf', 'sectorTimesCurrentSelf', 'sectorTimesPreviousSelf', 'lapDistanceFraction', 'sectorStartFactors'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['sectorTimesSessionBestLap', 'sectorTimesBestSelf', 'sectorTimesCurrentSelf', 'sectorTimesPreviousSelf', 'lapDistanceFraction', 'sectorStartFactors'];
 
     private lastCompletedLapTimestamp: number = null;
 
-    protected override onNewLap(_data: IShared, _driver: IDriverData, isMainDriver: boolean): void {
-        if (isMainDriver)
+    protected override onNewLap(_data: IExtendedShared, _driver: IDriverData, isMainDriver: boolean): void {
+        if (isMainDriver) {
             this.lastCompletedLapTimestamp = Date.now() / 1000;
+        }
     }
 
     protected override render(sessionBest_: ISectors, selfBest_: ISectors, selfCurrent_: ISectors, selfPrevious_: ISectors, lapDistance: number, sectorPositions: ISectorStarts, elementId: string): Hide | null {

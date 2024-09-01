@@ -3,10 +3,16 @@
 import {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
 import IShared, { EFinishStatus, ESessionPhase, IDriverData, ISectors } from './r3eTypes.js';
 
+
+type TireWear = { FrontLeft: number; FrontRight: number; RearLeft: number; RearRight: number; };
+
 export interface IExtendedShared {
   rawData: IShared;
+  lapId: number;
   fuelPerLap: number;
   fuelLastLap: number;
+  tireWearPerLap: TireWear;
+  tireWearLastLap: TireWear;
   averageLapTime: number;
   bestLapTime: number;
   estimatedRaceLapCount: number;

@@ -1,20 +1,21 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {valueIsValid, NA, valueIsValidAssertUndefined} from "../consts.js";
+import {valueIsValid, NA, valueIsValidAssertUndefined, IExtendedShared} from "../consts.js";
 import IShared, {IPushToPass} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class Rake extends HudElement {
-    override sharedMemoryKeys: string[] = ['pushToPass'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['pushToPass'];
 
     private p2pActiveTimeTotal = -1;
     private p2pWaitTimeTotal = -1;
 
-    protected override onPushToPassActivation(data: IShared, pushToPass: IPushToPass): void {
-        this.p2pActiveTimeTotal = data.pushToPass.engagedTimeLeft;
+    protected override onPushToPassActivation(data: IExtendedShared, pushToPass: IPushToPass): void {
+        this.p2pActiveTimeTotal = data.rawData.pushToPass.engagedTimeLeft;
     }
-    protected override onPushToPassDeactivation(data: IShared, pushToPass: IPushToPass): void {
-        this.p2pWaitTimeTotal = data.pushToPass.waitTimeLeft;
+    protected override onPushToPassDeactivation(data: IExtendedShared, pushToPass: IPushToPass): void {
+        this.p2pWaitTimeTotal = data.rawData.pushToPass.waitTimeLeft;
     }
-    protected override onPushToPassReady(data: IShared): void {
+    protected override onPushToPassReady(data: IExtendedShared): void {
         this.hud.p2pAudioController.play(1, 0);
     }
 

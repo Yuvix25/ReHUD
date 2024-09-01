@@ -330,7 +330,7 @@ IpcCommunication.handle('r3eData', async (event, data_: string) => {
     }
 
     try {
-        EventEmitter.cycle(data.rawData);
+        EventEmitter.cycle(data);
     } catch (e) {
         console.error('Error in EventEmitter.cycle', e);
     }

@@ -8,11 +8,12 @@ public struct R3EExtraData
 {
     public R3EData rawData;
 
+    public int? lapId;
     // difference to RawData.FuelPerLap is that it averages instead of taking the maximum, and is also based on data from previous sessions.
     public double? fuelPerLap;
     public double? fuelLastLap;
-    public TireWear? tireWearPerLap;
-    public TireWear? tireWearLastLap;
+    public TireWearObj? tireWearPerLap;
+    public TireWearObj? tireWearLastLap;
     public double? averageLapTime;
     public double? bestLapTime;
     public int? estimatedRaceLapCount;

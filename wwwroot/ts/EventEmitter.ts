@@ -1,5 +1,7 @@
+import {IExtendedShared} from './consts.js';
 import NamedEntity from './NamedEntity.js';
-import IShared, {ESession, ESessionPhase, IDriverData} from "./r3eTypes.js";
+import {ESession, ESessionPhase, IDriverData} from "./r3eTypes.js";
+import {SharedMemoryKey} from './SharedMemoryConsumer.js';
 import {getUid} from "./utils.js";
 
 export type EventCallbacks = {
@@ -41,28 +43,38 @@ export default class EventEmitter extends NamedEntity {
         return acc;
     }, {});
 
-    override sharedMemoryKeys: string[] = ['sessionType', 'sessionPhase', 'vehicleInfo', 'layoutId', 'driverData', 'playerName', 'gameInReplay', 'gameInMenus', 'gamePaused', 'controlType', 'layoutLength', 'pushToPass'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['sessionType', 'sessionPhase', 'vehicleInfo', 'layoutId', 'driverData', 'playerName', 'gameInReplay', 'gameInMenus', 'gamePaused', 'controlType', 'layoutLength', 'pushToPass'];
 
     override isEnabled(): boolean {
         return true;
     }
 
     static CLOSE_THRESHOLD = 50; // meters
-    static events: {[key: string]: Array<(data: any) => void>} = {};
-    static previousData: IShared = null;
+    static events: {[key: string]: Array<(data: IExtendedShared) => void>} = {};
+    static previousData: IExtendedShared = null;
     static uidMapPrevious: {[key: string]: IDriverData} = null;
     static newLapEvent: any;
     static enteredPitlaneEvent: any;
     static positionJumpEvent: any;
 
-    private static getValueByPath(data: IShared, path: string): any {
+    private static getValueByPath(data: IExtendedShared, path: string): any {
         const parts = path.split('.');
-        let value = data;
+        if (parts.length === 0) {
+            return data;
+        }
+
+        let value = data as any;
+        if (parts[0].startsWith('+')) {
+            parts[0] = parts[0].slice(1);
+        } else {
+            value = value.rawData;
+        }
+        
         for (const part of parts) {
             if (value == null) {
                 return null;
             }
-            value = (value as any)[part];
+            value = value[part];
         }
         return value;
     }
@@ -71,7 +83,7 @@ export default class EventEmitter extends NamedEntity {
      * Listen for an event.
      * @param callback - The callback function to be called when the event is emitted. The callback function will be passed the latest data from the Shared Memory API.
      */
-    static on(eventName: string, callback: (data: any) => void) {
+    static on(eventName: string, callback: (data: IExtendedShared) => void) {
         if (!this.events[eventName]) {
             this.events[eventName] = [];
         }
@@ -81,7 +93,7 @@ export default class EventEmitter extends NamedEntity {
     /**
      * Emit an event.
      */
-    static emit(eventName: string, isMainDriver: boolean | null, data: any, ...args: any[]) {
+    static emit(eventName: string, isMainDriver: boolean | null, extendedData: IExtendedShared, ...args: any[]) {
         if (isMainDriver !== false) {
             console.log('Emitting ' + eventName + ' event.');
 
@@ -97,7 +109,7 @@ export default class EventEmitter extends NamedEntity {
                     listenerData = EventEmitter.valueListenersReversed[eventName];
                     if (listenerData != null) {
                         listenerPrevValue = this.getValueByPath(this.previousData, listenerData[0]);
-                        listenerValue = this.getValueByPath(data, listenerData[0]);
+                        listenerValue = this.getValueByPath(extendedData, listenerData[0]);
                         listenerValueMap = (value: any) => listenerData[1] == null ? value : listenerData[1][value];
                         console.log(`${eventName}: ${listenerValueMap(listenerPrevValue)} -> ${listenerValueMap(listenerValue)}`);
                     }
@@ -109,7 +121,7 @@ export default class EventEmitter extends NamedEntity {
         const events = this.events[eventName];
         if (events) {
             events.forEach(fn => {                
-                fn.call(null, data, ...args);
+                fn.call(null, extendedData, ...args);
             });
         }
     }
@@ -119,7 +131,8 @@ export default class EventEmitter extends NamedEntity {
      * Listen for any event and emit if necessary.
      * @param data - Data from the Shared Memory API
      */
-    static cycle(data: IShared) {
+    static cycle(extendedData: IExtendedShared) {
+        const data = extendedData.rawData;
         const timestamp = Date.now();
 
         const newDriverMap: {[key: string]: IDriverData} = {};
@@ -135,45 +148,45 @@ export default class EventEmitter extends NamedEntity {
             let emittedPositionJump = false;
 
 
-            if (this.previousData.gameInReplay !== 1 && data.gameInReplay === 1) {
-              this.emit(EventEmitter.ENTERED_REPLAY_EVENT, null, data);
+            if (this.previousData.rawData.gameInReplay !== 1 && data.gameInReplay === 1) {
+              this.emit(EventEmitter.ENTERED_REPLAY_EVENT, null, extendedData);
             }
-            if (this.previousData.gameInReplay === 1 && data.gameInReplay !== 1) {
-              this.emit(EventEmitter.LEFT_REPLAY_EVENT, null, data);
+            if (this.previousData.rawData.gameInReplay === 1 && data.gameInReplay !== 1) {
+              this.emit(EventEmitter.LEFT_REPLAY_EVENT, null, extendedData);
             }
 
             for (const value of Object.keys(EventEmitter.valueListeners)) {
                 const previousValue = EventEmitter.getValueByPath(this.previousData, value);
-                const currentValue = EventEmitter.getValueByPath(data, value);
+                const currentValue = EventEmitter.getValueByPath(extendedData, value);
                 if (previousValue !== currentValue) {
                     for (const event of EventEmitter.valueListeners[value]) {
-                        this.emit(event[0], null, data, previousValue);
+                        this.emit(event[0], null, extendedData, previousValue);
                     }
                 }
             }
 
-            if (data.controlType != null && data.controlType > 0 && this.previousData.controlType != data.controlType) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
-                this.emit(EventEmitter.POSITION_JUMP_EVENT, true, data, newDriverMap[mainDriverUid]);
+            if (data.controlType != null && data.controlType > 0 && this.previousData.rawData.controlType != data.controlType) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
+                this.emit(EventEmitter.POSITION_JUMP_EVENT, true, extendedData, newDriverMap[mainDriverUid]);
                 emittedPositionJump = true;
             }
 
-            if (data.gamePaused == 1 && this.previousData.gamePaused != 1) {
-              this.emit(EventEmitter.GAME_PAUSED_EVENT, null, data);
+            if (data.gamePaused == 1 && this.previousData.rawData.gamePaused != 1) {
+              this.emit(EventEmitter.GAME_PAUSED_EVENT, null, extendedData);
             }
-            if (data.gamePaused == 0 && this.previousData.gamePaused == 1) {
-              this.emit(EventEmitter.GAME_RESUMED_EVENT, null, data);
-            }
-
-            if(data.pushToPass.waitTimeLeft > 0 && this.previousData.pushToPass.waitTimeLeft == 0) {
-                this.emit(EventEmitter.P2P_DEACTIVATION_EVENT, null, data)
+            if (data.gamePaused == 0 && this.previousData.rawData.gamePaused == 1) {
+              this.emit(EventEmitter.GAME_RESUMED_EVENT, null, extendedData);
             }
 
-            if(data.pushToPass.engagedTimeLeft > 0 && this.previousData.pushToPass.engagedTimeLeft == 0) {
-                this.emit(EventEmitter.P2P_ACTIVATION_EVENT, null, data)
+            if(data.pushToPass.waitTimeLeft > 0 && this.previousData.rawData.pushToPass.waitTimeLeft == 0) {
+                this.emit(EventEmitter.P2P_DEACTIVATION_EVENT, null, extendedData)
             }
 
-            if(data.pushToPass.waitTimeLeft == 0 && this.previousData.pushToPass.waitTimeLeft > 0 && data.gameInMenus != 1 || data.pushToPass.amountLeft > 0 && this.previousData.pushToPass.amountLeft == 0) {
-                this.emit(EventEmitter.P2P_READY_EVENT, null, data)
+            if(data.pushToPass.engagedTimeLeft > 0 && this.previousData.rawData.pushToPass.engagedTimeLeft == 0) {
+                this.emit(EventEmitter.P2P_ACTIVATION_EVENT, null, extendedData)
+            }
+
+            if(data.pushToPass.waitTimeLeft == 0 && this.previousData.rawData.pushToPass.waitTimeLeft > 0 && data.gameInMenus != 1 || data.pushToPass.amountLeft > 0 && this.previousData.rawData.pushToPass.amountLeft == 0) {
+                this.emit(EventEmitter.P2P_READY_EVENT, null, extendedData)
             }
 
             for (const uid of Object.keys(newDriverMap)) {
@@ -203,13 +216,13 @@ export default class EventEmitter extends NamedEntity {
 
                 if (toEmit != null) {
                     if (!(toEmit === EventEmitter.NEW_LAP_EVENT && isMainDriver) || !emittedPositionJump) {
-                      this.emit(toEmit, isMainDriver, data, driver);
+                      this.emit(toEmit, isMainDriver, extendedData, driver);
                     }
                 }
             }
         }
         
-        this.previousData = data;
+        this.previousData = extendedData;
         (this.previousData as any).timestamp = timestamp;
         this.uidMapPrevious = newDriverMap;
     }

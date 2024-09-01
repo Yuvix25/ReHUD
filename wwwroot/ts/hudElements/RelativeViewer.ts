@@ -4,10 +4,11 @@ import {Driver, IExtendedDriverData, getUid} from "../utils.js";
 import {RELATIVE_LENGTH, halfLengthTop, halfLengthBottom, insertCell, NA, nameFormat, getClassColors, finishedBadly} from "../consts.js";
 import DriverManager from "../actions/DriverManager.js";
 import RankedData from "../actions/RankedData.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 
 export default class RelativeViewer extends HudElement {
-    override sharedMemoryKeys: string[] = ['driverData', 'position', 'sessionPhase'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['driverData', 'position', 'sessionPhase'];
 
     public static readonly IMAGE_REDIRECT = 'https://game.raceroom.com/store/image_redirect?id=';
 

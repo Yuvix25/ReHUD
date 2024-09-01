@@ -1,9 +1,10 @@
 import HudElement from "./HudElement.js";
 import {valueIsValid, NA} from "../consts.js";
 import {IPlayerData, IDriverInfo} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class Rake extends HudElement {
-    override sharedMemoryKeys: string[] = ['player','vehicleInfo'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['player','vehicleInfo'];
 
     protected override render(playerData: IPlayerData, vehicleInfo: IDriverInfo): string {
         const rakeBar = document.getElementById('rake-bar');

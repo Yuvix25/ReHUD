@@ -6,34 +6,39 @@ namespace ReHUD.Models.LapData {
         public LapDataContext() { }
         public LapDataContext(DbContextOptions<LapDataContext> options) : base(options) { }
 
-        public DbSet<LapContext> LapContexts { get; set; }
-        public DbSet<LapLog> LapLogs { get; set; }
-        public DbSet<LapLogWithTelemetry> BestLapLogs { get; set; }
-        public DbSet<TireWearLog> TireWearLogs { get; set; }
-        public DbSet<FuelUsageLog> FuelUsageLogs { get; set; }
+        public DbSet<LapContext> LapsContext { get; set; }
+        public DbSet<LapData> LapsData { get; set; }
+        public DbSet<LapTime> LapTimes { get; set; }
+        public DbSet<TireWear> TireWears { get; set; }
+        public DbSet<FuelUsage> FuelUsages { get; set; }
+        public DbSet<Telemetry> BestLaps { get; set; }
+
+        private static readonly string DATA_FK = "DataId";
+        private static readonly string[] CONTEXT_FK = new string[] { "TrackLayoutId", "CarId", "ClassPerformanceIndex" };
+
+        private static void ConfigureEntityWithContext<T>(CollectionNavigationBuilder<LapContext, T> builder) where T : class, IEntityWithContext {
+            builder.WithOne(e => e.Context).HasForeignKey(CONTEXT_FK).IsRequired();
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             try {
                 var lapContext = modelBuilder.Entity<LapContext>();
-                lapContext.HasKey(l => new { l.Id });
-                lapContext.HasIndex(l => new { l.Timestamp, l.TrackLayoutId, l.CarId, l.ClassPerformanceIndex });
-                lapContext.HasOne(l => l.LapLog).WithOne(c => c.Context).HasForeignKey<LapLog>("ContextId").IsRequired(false);
-                lapContext.HasOne(l => l.TireWearLog).WithOne(c => c.Context).HasForeignKey<TireWearLog>("ContextId").IsRequired(false);
-                lapContext.HasOne(l => l.FuelUsageLog).WithOne(c => c.Context).HasForeignKey<FuelUsageLog>("ContextId").IsRequired(false);
+                lapContext.HasKey(l => new { l.TrackLayoutId, l.CarId, l.ClassPerformanceIndex });
+                lapContext.HasIndex(l => new { l.TrackLayoutId, l.CarId, l.ClassPerformanceIndex });
+                ConfigureEntityWithContext(lapContext.HasMany(l => l.Laps));
+                lapContext.HasOne(l => l.BestLap);
 
-                var lapLog = modelBuilder.Entity<LapLog>();
-                lapLog.HasKey(l => new { l.Id });
-                lapLog.OwnsOne(l => l.TireWear);
+                var lapData = modelBuilder.Entity<LapData>();
+                lapData.HasOne(l => l.LapTime).WithOne(c => c.Lap).HasForeignKey<LapTime>(DATA_FK).IsRequired();
+                lapData.HasOne(l => l.TireWear).WithOne(c => c.Lap).HasForeignKey<TireWear>(DATA_FK).IsRequired(false);
+                lapData.HasOne(l => l.FuelUsage).WithOne(c => c.Lap).HasForeignKey<FuelUsage>(DATA_FK).IsRequired(false);
+                lapData.HasOne(l => l.Telemetry).WithOne(c => c.Lap).HasForeignKey<Telemetry>(DATA_FK).IsRequired(false);
 
-                var bestLapLog = modelBuilder.Entity<LapLogWithTelemetry>();
-                bestLapLog.OwnsOne(l => l.LapTelemetry);
+                var tireWear = modelBuilder.Entity<TireWear>();
+                tireWear.OwnsOne(t => t.Value);
 
-                var tireWearLog = modelBuilder.Entity<TireWearLog>();
-                tireWearLog.HasKey(l => new { l.Id });
-                tireWearLog.OwnsOne(l => l.TireWear);
-
-                var fuelUsageLog = modelBuilder.Entity<FuelUsageLog>();
-                fuelUsageLog.HasKey(l => new { l.Id });
+                var telemetry = modelBuilder.Entity<Telemetry>();
+                telemetry.OwnsOne(t => t.Value);
             } catch (Exception e) {
                 Console.WriteLine(e);
             }

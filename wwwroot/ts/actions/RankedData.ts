@@ -1,5 +1,6 @@
 import EventListener from "../EventListener.js";
 import {IDriverData} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export type RankedDataEntry = {
     UserId: number,
@@ -15,7 +16,7 @@ export type RankedDataEntry = {
 
 
 export default class RankedData extends EventListener {
-    override sharedMemoryKeys: string[] = [];
+    override sharedMemoryKeys: SharedMemoryKey[] = [];
     override isEnabled(): boolean {
         return true;
     }

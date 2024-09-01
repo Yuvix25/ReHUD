@@ -1,6 +1,8 @@
+import {EventEmitter} from 'ws';
 import EventListener from './EventListener.js';
 import Hud from './Hud.js';
 import SettingsValue from './SettingsValue.js';
+import {SharedMemoryKey} from './SharedMemoryConsumer.js';
 import { RELATIVE_SAFE_MODE, base64EncodedUint8ArrayToString, valueIsValid } from './consts.js';
 import { ESession, IDriverData, IDriverInfo } from './r3eTypes.js';
 import { RawSourceMap, SourceMapConsumer } from 'source-map-js';
@@ -61,7 +63,7 @@ export class DeltaManager {
 }
 
 export class Driver extends EventListener {
-  override sharedMemoryKeys: string[] = []; // while this class does use shared memory, it's provided as single values by the driver manager, so it does not directly access the shared memory object
+  override sharedMemoryKeys: SharedMemoryKey[] = []; // while this class does use shared memory, it's provided as single values by the driver manager, so it does not directly access the shared memory object
   override isEnabled(): boolean {
     return true;
   }
@@ -188,6 +190,9 @@ export class Driver extends EventListener {
    * Erases the temporary data of the driver.
    */
   clearTempData() {
+    if (Driver.mainDriver === this) {
+      console.log('Clearing temp data for', this.userId);
+    }
     this.crossedFinishLine = null;
     this.currentIndex = null;
     this.setLapInvalid();
@@ -212,7 +217,12 @@ export class Driver extends EventListener {
         }
         this.currentIndex = newCurrentIndex;
       } else if ((gapToSpot / Driver.pointsPerMeter) < -Driver.positionJumpThreshold) { // negative progress shouldn't happen, endLap is supposed to move currentIndex back to -1
-        this.clearTempData();
+        if (this.previousDistance >= this.trackLength - 20 && distance < 20) {
+          // assume the driver has crossed the finish line, no negative progress (happens when completedLaps' update is delayed)
+        } else {
+          console.warn('Negative progress for ' + this.userId, gapToSpot, this.currentIndex, newCurrentIndex, this.previousDistance, distance, this.trackLength);
+          this.clearTempData();
+        }
       }
     }
 
@@ -239,6 +249,19 @@ export class Driver extends EventListener {
     }
     this.currentIndex = -1;
 
+    if (Driver.mainDriver === this) {
+      console.log('Data dump',
+        this.crossedFinishLine,
+        sessionType,
+        completedLaps,
+        laptime,
+        this.bestLapTime,
+        this.currentLapValid,
+        this.bestLapTimeValid,
+        this.completedLaps,
+      );
+    }
+
     if (this.crossedFinishLine != null && (sessionType !== ESession.Race || completedLaps > 1)) {
       if (!valueIsValid(laptime)) {
         laptime = time - this.points[0];
@@ -248,7 +271,7 @@ export class Driver extends EventListener {
 
       if (!SettingsValue.get(RELATIVE_SAFE_MODE)) {
         if (laptime < Driver.MIN_LAP_TIME) {
-          console.warn(`Invalid lap time for`, this.userId, laptime);
+          console.warn('Invalid lap time for', this.userId, laptime);
           this.setLapInvalid();
         } else {
           let didUpdateBestLap = false;
@@ -287,11 +310,12 @@ export class Driver extends EventListener {
   /**
    * Save the best lap (locally)
    */
-  saveBestLap(
-    layoutId: number,
-    carClassId: number,
-  ) {
-    Hud.hub.invoke('SaveBestLap', layoutId, carClassId, this.bestLapTime, this.bestLap, Driver.pointsPerMeter);
+  saveBestLap(lapId: number) {
+    if (lapId == null) {
+      console.error('Lap ID is null, cannot save best lap');
+      return;
+    }
+    Hud.hub.invoke('SaveBestLap', lapId, this.bestLap, Driver.pointsPerMeter);
   }
 
   /**

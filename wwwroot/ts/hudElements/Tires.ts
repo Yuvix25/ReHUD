@@ -2,9 +2,10 @@ import HudElement from "./HudElement.js";
 import SettingsValue from "../SettingsValue.js";
 import {validOrDefault, convertPressure, PRESSURE_UNITS, NA, valueIsValidAssertUndefined, lerpRGB3} from "../consts.js";
 import {IBrakeTemp, ITireData, ITireTemp} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class Tires extends HudElement {
-    override sharedMemoryKeys: string[] = ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt', 'tirePressure'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt', 'tirePressure'];
 
     protected override render(tireTemp: ITireData<ITireTemp>, tireWear: ITireData<number>, brakeTemp: ITireData<IBrakeTemp>, tireDirt: ITireData<number>, tirePressure: ITireData<number>): null {
         const nameMap = {

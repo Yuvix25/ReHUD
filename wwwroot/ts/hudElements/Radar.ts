@@ -3,6 +3,7 @@ import SettingsValue from "../SettingsValue.js";
 import {RADAR_RANGE, RADAR_BEEP_MIN_SPEED, RADAR_LOW_DETAIL, RADAR_OPACITY, RADAR_FADE_RANGE, RADAR_POINTER} from "../consts.js";
 import {IDriverData, IPlayerData, IVector3} from "../r3eTypes.js";
 import {distanceFromZero, getRadarPointerRotation, mpsToKph, rotateVector, rotationMatrixFromEular, vectorSubtract,} from "../utils.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 
 interface IExtendedDriverData extends IDriverData {
@@ -11,7 +12,7 @@ interface IExtendedDriverData extends IDriverData {
 }
 
 export default class Radar extends HudElementWithHideDelay {
-    override sharedMemoryKeys: string[] = ['driverData', 'player', 'position', 'carSpeed'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['driverData', 'player', 'position', 'carSpeed'];
 
     protected override render(drivers: IExtendedDriverData[], driver: IPlayerData, myPlace: number, speed: number, radarId: string): Hide | null {
         if (driver == undefined) {

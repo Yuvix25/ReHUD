@@ -1,8 +1,9 @@
 import HudElement, {Hide} from "./HudElement.js";
 import {ICarDamage} from "../r3eTypes.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class Damage extends HudElement {
-    override sharedMemoryKeys: string[] = ['carDamage'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['carDamage'];
 
     protected override render(damage: ICarDamage): Hide | null {
         const parts = ['engine', 'transmission', 'suspension', 'aerodynamics'] as const;

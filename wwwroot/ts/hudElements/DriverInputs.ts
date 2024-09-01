@@ -1,8 +1,9 @@
 import HudElement from "./HudElement.js";
 import {validNumberOrDefault, valueIsValidAssertUndefined} from "../consts.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class DriverInputs extends HudElement {
-    override sharedMemoryKeys: string[] = ['throttleRaw', 'throttle', 'brakeRaw', 'brake', 'clutchRaw', 'clutch', 'steerInputRaw', 'steerWheelRangeDegrees'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['throttleRaw', 'throttle', 'brakeRaw', 'brake', 'clutchRaw', 'clutch', 'steerInputRaw', 'steerWheelRangeDegrees'];
 
     private static rawOrReal(n: number, r: number): number {
         return validNumberOrDefault(n, validNumberOrDefault(r, 0));

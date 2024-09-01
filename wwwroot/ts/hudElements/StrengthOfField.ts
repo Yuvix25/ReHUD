@@ -1,9 +1,10 @@
 import HudElement, { Hide } from "./HudElement.js";
 import {IDriverData} from "../r3eTypes.js";
 import { NA } from "../consts.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class StrengthOfField extends HudElement {
-    override sharedMemoryKeys: string[] = ['driverData'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['driverData'];
 
     protected override render(drivers: IDriverData[]): string | Hide {
         let rankings = drivers.map(driver => this.hud.rankedDataService.getRankedDataForDriver(driver));

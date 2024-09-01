@@ -1,15 +1,17 @@
 import HudElement, {Hide, Style} from "./HudElement.js";
-import {DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, valueIsValidAssertUndefined} from "../consts.js";
-import IShared, {IDriverData} from "../r3eTypes.js";
+import {DELTA_MODE, IExtendedShared, SHOW_DELTA_ON_INVALID_LAPS, valueIsValidAssertUndefined} from "../consts.js";
+import {IDriverData} from "../r3eTypes.js";
 import {DeltaManager, Driver} from "../utils.js";
 import SettingsValue from "../SettingsValue.js";
+import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class Delta extends HudElement {
-    override sharedMemoryKeys: string[] = ['timeDeltaBestSelf', 'lapTimeCurrentSelf', 'currentLapValid', 'lapDistance'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['timeDeltaBestSelf', 'lapTimeCurrentSelf', 'currentLapValid', 'lapDistance'];
 
-    protected override onNewLap(_data: IShared, driver: IDriverData, isMainDriver: boolean): void {
-        if (isMainDriver)
+    protected override onNewLap(_data: IExtendedShared, driver: IDriverData, isMainDriver: boolean): void {
+        if (isMainDriver) {
             DeltaManager.clear();
+        }
     }
 
     protected override render(timeDeltaBestSelf: number, lapTimeCurrentSelf: number, currentLapValid: number, lapDistance: number, elementId: string): Hide | Style {

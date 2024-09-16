@@ -39,24 +39,24 @@ namespace ReHUD.Services {
 
         private static IIncludableQueryable<LapContext, Telemetry?> IncludeRelated(DbSet<LapContext> set) {
             return set
-                .Include(c => c.Laps).ThenInclude(l => l.LapTime)
-                .Include(c => c.Laps).ThenInclude(l => l.TireWear)
-                .Include(c => c.Laps).ThenInclude(l => l.FuelUsage)
+                .Include(c => c.Entries).ThenInclude(l => l.LapTime)
+                .Include(c => c.Entries).ThenInclude(l => l.TireWear)
+                .Include(c => c.Entries).ThenInclude(l => l.FuelUsage)
                 .Include(c => c.BestLap).ThenInclude(l => l!.Telemetry);
         }
 
         private LapContext? GetLapContext(int trackLayoutId, int carId) {
             lock (lockObject) {
-                return IncludeRelated(context.LapsContext).Single(c => c.TrackLayoutId == trackLayoutId && c.CarId == carId);
+                return IncludeRelated(context.LapContexts).Single(c => c.TrackLayoutId == trackLayoutId && c.CarId == carId);
             }
         }
 
         private LapContext? GetLapContext(int trackLayoutId, int carId, int classPerformanceIndex, bool forceCarId = false) {
             lock (lockObject) {
                 if (forceCarId) {
-                    return IncludeRelated(context.LapsContext).Single(c => c.TrackLayoutId == trackLayoutId && c.CarId == carId && c.ClassPerformanceIndex == classPerformanceIndex);
+                    return IncludeRelated(context.LapContexts).Single(c => c.TrackLayoutId == trackLayoutId && c.CarId == carId && c.ClassPerformanceIndex == classPerformanceIndex);
                 } else {
-                    var byClassPerformanceIndex = IncludeRelated(context.LapsContext).Where(c => c.TrackLayoutId == trackLayoutId && c.ClassPerformanceIndex == classPerformanceIndex);
+                    var byClassPerformanceIndex = IncludeRelated(context.LapContexts).Where(c => c.TrackLayoutId == trackLayoutId && c.ClassPerformanceIndex == classPerformanceIndex);
                     var byCarId = byClassPerformanceIndex.Where(c => c.CarId == carId);
                     if (byCarId.Any()) {
                         return byCarId.First();
@@ -78,7 +78,7 @@ namespace ReHUD.Services {
                     return;
                 }
 
-                var lapContext = entry.Context;
+                var lapContext = entry.LapContext;
 
                 if (entry is Telemetry telemetry) {
                     var oldLap = lapContext.BestLap;
@@ -147,7 +147,7 @@ namespace ReHUD.Services {
                         CarId = carId,
                     };
                 }
-                var laps = lapContext.Laps;
+                var laps = lapContext.Entries;
                 var lapTimes = lapContext.LapTimes;
                 var tireWears = lapContext.TireWears;
                 var fuelUsages = lapContext.FuelUsages;
@@ -171,7 +171,7 @@ namespace ReHUD.Services {
 
         public LapData? GetLap(int lapId) {
             lock (lockObject) {
-                return context.LapsData.Find(lapId);
+                return context.LapDatas.Find(lapId);
             }
         }
 
@@ -229,7 +229,7 @@ namespace ReHUD.Services {
 
         private static bool ShouldRemoveLapContext(LapContext context) {
             lock (context) {
-                return context.Laps.Count == 0;
+                return context.Entries.Count == 0;
             }
         }
 

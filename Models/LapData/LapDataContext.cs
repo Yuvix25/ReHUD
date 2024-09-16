@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -6,23 +7,53 @@ namespace ReHUD.Models.LapData {
         public LapDataContext() { }
         public LapDataContext(DbContextOptions<LapDataContext> options) : base(options) { }
 
-        public DbSet<LapContext> LapsContext { get; set; }
-        public DbSet<LapData> LapsData { get; set; }
+        public DbSet<LapContext> LapContexts { get; set; }
+        public DbSet<LapData> LapDatas { get; set; }
         public DbSet<LapTime> LapTimes { get; set; }
+        public DbSet<TireWearContext> TireWearContexts { get; set; }
         public DbSet<TireWear> TireWears { get; set; }
+        public DbSet<FuelUsageContext> FuelUsageContexts { get; set; }
         public DbSet<FuelUsage> FuelUsages { get; set; }
         public DbSet<Telemetry> BestLaps { get; set; }
 
         private static readonly string DATA_FK = "DataId";
-        private static readonly string[] CONTEXT_FK = new string[] { "TrackLayoutId", "CarId", "ClassPerformanceIndex" };
+        private static readonly string LAP_CONTEXT_FK = "LapContextId";
+        private static readonly string TIRE_WEAR_CONTEXT_FK = "TireWearContextId";
+        private static readonly string FUEL_USAGE_CONTEXT_FK = "FuelUsageContextId";
+
+        private static readonly Expression<Func<LapContext, object?>> LAP_CONTEXT_KEYS = (c) => new {
+            c.TrackLayoutId,
+            c.CarId,
+            c.ClassPerformanceIndex,
+            c.TireCompound,
+        };
+        private static readonly Expression<Func<TireWearContext, object?>> TIRE_WEAR_CONTEXT_KEYS = (c) => new {
+            c.TireWearRate,
+        };
+        private static readonly Expression<Func<FuelUsageContext, object?>> FUEL_USAGE_CONTEXT_KEYS = (c) => new {
+            c.FuelUsageRate,
+        };
+
+
+        private static EntityTypeBuilder<T> ConfigureContext<C, T>(ModelBuilder modelBuilder, Expression<Func<C, object?>> keys, string foreignKey) where C : Context<T> where T : class, IEntityWithContext<C>, IEntityWithContext<Context<T>?> {
+            var context = modelBuilder.Entity<C>();
+            context.HasAlternateKey(keys);
+            context.HasIndex(keys);
+            context.HasMany(l => l.Entries).WithOne(e => e.Context).HasForeignKey(foreignKey).IsRequired();
+
+            return context;
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             try {
-                var lapContext = modelBuilder.Entity<LapContext>();
-                lapContext.HasKey(l => new { l.TrackLayoutId, l.CarId, l.ClassPerformanceIndex });
-                lapContext.HasIndex(l => new { l.TrackLayoutId, l.CarId, l.ClassPerformanceIndex });
-                lapContext.HasMany(l => l.Laps).WithOne(e => e.Context).HasForeignKey(CONTEXT_FK).IsRequired();
-                lapContext.HasOne(l => l.BestLap);
+                ConfigureContext<LapContext, LapData>(modelBuilder, LAP_CONTEXT_KEYS, LAP_CONTEXT_FK).HasOne(l => l.BestLap);
+                ConfigureContext<TireWearContext, TireWear>(modelBuilder, TIRE_WEAR_CONTEXT_KEYS, TIRE_WEAR_CONTEXT_FK);
+
+
+                var tireWearContext = modelBuilder.Entity<TireWearContext>();
+                tireWearContext.HasAlternateKey(TIRE_WEAR_CONTEXT_KEYS);
+                tireWearContext.HasIndex(TIRE_WEAR_CONTEXT_KEYS);
+                tireWearContext.HasMany(l => l.Entries).WithOne(e => e.TireWearContext).HasForeignKey(TIRE_WEAR_CONTEXT_FK).IsRequired();
 
                 var lapData = modelBuilder.Entity<LapData>();
                 lapData.HasOne(l => l.LapTime).WithOne(c => c.Lap).HasForeignKey<LapTime>(DATA_FK).IsRequired();

@@ -8,28 +8,53 @@ namespace ReHUD.Models.LapData
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Key]
-        public int Id { get; set; }
+        public virtual int Id { get; set; }
     }
 
-    public interface IEntityWithContext
+    public interface IEntityWithContext<C> where C : Context?
     {
-        public LapContext Context { get; set; }
+        public C Context { get; }
     }
 
-    public class LapContext {
+
+    public abstract class Context : EntityWithId
+    {
+        [Key]
+        public override int Id => GetHashCode();
+
+        public override abstract bool Equals(object? obj);
+        public override abstract int GetHashCode();
+
+        public static bool operator ==(Context lhs, Context rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator !=(Context lhs, Context rhs)
+        {
+            return !(lhs == rhs);
+        }
+    }
+
+    public abstract class Context<T> : Context where T : class, IEntityWithContext<Context<T>?>
+    {
+        public ICollection<T> Entries { get; } = new List<T>();
+    }
+
+    public class LapContext : Context<LapData> {
         public int TrackLayoutId { get; set; }
         public int CarId { get; set; }
         public int ClassPerformanceIndex { get; set; }
+        public R3E.Constant.TireSubtype TireCompound { get; set; }
 
-        public ICollection<LapData> Laps { get; } = new List<LapData>();
         public LapData? BestLap { get; set; }
 
         [NotMapped]
-        public IEnumerable<LapTime> LapTimes => Laps.Where(l => l.LapTime != null).Select(l => l.LapTime);
+        public IEnumerable<LapTime> LapTimes => Entries.Where(l => l.LapTime != null).Select(l => l.LapTime);
         [NotMapped]
-        public IEnumerable<TireWear> TireWears => Laps.Where(l => l.TireWear != null).Select(l => l.TireWear!);
+        public IEnumerable<TireWear> TireWears => Entries.Where(l => l.TireWear != null).Select(l => l.TireWear!);
         [NotMapped]
-        public IEnumerable<FuelUsage> FuelUsages => Laps.Where(l => l.FuelUsage != null).Select(l => l.FuelUsage!);
+        public IEnumerable<FuelUsage> FuelUsages => Entries.Where(l => l.FuelUsage != null).Select(l => l.FuelUsage!);
 
         [NotMapped]
         public List<LapPointer> Pointers
@@ -44,15 +69,32 @@ namespace ReHUD.Models.LapData
                 return pointers;
             }
         }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            
+            LapContext other = (LapContext)obj;
+            return TrackLayoutId == other.TrackLayoutId && CarId == other.CarId && ClassPerformanceIndex == other.ClassPerformanceIndex && TireCompound == other.TireCompound;
+        }
+        
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(TrackLayoutId, CarId, ClassPerformanceIndex, TireCompound);
+        }
     }
 
-    public class LapData : EntityWithId, IEntityWithContext
+    public class LapData : EntityWithId, IEntityWithContext<LapContext>, IEntityWithContext<Context<LapData>?>
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime Timestamp { get; set; }
         public bool Valid { get; set; }
 
-        public LapContext Context { get; set; }
+        public LapContext Context { get; }
+        Context<LapData> IEntityWithContext<Context<LapData>?>.Context => Context;
 
         public LapTime LapTime { get; set; }
         public TireWear? TireWear { get; set; }
@@ -93,19 +135,67 @@ namespace ReHUD.Models.LapData
         public bool PendingRemoval { get; set; }
 
         [NotMapped]
-        public LapContext Context => Lap.Context;
+        public LapContext LapContext => Lap.Context;
     }
+
 
     [NotMapped]
-    public abstract class ValuedLapPointer<T> : LapPointer
+    public abstract class LapPointer<C, T, V> : LapPointer, IEntityWithContext<C?> where C : Context<T> where T : LapPointer<C, T, V>, IEntityWithContext<Context<T>?>
     {
-        public T Value { get; set; }
+        public V Value { get; set; }
+
+        public virtual C? Context => null;
     }
 
-    public class LapTime : ValuedLapPointer<double> { }
-    public class TireWear : ValuedLapPointer<TireWearObj> { }
-    public class FuelUsage : ValuedLapPointer<double> { }
-    public class Telemetry : ValuedLapPointer<TelemetryObj> { }
+    public class LapTime : LapPointer<Context<LapTime>, LapTime, double>, IEntityWithContext<Context<LapTime>?> { }
+
+    public class TireWearContext : Context<TireWear> {
+        public int TireWearRate { get; set; }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            
+            TireWearContext other = (TireWearContext)obj;
+            return TireWearRate == other.TireWearRate;
+        }
+        
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(TireWearRate);
+        }
+    }
+    public class TireWear : LapPointer<TireWearContext, TireWear, TireWearObj>, IEntityWithContext<Context<TireWear>?> {
+        Context<TireWear>? IEntityWithContext<Context<TireWear>?>.Context => Context;
+    }
+
+    public class FuelUsageContext : Context<FuelUsage> {
+        public int FuelUsageRate { get; set; }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            
+            FuelUsageContext other = (FuelUsageContext)obj;
+            return FuelUsageRate == other.FuelUsageRate;
+        }
+        
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(FuelUsageRate);
+        }
+    }
+    public class FuelUsage : LapPointer<FuelUsageContext, FuelUsage, double>, IEntityWithContext<Context<FuelUsage>?> {
+        Context<FuelUsage>? IEntityWithContext<Context<FuelUsage>?>.Context => Context;
+    }
+
+    public class Telemetry : LapPointer<Context<Telemetry>, Telemetry, TelemetryObj> { }
 
 
     public class TireWearObj

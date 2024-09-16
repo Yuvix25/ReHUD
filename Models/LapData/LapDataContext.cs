@@ -16,16 +16,12 @@ namespace ReHUD.Models.LapData {
         private static readonly string DATA_FK = "DataId";
         private static readonly string[] CONTEXT_FK = new string[] { "TrackLayoutId", "CarId", "ClassPerformanceIndex" };
 
-        private static void ConfigureEntityWithContext<T>(CollectionNavigationBuilder<LapContext, T> builder) where T : class, IEntityWithContext {
-            builder.WithOne(e => e.Context).HasForeignKey(CONTEXT_FK).IsRequired();
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             try {
                 var lapContext = modelBuilder.Entity<LapContext>();
                 lapContext.HasKey(l => new { l.TrackLayoutId, l.CarId, l.ClassPerformanceIndex });
                 lapContext.HasIndex(l => new { l.TrackLayoutId, l.CarId, l.ClassPerformanceIndex });
-                ConfigureEntityWithContext(lapContext.HasMany(l => l.Laps));
+                lapContext.HasMany(l => l.Laps).WithOne(e => e.Context).HasForeignKey(CONTEXT_FK).IsRequired();
                 lapContext.HasOne(l => l.BestLap);
 
                 var lapData = modelBuilder.Entity<LapData>();

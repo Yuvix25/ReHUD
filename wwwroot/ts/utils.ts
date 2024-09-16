@@ -217,7 +217,10 @@ export class Driver extends EventListener {
         }
         this.currentIndex = newCurrentIndex;
       } else if ((gapToSpot / Driver.pointsPerMeter) < -Driver.positionJumpThreshold) { // negative progress shouldn't happen, endLap is supposed to move currentIndex back to -1
-        if (this.previousDistance >= this.trackLength - 20 && distance < 20) {
+        const prevDistanceFromPoints = this.currentIndex / Driver.pointsPerMeter;
+        const currentDistanceFromPoints = newCurrentIndex / Driver.pointsPerMeter;
+        // we need to use distance from points because normal distance is always updated so if we have multiple iterations before completedLaps is updated, we can't rely on it
+        if (prevDistanceFromPoints >= this.trackLength - 20 && currentDistanceFromPoints < 20) {
           // assume the driver has crossed the finish line, no negative progress (happens when completedLaps' update is delayed)
         } else {
           console.warn('Negative progress for ' + this.userId, gapToSpot, this.currentIndex, newCurrentIndex, this.previousDistance, distance, this.trackLength);

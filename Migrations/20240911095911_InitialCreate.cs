@@ -19,6 +19,7 @@ namespace ReHUD.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     DataId = table.Column<int>(type: "INTEGER", nullable: true),
                     PendingRemoval = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Value_InternalPoints = table.Column<string>(type: "TEXT", nullable: false),
                     Value_PointsPerMeter = table.Column<double>(type: "REAL", nullable: false)
                 },
                 constraints: table =>

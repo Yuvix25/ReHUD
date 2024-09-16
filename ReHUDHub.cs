@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using ReHUD;
 using ReHUD.Interfaces;
+using ReHUD.Services;
 
 namespace SignalRChat.Hubs
 {

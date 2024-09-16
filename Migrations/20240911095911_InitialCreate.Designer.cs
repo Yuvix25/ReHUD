@@ -11,7 +11,7 @@ using ReHUD.Models.LapData;
 namespace ReHUD.Migrations
 {
     [DbContext(typeof(LapDataContext))]
-    [Migration("20240901193543_InitialCreate")]
+    [Migration("20240911095911_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -160,11 +160,11 @@ namespace ReHUD.Migrations
 
             modelBuilder.Entity("ReHUD.Models.LapData.FuelUsage", b =>
                 {
-                    b.HasOne("ReHUD.Models.LapData.LapData", "Data")
+                    b.HasOne("ReHUD.Models.LapData.LapData", "Lap")
                         .WithOne("FuelUsage")
                         .HasForeignKey("ReHUD.Models.LapData.FuelUsage", "DataId");
 
-                    b.Navigation("Data");
+                    b.Navigation("Lap");
                 });
 
             modelBuilder.Entity("ReHUD.Models.LapData.LapContext", b =>
@@ -189,18 +189,18 @@ namespace ReHUD.Migrations
 
             modelBuilder.Entity("ReHUD.Models.LapData.LapTime", b =>
                 {
-                    b.HasOne("ReHUD.Models.LapData.LapData", "Data")
+                    b.HasOne("ReHUD.Models.LapData.LapData", "Lap")
                         .WithOne("LapTime")
                         .HasForeignKey("ReHUD.Models.LapData.LapTime", "DataId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Data");
+                    b.Navigation("Lap");
                 });
 
             modelBuilder.Entity("ReHUD.Models.LapData.Telemetry", b =>
                 {
-                    b.HasOne("ReHUD.Models.LapData.LapData", "Data")
+                    b.HasOne("ReHUD.Models.LapData.LapData", "Lap")
                         .WithOne("Telemetry")
                         .HasForeignKey("ReHUD.Models.LapData.Telemetry", "DataId");
 
@@ -208,6 +208,10 @@ namespace ReHUD.Migrations
                         {
                             b1.Property<int>("TelemetryId")
                                 .HasColumnType("INTEGER");
+
+                            b1.Property<string>("InternalPoints")
+                                .IsRequired()
+                                .HasColumnType("TEXT");
 
                             b1.Property<double>("PointsPerMeter")
                                 .HasColumnType("REAL");
@@ -220,7 +224,7 @@ namespace ReHUD.Migrations
                                 .HasForeignKey("TelemetryId");
                         });
 
-                    b.Navigation("Data");
+                    b.Navigation("Lap");
 
                     b.Navigation("Value")
                         .IsRequired();
@@ -228,7 +232,7 @@ namespace ReHUD.Migrations
 
             modelBuilder.Entity("ReHUD.Models.LapData.TireWear", b =>
                 {
-                    b.HasOne("ReHUD.Models.LapData.LapData", "Data")
+                    b.HasOne("ReHUD.Models.LapData.LapData", "Lap")
                         .WithOne("TireWear")
                         .HasForeignKey("ReHUD.Models.LapData.TireWear", "DataId");
 
@@ -257,7 +261,7 @@ namespace ReHUD.Migrations
                                 .HasForeignKey("TireWearId");
                         });
 
-                    b.Navigation("Data");
+                    b.Navigation("Lap");
 
                     b.Navigation("Value")
                         .IsRequired();

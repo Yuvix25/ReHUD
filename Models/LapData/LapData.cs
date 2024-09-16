@@ -25,7 +25,7 @@ namespace ReHUD.Models.LapData
         public LapData? BestLap { get; set; }
 
         [NotMapped]
-        public IEnumerable<LapTime> LapTimes => Laps.Select(l => l.LapTime);
+        public IEnumerable<LapTime> LapTimes => Laps.Where(l => l.LapTime != null).Select(l => l.LapTime);
         [NotMapped]
         public IEnumerable<TireWear> TireWears => Laps.Where(l => l.TireWear != null).Select(l => l.TireWear!);
         [NotMapped]
@@ -162,18 +162,23 @@ namespace ReHUD.Models.LapData
     }
 
     public class TelemetryObj {
-        private string InternalLapPoints { get; set; }
+
+        /// <summary>
+        /// Serialized array of points for the database.
+        /// Should not be used directly, use <see cref="Points"/> instead.
+        /// </summary>
+        public string InternalPoints { get; set; }
 
         [NotMapped]
         public double[] Points
         {
             get
             {
-                return Array.ConvertAll(InternalLapPoints.Split(';'), double.Parse);
+                return Array.ConvertAll(InternalPoints.Split(';'), double.Parse);
             }
             set
             {
-                InternalLapPoints = string.Join(";", value.Select(p => p.ToString()).ToArray());
+                InternalPoints = string.Join(";", value.Select(p => p.ToString()).ToArray());
             }
         }
 

@@ -16,7 +16,6 @@ namespace ReHUD;
 public class Startup
 {
     public static readonly ILog logger = LogManager.GetLogger(typeof(Startup));
-    private static string? logFilePath;
 
     private IUpdateService updateService;
     private IRaceRoomObserver raceroomObserver;
@@ -31,12 +30,6 @@ public class Startup
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IUpdateService updateService, IRaceRoomObserver raceroomObserver, ISharedMemoryService sharedMemoryService, IR3EDataService r3eDataService) {
-        logFilePath = Path.Combine(UserData.dataPath, "ReHUD.log");
-        GlobalContext.Properties["LogFilePath"] = logFilePath;
-
-        var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-        XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
-
         this.updateService = updateService;
         this.raceroomObserver = raceroomObserver;
         this.sharedMemoryService = sharedMemoryService;
@@ -392,6 +385,7 @@ public class Startup
             }
 
             MainWindow?.SetIgnoreMouseEvents(locked);
+            MainWindow?.SetAlwaysOnTop(locked, OnTopLevel.screenSaver);
             SettingsWindow.SetAlwaysOnTop(!IsInVrMode && !locked, OnTopLevel.screenSaver);
 
             if (locked && save) // save
@@ -421,11 +415,11 @@ public class Startup
 
 
         await Electron.IpcMain.On("show-log-file", async (arg) => {
-            if (logFilePath == null) {
+            var logFilePath = GlobalContext.Properties["LogFilePath"];
+            if (logFilePath is string path) {
+                await Electron.Shell.ShowItemInFolderAsync(path);
+            } else {
                 await ShowMessageBox(SettingsWindow, logFilePathWarning, "Warning", MessageBoxType.warning);
-            }
-            else {
-                await Electron.Shell.ShowItemInFolderAsync(Path.Combine(logFilePath));
             }
         });
 

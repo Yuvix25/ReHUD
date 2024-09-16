@@ -2,23 +2,23 @@ using System.Runtime.InteropServices;
 
 namespace R3E
 {
-    class Constant
+    public class Constant
     {
         public const string sharedMemoryName = "$R3E";
 
-        enum VersionMajor
+        public enum VersionMajor
         {
             // Major version number to test against
             R3E_VERSION_MAJOR = 2
         };
 
-        enum VersionMinor
+        public enum VersionMinor
         {
             // Minor version number to test against
             R3E_VERSION_MINOR = 14
         };
 
-        enum Session
+        public enum Session
         {
             Unavailable = -1,
             Practice = 0,
@@ -27,7 +27,7 @@ namespace R3E
             Warmup = 3,
         };
 
-        enum SessionPhase
+        public enum SessionPhase
         {
             Unavailable = -1,
 
@@ -50,7 +50,7 @@ namespace R3E
             Checkered = 6,
         };
 
-        enum Control
+        public enum Control
         {
             Unavailable = -1,
 
@@ -67,7 +67,7 @@ namespace R3E
             Replay = 3,
         };
 
-        enum PitWindow
+        public enum PitWindow
         {
             Unavailable = -1,
 
@@ -87,7 +87,7 @@ namespace R3E
             Completed = 4,
         };
 
-        enum PitStopStatus
+        public enum PitStopStatus
         {
             // No mandatory pitstops
             Unavailable = -1,
@@ -102,7 +102,7 @@ namespace R3E
             Served = 2,
         };
 
-        enum FinishStatus
+        public enum FinishStatus
         {
             // N/A
             Unavailable = -1,
@@ -126,7 +126,7 @@ namespace R3E
             DQ = 5,
         };
 
-        enum SessionLengthFormat
+        public enum SessionLengthFormat
         {
             // N/A
             Unavailable = -1,
@@ -139,7 +139,7 @@ namespace R3E
             TimeAndLapBased = 2
         };
 
-        enum PitMenuSelection
+        public enum PitMenuSelection
         {
             // Pit menu unavailable
             Unavailable = -1,
@@ -165,14 +165,14 @@ namespace R3E
             Max = 11
         };
 
-        enum TireType
+        public enum TireType
         {
             Unavailable = -1,
             Option = 0,
             Prime = 1,
         };
 
-        enum TireSubtype
+        public enum TireSubtype
         {
             Unavailable = -1,
             Primary = 0,
@@ -182,7 +182,7 @@ namespace R3E
             Hard = 4
         };
 
-        enum MtrlType
+        public enum MtrlType
         {
             Unavailable = -1,
             None = 0,
@@ -193,7 +193,7 @@ namespace R3E
             Rumble = 5
         };
 
-        enum EngineType
+        public enum EngineType
         {
             COMBUSTION = 0,
             ELECTRIC = 1,

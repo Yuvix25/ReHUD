@@ -202,7 +202,7 @@ namespace ReHUD.Services
                 bool fuelDataValid = lastFuel != null && fuelNow != -1;
                 float? fuelDiff = fuelDataValid ? lastFuel - fuelNow : null;
 
-                LapContext context = lapDataService.GetLapContextOrCreate(data.layoutId, data.vehicleInfo.modelId, data.vehicleInfo.classPerformanceIndex);
+                LapContext context = new(data.layoutId, data.vehicleInfo.modelId, data.vehicleInfo.classPerformanceIndex, data.tireSubtypeFront, data.tireSubtypeRear);
 
                 if (lapValid) {
                     LapData lap = lapDataService.LogLap(context, lapValid, data.lapTimePreviousSelf);
@@ -210,17 +210,11 @@ namespace ReHUD.Services
                     extraData.lapId = lap.Id;
 
                     if (tireWearDataValid && data.tireWearActive >= 1) {
-                        lapDataService.Log(new TireWear {
-                            Lap = lap,
-                            Value = tireWearDiff!,
-                        });
+                        lapDataService.Log(new TireWear(lap, new TireWearContext(data.tireWearActive), tireWearDiff!));
                     }
 
                     if (fuelDataValid && data.fuelUseActive >= 1) {
-                        lapDataService.Log(new FuelUsage {
-                            Lap = lap,
-                            Value = fuelDiff!.Value,
-                        });
+                        lapDataService.Log(new FuelUsage(lap, new FuelUsageContext(data.fuelUseActive), fuelDiff!.Value));
                     }
                 }
 
@@ -256,13 +250,14 @@ namespace ReHUD.Services
             }
             logger.InfoFormat("SaveBestLap: lapId={0}, trackLayoutId={1}, carId={2}, classPerformanceIndex={3}", lapId, lap.Context.TrackLayoutId, lap.Context.CarId, lap.Context.ClassPerformanceIndex);
 
-            Telemetry telemetry = new() {
-                Lap = lap,
-                Value = new() {
-                    Points = points,
-                    PointsPerMeter = pointsPerMeter,
-                },
-            };
+            // Telemetry telemetry = new() {
+            //     Lap = lap,
+            //     Value = new() {
+            //         Points = points,
+            //         PointsPerMeter = pointsPerMeter,
+            //     },
+            // };
+            Telemetry telemetry = new(lap, new(points, pointsPerMeter));
             lapDataService.Log(telemetry);
         }
 

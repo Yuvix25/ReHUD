@@ -7,7 +7,7 @@ namespace ReHUD.Models.LapData {
         public LapDataContext() { }
         public LapDataContext(DbContextOptions<LapDataContext> options) : base(options) { }
 
-        public DbSet<LapContext> LapContexts { get; set; }
+        public DbSet<Context> Contexts { get; set; }
         public DbSet<LapData> LapDatas { get; set; }
         public DbSet<LapTime> LapTimes { get; set; }
         public DbSet<TireWearContext> TireWearContexts { get; set; }
@@ -25,7 +25,7 @@ namespace ReHUD.Models.LapData {
             c.TrackLayoutId,
             c.CarId,
             c.ClassPerformanceIndex,
-            c.TireCompound,
+            c.TireCompoundFront,
         };
         private static readonly Expression<Func<TireWearContext, object?>> TIRE_WEAR_CONTEXT_KEYS = (c) => new {
             c.TireWearRate,
@@ -35,25 +35,32 @@ namespace ReHUD.Models.LapData {
         };
 
 
-        private static EntityTypeBuilder<T> ConfigureContext<C, T>(ModelBuilder modelBuilder, Expression<Func<C, object?>> keys, string foreignKey) where C : Context<T> where T : class, IEntityWithContext<C>, IEntityWithContext<Context<T>?> {
+        private static EntityTypeBuilder<C> ConfigureContext<C>(ModelBuilder modelBuilder, Expression<Func<C, object?>> keys) where C : Context {
             var context = modelBuilder.Entity<C>();
             context.HasAlternateKey(keys);
             context.HasIndex(keys);
-            context.HasMany(l => l.Entries).WithOne(e => e.Context).HasForeignKey(foreignKey).IsRequired();
 
+            return context;
+        }
+
+        private static EntityTypeBuilder<LapContext> ConfigureLapContext(ModelBuilder modelBuilder, Expression<Func<LapContext, object?>> keys, string foreignKey) {
+            var context = ConfigureContext(modelBuilder, keys);
+            context.HasMany(c => c.Entries).WithOne(l => l.Context).HasForeignKey(foreignKey).IsRequired();
+            return context;
+        }
+
+        private static EntityTypeBuilder<C> ConfigureContext<C, T, V>(ModelBuilder modelBuilder, Expression<Func<C, object?>> keys, string foreignKey) where C : Context<T> where T : LapPointer<C, T, V>, IEntityWithContext<Context<T>> {
+            var context = ConfigureContext(modelBuilder, keys);
+            context.HasMany(c => c.Entries).WithOne(e => e.TypedContext).HasForeignKey(foreignKey).IsRequired();
             return context;
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             try {
-                ConfigureContext<LapContext, LapData>(modelBuilder, LAP_CONTEXT_KEYS, LAP_CONTEXT_FK).HasOne(l => l.BestLap);
-                ConfigureContext<TireWearContext, TireWear>(modelBuilder, TIRE_WEAR_CONTEXT_KEYS, TIRE_WEAR_CONTEXT_FK);
+                ConfigureLapContext(modelBuilder, LAP_CONTEXT_KEYS, LAP_CONTEXT_FK);
+                ConfigureContext<TireWearContext, TireWear, TireWearObj>(modelBuilder, TIRE_WEAR_CONTEXT_KEYS, TIRE_WEAR_CONTEXT_FK);
+                ConfigureContext<FuelUsageContext, FuelUsage, double>(modelBuilder, FUEL_USAGE_CONTEXT_KEYS, FUEL_USAGE_CONTEXT_FK);
 
-
-                var tireWearContext = modelBuilder.Entity<TireWearContext>();
-                tireWearContext.HasAlternateKey(TIRE_WEAR_CONTEXT_KEYS);
-                tireWearContext.HasIndex(TIRE_WEAR_CONTEXT_KEYS);
-                tireWearContext.HasMany(l => l.Entries).WithOne(e => e.TireWearContext).HasForeignKey(TIRE_WEAR_CONTEXT_FK).IsRequired();
 
                 var lapData = modelBuilder.Entity<LapData>();
                 lapData.HasOne(l => l.LapTime).WithOne(c => c.Lap).HasForeignKey<LapTime>(DATA_FK).IsRequired();

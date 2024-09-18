@@ -11,8 +11,8 @@ namespace ReHUD.Interfaces
         public void SaveChanges();
         public IDbContextTransaction BeginTransaction();
 
-        public LapContext GetLapContextOrCreate(int trackLayoutId, int carId, int classPerformanceIndex);
-        public void AddContext(LapContext context);
+        public T AttachContext<T>(T context) where T : Context;
+        public void AddContext(Context context);
         public LapData LogLap(LapContext context, bool valid, double lapTime);
         public void Log(LapPointer entry);
         public bool RemoveLapPointer<T>(T pointer) where T : LapPointer;

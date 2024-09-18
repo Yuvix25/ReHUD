@@ -26,6 +26,9 @@ namespace ReHUD.Migrations
                     b.Property<int?>("DataId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("FuelUsageContextId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("PendingRemoval")
                         .HasColumnType("INTEGER");
 
@@ -37,12 +40,36 @@ namespace ReHUD.Migrations
                     b.HasIndex("DataId")
                         .IsUnique();
 
+                    b.HasIndex("FuelUsageContextId");
+
                     b.ToTable("FuelUsages");
+                });
+
+            modelBuilder.Entity("ReHUD.Models.LapData.FuelUsageContext", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FuelUsageRate")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("FuelUsageRate");
+
+                    b.HasIndex("FuelUsageRate");
+
+                    b.ToTable("FuelUsageContexts");
                 });
 
             modelBuilder.Entity("ReHUD.Models.LapData.LapContext", b =>
                 {
-                    b.Property<int>("TrackLayoutId")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("BestLapId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("CarId")
@@ -51,16 +78,19 @@ namespace ReHUD.Migrations
                     b.Property<int>("ClassPerformanceIndex")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("BestLapId")
+                    b.Property<int>("TireCompound")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("TrackLayoutId", "CarId", "ClassPerformanceIndex");
+                    b.Property<int>("TrackLayoutId")
+                        .HasColumnType("INTEGER");
 
-                    b.HasIndex("BestLapId");
+                    b.HasKey("Id");
 
-                    b.HasIndex("TrackLayoutId", "CarId", "ClassPerformanceIndex");
+                    b.HasAlternateKey("TrackLayoutId", "CarId", "ClassPerformanceIndex", "TireCompound");
 
-                    b.ToTable("LapsContext");
+                    b.HasIndex("TrackLayoutId", "CarId", "ClassPerformanceIndex", "TireCompound");
+
+                    b.ToTable("LapContexts");
                 });
 
             modelBuilder.Entity("ReHUD.Models.LapData.LapData", b =>
@@ -69,27 +99,21 @@ namespace ReHUD.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("CarId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ClassPerformanceIndex")
+                    b.Property<int>("LapContextId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Timestamp")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("TrackLayoutId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("Valid")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TrackLayoutId", "CarId", "ClassPerformanceIndex");
+                    b.HasIndex("LapContextId");
 
-                    b.ToTable("LapsData");
+                    b.ToTable("LapDatas");
                 });
 
             modelBuilder.Entity("ReHUD.Models.LapData.LapTime", b =>
@@ -147,12 +171,35 @@ namespace ReHUD.Migrations
                     b.Property<bool>("PendingRemoval")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("TireWearContextId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DataId")
                         .IsUnique();
 
+                    b.HasIndex("TireWearContextId");
+
                     b.ToTable("TireWears");
+                });
+
+            modelBuilder.Entity("ReHUD.Models.LapData.TireWearContext", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TireWearRate")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("TireWearRate");
+
+                    b.HasIndex("TireWearRate");
+
+                    b.ToTable("TireWearContexts");
                 });
 
             modelBuilder.Entity("ReHUD.Models.LapData.FuelUsage", b =>
@@ -161,23 +208,22 @@ namespace ReHUD.Migrations
                         .WithOne("FuelUsage")
                         .HasForeignKey("ReHUD.Models.LapData.FuelUsage", "DataId");
 
+                    b.HasOne("ReHUD.Models.LapData.FuelUsageContext", "TypedContext")
+                        .WithMany("Entries")
+                        .HasForeignKey("FuelUsageContextId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Lap");
-                });
 
-            modelBuilder.Entity("ReHUD.Models.LapData.LapContext", b =>
-                {
-                    b.HasOne("ReHUD.Models.LapData.LapData", "BestLap")
-                        .WithMany()
-                        .HasForeignKey("BestLapId");
-
-                    b.Navigation("BestLap");
+                    b.Navigation("TypedContext");
                 });
 
             modelBuilder.Entity("ReHUD.Models.LapData.LapData", b =>
                 {
                     b.HasOne("ReHUD.Models.LapData.LapContext", "Context")
-                        .WithMany("Laps")
-                        .HasForeignKey("TrackLayoutId", "CarId", "ClassPerformanceIndex")
+                        .WithMany("Entries")
+                        .HasForeignKey("LapContextId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -233,6 +279,12 @@ namespace ReHUD.Migrations
                         .WithOne("TireWear")
                         .HasForeignKey("ReHUD.Models.LapData.TireWear", "DataId");
 
+                    b.HasOne("ReHUD.Models.LapData.TireWearContext", "TypedContext")
+                        .WithMany("Entries")
+                        .HasForeignKey("TireWearContextId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.OwnsOne("ReHUD.Models.LapData.TireWearObj", "Value", b1 =>
                         {
                             b1.Property<int>("TireWearId")
@@ -260,13 +312,20 @@ namespace ReHUD.Migrations
 
                     b.Navigation("Lap");
 
+                    b.Navigation("TypedContext");
+
                     b.Navigation("Value")
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ReHUD.Models.LapData.FuelUsageContext", b =>
+                {
+                    b.Navigation("Entries");
+                });
+
             modelBuilder.Entity("ReHUD.Models.LapData.LapContext", b =>
                 {
-                    b.Navigation("Laps");
+                    b.Navigation("Entries");
                 });
 
             modelBuilder.Entity("ReHUD.Models.LapData.LapData", b =>
@@ -279,6 +338,11 @@ namespace ReHUD.Migrations
                     b.Navigation("Telemetry");
 
                     b.Navigation("TireWear");
+                });
+
+            modelBuilder.Entity("ReHUD.Models.LapData.TireWearContext", b =>
+                {
+                    b.Navigation("Entries");
                 });
 #pragma warning restore 612, 618
         }

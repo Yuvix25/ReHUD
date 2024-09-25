@@ -12,14 +12,14 @@
 
 ReHUD is a custom, configurable, easy-to-use and easy-to-extend HUD for RaceRoom Racing Experience.
 
-I started this project following the recent increase in the number of bugs in RaceRoom's WebHud framework, resulting in the deprecation of many loved huds, including [OtterHud](https://forum.kw-studios.com/index.php?threads/otterhud-a-custom-webhud-with-additional-features.13152/) - which is the hud I was using up until now.
+I started this project because more and more bugs began to appear in [OtterHud](https://forum.kw-studios.com/index.php?threads/otterhud-a-custom-webhud-with-additional-features.13152/), the hud I was using up until now, and an amazing one.
 
 ---
 
 ## Current Features
  - MoTeC dash (speed, gear, revs, etc.)
  - Tire temp and tire wear status
- - Fuel insights
+ - Fuel calculator
  - Input meter
  - Damage viewer
  - Radar
@@ -41,7 +41,6 @@ _\* work in progress_
 ## Planned Features
  - Manual rolling start
  - Input graphs
- - Fuel calculator
  - Advanced telemetry
 
 ---

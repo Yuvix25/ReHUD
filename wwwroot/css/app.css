@@ -1010,7 +1010,7 @@ progress#revs::-webkit-progress-value {
   background-repeat: round;
 }
 
-posEl {
+#tv-tower .tv-tower-driver posEl {
   text-align: center;
   translate: 0px -2px;
   position:relative;
@@ -1024,7 +1024,7 @@ posEl {
     1px 1px 4px #000;
 }
 
-nameEl {
+#tv-tower .tv-tower-driver nameEl {
   letter-spacing: 1.2px;
   white-space: nowrap;
   padding-left: 8px;
@@ -1039,7 +1039,7 @@ nameEl {
     1px 1px 4px #000;
 }
 
-ratEl, repEl {
+#tv-tower .tv-tower-driver ratEl, #tv-tower .tv-tower-driver repEl {
   text-align: center;
   font-weight: 500;
   font-size: 15px;
@@ -1048,7 +1048,7 @@ ratEl, repEl {
   background-color: rgb(255, 255, 255);
 }
 
-lapEl {
+#tv-tower .tv-tower-driver lapEl {
   text-align: left;
   letter-spacing: 0.8px;
   translate: 0px -3px;
@@ -1060,7 +1060,7 @@ lapEl {
     -1px 1px 2px #000,
     1px 1px 2px #000;
 }
-deltaEl {
+#tv-tower .tv-tower-driver deltaEl {
   translate: 0px -3px;
   text-align: center;
   letter-spacing: 0.8px;

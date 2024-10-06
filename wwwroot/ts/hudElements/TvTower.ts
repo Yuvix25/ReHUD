@@ -109,7 +109,7 @@ export default class TvTower extends HudElement {
         const driverSettingHalf = Math.floor((TV_TOWER_MAX_SETTING - 1) / 2);
         let mandatoryFirstPlace = false;
 
-        let InFirstRange = !(driverDistanceToFirst >= (TV_TOWER_MAX_SETTING / 2));
+        let InFirstRange = (driverDistanceToFirst < (TV_TOWER_MAX_SETTING / 2));
 
         let inLastRange = driverDistanceToLast <= (TV_TOWER_MAX_SETTING / 2);
 
@@ -263,9 +263,9 @@ export default class TvTower extends HudElement {
                             deltaElement.style.width = '';
                             
                         } else {
-                            if(driver.finishStatus !== EFinishStatus.Finished) {
                             deltaString = EFinishStatus[driver.finishStatus];
-                            } else {
+                            if(driver.finishStatus == EFinishStatus.Finished) {
+                                deltaString = '';
                                 deltaElement.style.backgroundImage = 'url("../icons/finished.png")';
                                 deltaElement.style.backgroundSize = '23px 20px';
                                 deltaElement.style.width = '30px';
@@ -281,7 +281,6 @@ export default class TvTower extends HudElement {
                                 showDeltaForMainDriver = true;
                                 break;
                             case EFinishStatus.Finished:
-                                showDeltaForMainDriver = false;
                                 break;
                         }
 

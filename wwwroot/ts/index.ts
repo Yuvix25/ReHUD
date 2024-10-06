@@ -46,6 +46,7 @@ import IpcCommunication from './IpcCommunication.js';
 import Rake from './hudElements/Rake.js';
 import DRS from './hudElements/Drs.js';
 import P2P from './hudElements/PushToPass.js';
+import TvTower from './hudElements/TvTower.js';
 import {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
 
 enableLogging(ipcRenderer, 'index.js');
@@ -64,6 +65,8 @@ const hud = new Hud([
 
     new PositionBar({name: 'PositionBar', elementId: 'position-bar', transformableId: 'position-bar', renderEvery: 80}),
     new RelativeViewer({name: 'RelativeViewer', elementId: 'relative-viewer', transformableId: 'relative-viewer', renderEvery: 80}),
+    new TvTower({name: 'TvTower', elementId: 'tv-tower', transformableId: 'tv-tower', renderEvery: 80}),
+    
 
     new FuelLeft({name: 'FuelLeft', elementId: 'fuel-left', transformableId: 'fuel-data', renderEvery: 200}),
     new FuelPerLap({name: 'FuelPerLap', elementId: 'fuel-per-lap', transformableId: 'fuel-data', renderEvery: 500}),

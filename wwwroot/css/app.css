@@ -917,7 +917,160 @@ progress#revs::-webkit-progress-value {
   width: 18px !important; /* 18px + 2 * 7px = 32px */
 }
 
+#tv-tower {
+  width: fit-content;
+  overflow: visible !important;
 
+  height: fit-content;
+  background-color: rgba(0, 0, 0, 0.4);
+  margin-top: 12px;
+  margin-left: 12px;
+  display: block;
+  border-radius: 5px 5px 5px 0px;
+  padding-left: 3px;
+}
+
+
+#tv-tower .tv-tower-driver {
+  height: 19px;
+  width: 100%;
+  margin-top: 3px;
+  position: relative;
+  border-bottom: 1px solid rgba(134, 134, 134, 0.3);
+  border-radius: 0px 0px 5px 0px;
+}
+
+#tv-tower .tv-tower-driver .tv-tower-driver-position {
+  display: inline-block;
+  width: 26px;
+  height: 100%;
+  background-color: rgb(134, 134, 134);
+  border-radius: 7px 0px 0px 0px;
+}
+
+#tv-tower .tv-tower-driver .tv-tower-driver-class {
+  display: inline-block;
+  width: 4px;
+  height: 100%;
+  border-radius: 0px 0px 3px 0px;
+}
+
+#tv-tower .tv-tower-driver .tv-tower-driver-name {
+  display: inline-block;
+  width: 150px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  top: 4px;
+}
+
+#tv-tower .tv-tower-driver .tv-tower-driver-car-image {
+  position: relative;
+  display: inline-block;
+  height: 100%;
+  aspect-ratio: 1;
+  background-size: 20px 20px;
+  margin-right: 5px;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+}
+
+#tv-tower .tv-tower-driver .tv-tower-driver-rating {
+  margin-right: 1px;
+  display: inline-block;
+  width: 40px;
+  height: 17px;
+  position: relative;
+  top: -4px;
+  border-radius: 5px 0px 0px 5px;
+}
+
+#tv-tower .tv-tower-driver .tv-tower-driver-reputation {
+  display: inline-block;
+  width: 25px;
+  height: 17px;
+  position: relative;
+  top: -4px;
+  border-radius: 0px 5px 5px 0px;
+}
+
+#tv-tower .tv-tower-driver .tv-tower-driver-laptime {
+  display: inline-block;
+  width: 60px;
+  margin-left: 20px;
+  margin-right: 10px;
+  height: 100%;
+}
+
+#tv-tower .tv-tower-driver .tv-tower-driver-delta {
+  display: inline-block;
+  height: 100%;
+  margin-right: 5px;
+  width: fit-content;
+}
+
+posEl {
+  text-align: center;
+  translate: 0px -2px;
+  position:relative;
+  font-weight: 400;
+  font-size: 18px;
+  color: white;
+  line-height: 1;
+  text-shadow: -1px -1px 3px #000,
+    1px -1px 4px #000,
+    -1px 1px 4px #000,
+    1px 1px 4px #000;
+}
+
+nameEl {
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  padding-left: 8px;
+  translate: 0px -4px;
+  font-weight: 400;
+  font-size: 17px;
+  color: white;
+  line-height: 1;
+  text-shadow: -1px -1px 3px #000,
+    1px -1px 4px #000,
+    -1px 1px 4px #000,
+    1px 1px 4px #000;
+}
+
+ratEl, repEl {
+  text-align: center;
+  font-weight: 500;
+  font-size: 15px;
+  color: rgb(0, 0, 0);
+  line-height: 1;
+  background-color: rgb(255, 255, 255);
+}
+
+lapEl {
+  text-align: left;
+  letter-spacing: 0.8px;
+  translate: 0px -3px;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1;
+  text-shadow: -1px -1px 2px #000,
+    1px -1px 2px #000,
+    -1px 1px 2px #000,
+    1px 1px 2px #000;
+}
+deltaEl {
+  translate: 0px -3px;
+  text-align: center;
+  letter-spacing: 0.8px;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1;
+  text-shadow: -1px -1px 2px #000,
+    1px -1px 2px #000,
+    -1px 1px 2px #000,
+    1px 1px 2px #000;
+}
 
 #p2p, #drs, #rake {
   display: flex;
@@ -954,7 +1107,7 @@ progress#revs::-webkit-progress-value {
 #rake-bar-pointer {
   width: 3%;
   height: 100%;
-  background-color: white;
+  background-color: rgb(0, 0, 0);
 }
 
 

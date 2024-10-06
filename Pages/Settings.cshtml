@@ -58,6 +58,15 @@
 
     <slider-setting key="positionBarCellCount" min="3" max="51" step="2" value="13">Position Bar Cell Count</slider-setting>
 
+    <slider-setting key="tvTowerMaxSize" min="10" max="36" step="2" value="16">TV Tower Maximum Player Count</slider-setting>
+    <toggle-setting key="tvTowerCarLogo">Show TV Tower Image</toggle-setting>
+    <toggle-setting key="tvTowerRankedData">Show TV Tower Ranked Data</toggle-setting>
+    <choice-setting key="tvTowerCarLogoOrLivery" value="livery">
+        <label>TV Tower Image</label>
+        <button value="carLogo">Brand Logo</button>
+        <button value="livery">Livery</button>
+    </choice-setting>
+
     <choice-setting key="deltaMode" value="session" tooltip="'All-time Best' will give the best lap recorded by ReHUD. If no valid lap was recorded yet, will fallback to the session best provided by RaceRoom.">
         <label>Show Delta Compared to</label>
         <button value="session">Session Best</button>

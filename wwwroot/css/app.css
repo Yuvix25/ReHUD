@@ -1007,6 +1007,7 @@ progress#revs::-webkit-progress-value {
   height: 100%;
   margin-right: 5px;
   width: fit-content;
+  background-repeat: round;
 }
 
 posEl {

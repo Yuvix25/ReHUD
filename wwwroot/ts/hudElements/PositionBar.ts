@@ -1,55 +1,11 @@
 import HudElement, {Hide} from "./HudElement.js";
 import {laptimeFormat, valueIsValidAssertNull, validNumberOrDefault, nameFormat, getClassColors, POSITION_BAR_CELL_COUNT} from "../consts.js";
 import {EFinishStatus, ESession, IDriverData, ISectors} from "../r3eTypes.js";
-import {Driver, getUid} from "../utils.js";
+import {Driver, getRaceDeltas, getUid} from "../utils.js";
 import SettingsValue from "../SettingsValue.js";
 
 export default class PositionBar extends HudElement {
     override sharedMemoryKeys: string[] = ['driverData', 'position', 'sessionType', 'sectorTimesSessionBestLap'];
-
-    private static readonly precision = 3;
-
-    private getRaceDeltas(driverData: IDriverData[], position: number): string[] {
-        const deltas: string[] = [];
-        const deltaLoop = (front: boolean) => {
-            const push = (delta: string) => {
-                front ? deltas.unshift(delta) : deltas.push(delta);
-            }
-
-            let delta = 0;
-            const me = driverData[position];
-            for (let i = position + (front ? -1 : 1); front ? i >= 0 : i < driverData.length; front ? i-- : i++) {
-                const driver = driverData[i];
-
-                let lapDiff = me.completedLaps - driver.completedLaps;
-                if (lapDiff < 0 && driver.lapDistance < me.lapDistance) {
-                    lapDiff++;
-                } else if (lapDiff > 0 && me.lapDistance < driver.lapDistance) {
-                    lapDiff--;
-                }
-
-                if (lapDiff != 0) {
-                    push(lapDiff > 0 ? `+${lapDiff}L` : `${lapDiff}L`);
-                } else {
-                    let nextDelta = front ? driver.timeDeltaBehind : driver.timeDeltaFront;
-                    if (nextDelta < 0) {
-                        front ? deltas.unshift(null) : deltas.push(null);
-                        continue;
-                    }
-                    delta += nextDelta;
-                    push(front ? (-delta).toFixed(PositionBar.precision) : '+' + delta.toFixed(PositionBar.precision));
-                }
-            }
-        }
-
-        deltaLoop(true);
-
-        deltas.push(null);
-
-        deltaLoop(false);
-
-        return deltas;
-    }
 
     protected override render(driverData: IDriverData[], position: number, sessionType: ESession, sessionBestSectors: ISectors, elementId: string): Hide | null {
         const positionBar = document.getElementById(elementId);
@@ -114,7 +70,7 @@ export default class PositionBar extends HudElement {
 
         let raceDeltas: string[] = null;
         if (sessionType === ESession.Race) {
-            raceDeltas = this.getRaceDeltas(driverData, position);
+            raceDeltas = getRaceDeltas(driverData, position);
         } 
 
         let firstCell = start - Math.ceil(position - POSITION_BAR_SIZE / 2);

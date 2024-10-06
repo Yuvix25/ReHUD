@@ -1,58 +1,14 @@
 import HudElement, {Hide} from "./HudElement.js";
-import {Driver, getUid} from "../utils.js";
+import {Driver, getRaceDeltas, getUid} from "../utils.js";
 import {EFinishStatus, ESession, IDriverData, ISectors} from "../r3eTypes.js";
 import SettingsValue from "../SettingsValue.js";
-import { getClassColors, getSessionType, laptimeFormat, nameFormat, SESSION_TYPES, TV_TOWER_CAR_LOGO, TV_TOWER_CAR_LOGO_OR_LIVERY, TV_TOWER_MAX_SIZE_SETTING, TV_TOWER_RANKED_DATA, validNumberOrDefault, valueIsValidAssertNull } from "../consts.js";
+import { getClassColors, laptimeFormat, nameFormat, TV_TOWER_CAR_LOGO, TV_TOWER_CAR_LOGO_OR_LIVERY, TV_TOWER_MAX_SIZE_SETTING, TV_TOWER_RANKED_DATA, validNumberOrDefault, valueIsValidAssertNull } from "../consts.js";
 import RankedData from "../actions/RankedData.js";
 
 export default class TvTower extends HudElement {
     override sharedMemoryKeys: string[] = ['driverData', 'position', 'sessionType', 'sectorTimesSessionBestLap'];
 
     public static readonly IMAGE_REDIRECT = 'https://game.raceroom.com/store/image_redirect?id=';
-
-    private static readonly precision = 3;
-
-    private getRaceDeltas(driverData: IDriverData[], position: number): string[] {
-        const deltas: string[] = [];
-        const deltaLoop = (front: boolean) => {
-            const push = (delta: string) => {
-                front ? deltas.unshift(delta) : deltas.push(delta);
-            }
-
-            let delta = 0;
-            const me = driverData[position];
-            for (let i = position + (front ? -1 : 1); front ? i >= 0 : i < driverData.length; front ? i-- : i++) {
-                const driver = driverData[i];
-
-                let lapDiff = me.completedLaps - driver.completedLaps;
-                if (lapDiff < 0 && driver.lapDistance < me.lapDistance) {
-                    lapDiff++;
-                } else if (lapDiff > 0 && me.lapDistance < driver.lapDistance) {
-                    lapDiff--;
-                }
-
-                if (lapDiff != 0) {
-                    push(lapDiff > 0 ? `+${lapDiff}L` : `${lapDiff}L`);
-                } else {
-                    let nextDelta = front ? driver.timeDeltaBehind : driver.timeDeltaFront;
-                    if (nextDelta < 0) {
-                        front ? deltas.unshift(null) : deltas.push(null);
-                        continue;
-                    }
-                    delta += nextDelta;
-                    push(front ? (-delta).toFixed(TvTower.precision) : '+' + delta.toFixed(TvTower.precision));
-                }
-            }
-        }
-
-        deltaLoop(true);
-
-        deltas.push(null);
-
-        deltaLoop(false);
-
-        return deltas;
-    }
 
     private rankedData: RankedData = null;
 
@@ -64,16 +20,17 @@ export default class TvTower extends HudElement {
     protected override render(driverData: IDriverData[], position: number, sessionType: ESession, sessionBestSectors: ISectors, elementId: string): Hide | null {
         const tvTower = document.getElementById(elementId);
 
+        //Setting for total number of cells
         const TV_TOWER_MAX_SETTING = SettingsValue.get(TV_TOWER_MAX_SIZE_SETTING);
 
         const TV_TOWER_CAR_LOGO_SETTING = SettingsValue.get(TV_TOWER_CAR_LOGO);
         const TV_TOWER_RANKED_DATA_SETTING = SettingsValue.get(TV_TOWER_RANKED_DATA);
-        //const TV_TOWER_COUNTY_FLAG_SETTING = SettingsValue.get(TV_TOWER_COUNTRY_FLAG);
         const TV_TOWER_CAR_LOGO_OR_LIVERY_SETTING = SettingsValue.get(TV_TOWER_CAR_LOGO_OR_LIVERY);
         
 
         const driverCount = driverData.length;
 
+        //cut-off for low driver amounts
         const TV_TOWER_MAX_SIZE = Math.min(TV_TOWER_MAX_SETTING, driverCount)
 
 
@@ -85,17 +42,16 @@ export default class TvTower extends HudElement {
         } else if (TV_TOWER_MAX_SIZE > tvTower.children.length) {
             for (let i = 0; i < TV_TOWER_MAX_SIZE - tvTower.children.length; i++) {
 
+                //indidual cell
                 const cell = document.createElement('div');
                 cell.classList.add('tv-tower-driver');
                 
+                //shown data
                 const position = document.createElement('posEl');
                 position.classList.add('tv-tower-driver-position');
 
                 const classColor = document.createElement('classEl');
                 classColor.classList.add('tv-tower-driver-class');
-
-                //const countryFlag = document.createElement('flagEl');
-                //countryFlag.classList.add('tv-tower-driver-flag');
 
                 const carImage = document.createElement('carImg');
                 carImage.classList.add('tv-tower-driver-car-image');
@@ -117,7 +73,6 @@ export default class TvTower extends HudElement {
 
                 cell.appendChild(position);
                 cell.appendChild(classColor);
-                //cell.appendChild(countryFlag);
                 cell.appendChild(name);
                 cell.appendChild(carImage);
                 cell.appendChild(rat);
@@ -145,9 +100,21 @@ export default class TvTower extends HudElement {
 
         let raceDeltas: string[] = null;
         if (sessionType === ESession.Race) {
-            raceDeltas = this.getRaceDeltas(driverData, position);
+            raceDeltas = getRaceDeltas(driverData, position);
         } 
+        
+        //for determining possible cut-off
+        const driverDistanceToFirst = position - 1;
+        const driverDistanceToLast = driverCount - position + 1;
+        const driverSettingHalf = Math.floor((TV_TOWER_MAX_SETTING - 1) / 2);
+        let mandatoryFirstPlace = false;
+
+        let InFirstRange = !(driverDistanceToFirst >= (TV_TOWER_MAX_SETTING / 2));
+
+        let inLastRange = driverDistanceToLast <= (TV_TOWER_MAX_SETTING / 2);
+
         let currentDriverUpdate;
+
         for (let i = 0; i < Math.min(TV_TOWER_MAX_SIZE); i++) {
 
             let start = 0;
@@ -162,7 +129,6 @@ export default class TvTower extends HudElement {
             const driverElement: HTMLSpanElement = tvTower.querySelector('.tv-tower-driver');
             const positionElement: HTMLSpanElement = tvTowerCell.querySelector('.tv-tower-driver-position');
             const classColorElement: HTMLSpanElement = tvTowerCell.querySelector('.tv-tower-driver-class');
-            //const flagElement: HTMLSpanElement = tvTowerCell.querySelector('.tv-tower-driver-flag');
             const carImageElement: HTMLSpanElement = tvTowerCell.querySelector('.tv-tower-driver-car-image');
             const nameElement: HTMLSpanElement = tvTowerCell.querySelector('.tv-tower-driver-name');
             const ratingElement: HTMLSpanElement = tvTowerCell.querySelector('.tv-tower-driver-rating');
@@ -171,24 +137,14 @@ export default class TvTower extends HudElement {
             const deltaElement: HTMLSpanElement = tvTowerCell.querySelector('.tv-tower-driver-delta');
 
             if (start <= i && i <= end) {
+
+            // `currentDriverUpdate` later can converge from `i` to allow scrolling  
             if(i == 0) {
             currentDriverUpdate = i;
             }
 
-            const driverDistanceToFirst = position - 1;
-            const driverDistanceToLast = driverCount - position + 1;
-            const driverSettingHalf = Math.floor((TV_TOWER_MAX_SETTING - 1) / 2);
-            let mandatoryFirstPlace = false;
-
-            let notInFirstRange = false;
-            driverDistanceToFirst >= (TV_TOWER_MAX_SETTING / 2) ? notInFirstRange = true : notInFirstRange = false;
-
-            let inLastRange = false;
-            driverDistanceToLast <= (TV_TOWER_MAX_SETTING / 2) ? inLastRange = true : inLastRange = false;
-
-            
             // assigning when not in range of first and last
-            if(notInFirstRange && !inLastRange) {
+            if(!InFirstRange && !inLastRange) {
                 mandatoryFirstPlace = true;
 
                 if(i == currentDriverUpdate) {
@@ -212,7 +168,7 @@ export default class TvTower extends HudElement {
 
 
                 const driver = driverData[currentDriverUpdate];
-                const isDriver: boolean = Driver.mainDriver.userId === getUid(driver.driverInfo) ? true : false;
+                const isDriver: boolean = Driver.mainDriver.userId == getUid(driver.driverInfo);
 
                 if(mandatoryFirstPlace && currentDriverUpdate == 0) {
                     driverElement.style.marginBottom = '10px';
@@ -220,11 +176,13 @@ export default class TvTower extends HudElement {
                     driverElement.style.marginBottom = '';
                 }
 
-                positionElement.textContent = driver.place.toString();
+                positionElement.textContent = driver.placeClass.toString();
                 
-                const driverColor = classColors.get(driver.driverInfo.classPerformanceIndex);
-                classColorElement.style.backgroundColor = 
-                driverColor == null ? 'white': driverColor;
+                let driverColor = classColors.get(driver.driverInfo.classPerformanceIndex);
+                if(driverColor == null) {
+                    driverColor = 'white';
+                }
+                classColorElement.style.backgroundColor = driverColor;
 
                 nameElement.textContent = nameFormat(driver.driverInfo.name);
                 if(isDriver) {
@@ -255,14 +213,14 @@ export default class TvTower extends HudElement {
                 }
                 const manufacturerId = driver.driverInfo.manufacturerId.toString();
                 const liveryId = driver.driverInfo.liveryId.toString();
-                const liveryChoice = TV_TOWER_CAR_LOGO_OR_LIVERY_SETTING == 'livery' ? true : false;
+                const liverySettingTrue = TV_TOWER_CAR_LOGO_OR_LIVERY_SETTING == 'livery';
                 
-                const imageSrc =  liveryChoice ?
+                const imageSrc =  liverySettingTrue ?
                 `url("${TvTower.IMAGE_REDIRECT + liveryId + '&size=thumb'}")` :
                 `url("${TvTower.IMAGE_REDIRECT + manufacturerId + '&size=thumb'}")`
 
                 carImageElement.style.backgroundImage = imageSrc;
-                if(liveryChoice) {
+                if(liverySettingTrue) {
                     carImageElement.style.aspectRatio = '2.8';
                     carImageElement.style.backgroundSize = '50px 25px';
                     carImageElement.style.backgroundColor = '';
@@ -293,15 +251,25 @@ export default class TvTower extends HudElement {
                         time = driver.sectorTimePreviousSelf.sector3;
                         if (valueIsValidAssertNull(time)) {
                             if (time <= sessionBestSectors.sector3) {
-                                timeColor = 'purple';
+                                timeColor = 'var(--time-purple)';
                             } else if (time <= driver.sectorTimeBestSelf.sector3) {
-                                timeColor = 'green';
+                                timeColor = 'var(--time-green)';
                             }
                         }
                         if (driver.finishStatus === EFinishStatus.None || driver.finishStatus === EFinishStatus.Unavailable) {
                             deltaString = raceDeltas[driver.place - 1];
+                            deltaElement.style.backgroundImage = '';
+                            deltaElement.style.backgroundSize = '';
+                            deltaElement.style.width = '';
+                            
                         } else {
+                            if(driver.finishStatus !== EFinishStatus.Finished) {
                             deltaString = EFinishStatus[driver.finishStatus];
+                            } else {
+                                deltaElement.style.backgroundImage = 'url("../icons/finished.png")';
+                                deltaElement.style.backgroundSize = '23px 20px';
+                                deltaElement.style.width = '30px';
+                            }
                         }
 
                         switch (driver.finishStatus) {
@@ -313,8 +281,7 @@ export default class TvTower extends HudElement {
                                 showDeltaForMainDriver = true;
                                 break;
                             case EFinishStatus.Finished:
-                                deltaColor = 'rgb(255,215,0)'; // gold
-                                showDeltaForMainDriver = true;
+                                showDeltaForMainDriver = false;
                                 break;
                         }
 
@@ -340,7 +307,11 @@ export default class TvTower extends HudElement {
                 if (deltaString != null && (Driver.mainDriver.userId !== driver.driverInfo.userId.toString() || showDeltaForMainDriver)) {
                     if (deltaNumber != null) deltaString = deltaNumber > 0 ? `+${deltaString}` : deltaString;
 
-                    !isDriver ? deltaElement.textContent = deltaString : deltaElement.textContent = '';
+                    if(!isDriver) { 
+                    deltaElement.textContent = deltaString;
+                    } else { 
+                    deltaElement.textContent = '';
+                    }
                     deltaElement.style.color = deltaColor;
                 } else {
                     deltaElement.textContent = '';
@@ -358,6 +329,9 @@ export default class TvTower extends HudElement {
                 laptimeElement.style.color = '';
                 laptimeElement.textContent = '';
                 deltaElement.textContent = '';
+                deltaElement.style.backgroundImage = '';
+                deltaElement.style.backgroundSize = '';
+                deltaElement.style.width = '';
                 driverElement.style.marginBottom = '';
             }
         }

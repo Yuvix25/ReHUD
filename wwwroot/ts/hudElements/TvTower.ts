@@ -47,28 +47,28 @@ export default class TvTower extends HudElement {
                 cell.classList.add('tv-tower-driver');
                 
                 //shown data
-                const position = document.createElement('posEl');
+                const position = document.createElement('div');
                 position.classList.add('tv-tower-driver-position');
 
-                const classColor = document.createElement('classEl');
+                const classColor = document.createElement('div');
                 classColor.classList.add('tv-tower-driver-class');
 
-                const carImage = document.createElement('carImg');
+                const carImage = document.createElement('div');
                 carImage.classList.add('tv-tower-driver-car-image');
 
-                const name = document.createElement('nameEl');
+                const name = document.createElement('div');
                 name.classList.add('tv-tower-driver-name');
 
-                const rat = document.createElement('ratEl');
+                const rat = document.createElement('div');
                 rat.classList.add('tv-tower-driver-rating');
 
-                const rep = document.createElement('repEl');
+                const rep = document.createElement('div');
                 rep.classList.add('tv-tower-driver-reputation');
                 
-                const laptime = document.createElement('lapEl');
+                const laptime = document.createElement('div');
                 laptime.classList.add('tv-tower-driver-laptime');
                 
-                const delta = document.createElement('deltaEl');
+                const delta = document.createElement('div');
                 delta.classList.add('tv-tower-driver-delta');
 
                 cell.appendChild(position);
@@ -238,12 +238,12 @@ export default class TvTower extends HudElement {
 
                 const myTime = validNumberOrDefault(me.sectorTimeBestSelf.sector3, null);
 
-                let timeColor = 'white';
-                let deltaColor = 'white';
+                let timeColor = '#fff';
+                let deltaColor = 'var(--delta-color)';
 
                 let time = null;
-                let deltaNumber: number = null;
-                let deltaString: string = null;
+                let deltaNumber = null;
+                let deltaString = null;
 
                 let showDeltaForMainDriver = false;
                 switch (sessionType) {

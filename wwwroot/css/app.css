@@ -1010,7 +1010,7 @@ progress#revs::-webkit-progress-value {
   background-repeat: round;
 }
 
-#tv-tower .tv-tower-driver posEl {
+#tv-tower .tv-tower-driver div.tv-tower-driver-position {
   text-align: center;
   translate: 0px -2px;
   position:relative;
@@ -1024,7 +1024,7 @@ progress#revs::-webkit-progress-value {
     1px 1px 4px #000;
 }
 
-#tv-tower .tv-tower-driver nameEl {
+#tv-tower .tv-tower-driver div.tv-tower-driver-name {
   letter-spacing: 1.2px;
   white-space: nowrap;
   padding-left: 8px;
@@ -1039,7 +1039,7 @@ progress#revs::-webkit-progress-value {
     1px 1px 4px #000;
 }
 
-#tv-tower .tv-tower-driver ratEl, #tv-tower .tv-tower-driver repEl {
+#tv-tower .tv-tower-driver div.tv-tower-driver-rating, #tv-tower .tv-tower-driver div.tv-tower-driver-reputation {
   text-align: center;
   font-weight: 500;
   font-size: 15px;
@@ -1048,7 +1048,7 @@ progress#revs::-webkit-progress-value {
   background-color: rgb(255, 255, 255);
 }
 
-#tv-tower .tv-tower-driver lapEl {
+#tv-tower .tv-tower-driver div.tv-tower-driver-laptime {
   text-align: left;
   letter-spacing: 0.8px;
   translate: 0px -3px;
@@ -1060,7 +1060,7 @@ progress#revs::-webkit-progress-value {
     -1px 1px 2px #000,
     1px 1px 2px #000;
 }
-#tv-tower .tv-tower-driver deltaEl {
+#tv-tower .tv-tower-driver div.tv-tower-driver-delta {
   translate: 0px -3px;
   text-align: center;
   letter-spacing: 0.8px;

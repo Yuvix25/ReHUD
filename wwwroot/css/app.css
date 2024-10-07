@@ -923,11 +923,13 @@ progress#revs::-webkit-progress-value {
 
   height: fit-content;
   background-color: rgba(0, 0, 0, 0.4);
-  margin-top: 12px;
-  margin-left: 12px;
   display: block;
   border-radius: 5px 5px 5px 0px;
   padding-left: 3px;
+
+  position: fixed;
+  top: 300px;
+  left: 12px;
 }
 
 
@@ -935,6 +937,7 @@ progress#revs::-webkit-progress-value {
   height: 19px;
   width: 100%;
   margin-top: 3px;
+  margin-bottom: 3px;
   position: relative;
   border-bottom: 1px solid rgba(134, 134, 134, 0.3);
   border-radius: 0px 0px 5px 0px;

@@ -29,6 +29,10 @@ export const RADAR_POINTER = 'radarPointer';
 export const RADAR_FADE_RANGE ='radarFadeRange';
 export const RELATIVE_SAFE_MODE = 'relativeSafeMode';
 export const POSITION_BAR_CELL_COUNT = 'positionBarCellCount';
+export const TV_TOWER_MAX_SIZE_SETTING = 'tvTowerMaxSize';
+export const TV_TOWER_CAR_LOGO = 'tvTowerCarLogo';
+export const TV_TOWER_RANKED_DATA ='tvTowerRankedData';
+export const TV_TOWER_CAR_LOGO_OR_LIVERY = 'tvTowerCarLogoOrLivery';
 export const DELTA_MODE = 'deltaMode';
 export const SHOW_DELTA_ON_INVALID_LAPS = 'showDeltaOnInvalidLaps';
 export const FRAMERATE = 'framerate';
@@ -107,6 +111,7 @@ export const SESSION_TYPES = {
 
 export const TRANSFORMABLES = {
   'position-bar': 'Position Bar',
+  'tv-tower': 'TV Tower',
   'position-container': 'Position',
   'completed-laps-container': 'Completed Laps',
   'estimated-laps-left-container': 'Estimated Laps Left',

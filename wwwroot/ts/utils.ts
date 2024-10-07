@@ -560,6 +560,49 @@ export function mpsToKph(mps: number) {
 }
 
 
+export function getRaceDeltas(driverData: IDriverData[], position: number): string[] {
+  
+    const precision = 3;
+    const deltas: string[] = [];
+    const deltaLoop = (front: boolean) => {
+        const push = (delta: string) => {
+            front ? deltas.unshift(delta) : deltas.push(delta);
+        }
+
+        let delta = 0;
+        const me = driverData[position];
+        for (let i = position + (front ? -1 : 1); front ? i >= 0 : i < driverData.length; front ? i-- : i++) {
+            const driver = driverData[i];
+
+            let lapDiff = me.completedLaps - driver.completedLaps;
+            if (lapDiff < 0 && driver.lapDistance < me.lapDistance) {
+                lapDiff++;
+            } else if (lapDiff > 0 && me.lapDistance < driver.lapDistance) {
+                lapDiff--;
+            }
+
+            if (lapDiff != 0) {
+                push(lapDiff > 0 ? `+${lapDiff}L` : `${lapDiff}L`);
+            } else {
+                let nextDelta = front ? driver.timeDeltaBehind : driver.timeDeltaFront;
+                if (nextDelta < 0) {
+                    front ? deltas.unshift(null) : deltas.push(null);
+                    continue;
+                }
+                delta += nextDelta;
+                push(front ? (-delta).toFixed(precision) : '+' + delta.toFixed(precision));
+            }
+        }
+    }
+
+    deltaLoop(true);
+
+    deltas.push(null);
+
+    deltaLoop(false);
+
+    return deltas;
+}
 
 export class AudioController {
   audio: HTMLAudioElement = new Audio();

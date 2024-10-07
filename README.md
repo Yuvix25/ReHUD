@@ -26,6 +26,7 @@ I started this project because more and more bugs began to appear in [OtterHud](
  - Position bar
  - Live delta
  - Position bar
+ - TV tower
  - Session status
  - Pit timer
  - Live rake visualizer

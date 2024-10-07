@@ -127,6 +127,8 @@ public class Startup
     public static BrowserWindow? MainWindow { get; private set; }
     public static BrowserWindow? SettingsWindow { get; private set; }
 
+    private const string BUY_ME_A_COFFEE_URL = "https://www.buymeacoffee.com/yuvalrosen";
+
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
     private readonly string logFilePathWarning = $"Log file path could not be determined. Try searching for a file named 'ReHUD.log' in '{UserData.dataPath}'";
 
@@ -337,8 +339,8 @@ public class Startup
 
     private async Task CreateSettingsWindow(IWebHostEnvironment env) {
         SettingsWindow = await CreateWindowAsync(new BrowserWindowOptions() {
-            Width = 800,
-            Height = 830,
+            Width = 1000,
+            Height = 1000,
             Icon = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ReHUD.png"),
             WebPreferences = new WebPreferences() {
                 EnableRemoteModule = true,
@@ -445,6 +447,10 @@ public class Startup
                 await layout.DeleteLayout();
                 SendHudLayout();
             }
+        });
+
+        await Electron.IpcMain.On("buy-me-a-coffee", async (arg) => {
+            await Electron.Shell.OpenExternalAsync(BUY_ME_A_COFFEE_URL);
         });
 
         SettingsWindow.OnClosed += () => Electron.App.Quit();

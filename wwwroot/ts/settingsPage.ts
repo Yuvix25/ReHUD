@@ -205,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
     {id: 'general-tablink', func: (event: MouseEvent) => tabChange(event, 'main-tabs', 'general-tab')},
     {id: 'layout-tablink', func: (event: MouseEvent) => tabChange(event, 'main-tabs', 'layout-tab')},
     {id: 'new-layout-preset', func: () => ipcRenderer.send('new-hud-layout')},
+    {id: 'buy-me-a-coffee', func: () => ipcRenderer.send('buy-me-a-coffee')},
   ];
 
 

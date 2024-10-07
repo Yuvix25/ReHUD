@@ -190,9 +190,6 @@ export class Driver extends EventListener {
    * Erases the temporary data of the driver.
    */
   clearTempData() {
-    if (Driver.mainDriver === this) {
-      console.log('Clearing temp data for', this.userId);
-    }
     this.crossedFinishLine = null;
     this.currentIndex = null;
     this.setLapInvalid();
@@ -505,15 +502,10 @@ export interface IExtendedDriverData extends IDriverData {
  * @return Unique ID for the driver (JSON of some fields)
  */
 export function computeUid(driverInfo: IDriverInfo): string {
-  if (driverInfo == null)
+  if (driverInfo == null) {
     return null;
-  const obj = {
-    name: base64EncodedUint8ArrayToString(driverInfo.name),
-    userId: driverInfo.userId,
-    slotId: driverInfo.slotId,
-    carId: driverInfo.liveryId,
-  };
-  return JSON.stringify(obj);
+  }
+  return `${base64EncodedUint8ArrayToString(driverInfo.name)}_${driverInfo.userId}_${driverInfo.slotId}_${driverInfo.liveryId}`;
 }
 
 export function getUid(driverInfo: IDriverInfo): string {

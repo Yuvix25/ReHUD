@@ -12,6 +12,7 @@ export default abstract class EventListener extends NamedEntity {
         EventEmitter.on(EventEmitter.NEW_LAP_EVENT, this.onNewLap.bind(this));
         EventEmitter.on(EventEmitter.POSITION_JUMP_EVENT, this.onPositionJump.bind(this));
         EventEmitter.on(EventEmitter.ENTERED_PITLANE_EVENT, this.onPitlaneEntrance.bind(this));
+        EventEmitter.on(EventEmitter.LEFT_PITLANE_EVENT, this.onPitlaneExit.bind(this));
         EventEmitter.on(EventEmitter.GAME_PAUSED_EVENT, this.onGamePause.bind(this));
         EventEmitter.on(EventEmitter.GAME_RESUMED_EVENT, this.onGameResume.bind(this));
         EventEmitter.on(EventEmitter.SESSION_CHANGED_EVENT, this.onSessionChange.bind(this));
@@ -37,6 +38,7 @@ export default abstract class EventListener extends NamedEntity {
     protected onNewLap(extendedData: IExtendedShared, driver: IDriverData, isMainDriver: boolean) { }
     protected onPositionJump(extendedData: IExtendedShared, driver: IDriverData, isMainDriver: boolean) { }
     protected onPitlaneEntrance(extendedData: IExtendedShared, driver: IDriverData, isMainDriver: boolean) { }
+    protected onPitlaneExit(extendedData: IExtendedShared, driver: IDriverData, isMainDriver: boolean) { }
     protected onSessionChange(extendedData: IExtendedShared, lastSession: ESession) { }
     protected onSessionPhaseChange(extendedData: IExtendedShared, lastSessionPhase: ESessionPhase) { }
     protected onCarChange(extendedData: IExtendedShared, lastModelId: number) { }
@@ -46,7 +48,7 @@ export default abstract class EventListener extends NamedEntity {
     protected onGameResume(extendedData: IExtendedShared) { }
     protected onEnteredReplay(extendedData: IExtendedShared) { }
     protected onLeftReplay(extendedData: IExtendedShared) { }
-    protected onPushToPassDeactivation(extendedData: IExtendedShared, pushToPass: IPushToPass) { }
-    protected onPushToPassActivation(extendedData: IExtendedShared, pushToPass: IPushToPass) { }
+    protected onPushToPassDeactivation(extendedData: IExtendedShared) { }
+    protected onPushToPassActivation(extendedData: IExtendedShared) { }
     protected onPushToPassReady(extendedData: IExtendedShared) { }
 }

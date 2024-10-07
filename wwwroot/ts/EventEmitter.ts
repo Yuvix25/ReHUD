@@ -4,31 +4,27 @@ import {ESession, ESessionPhase, IDriverData} from "./r3eTypes.js";
 import {SharedMemoryKey} from './SharedMemoryConsumer.js';
 import {getUid} from "./utils.js";
 
-export type EventCallbacks = {
-    [EventEmitter.NEW_LAP_EVENT]?: (data: any) => void;
-    [EventEmitter.POSITION_JUMP_EVENT]?: (data: any) => void;
-    [EventEmitter.ENTERED_PITLANE_EVENT]?: (data: any) => void;
-};
 
 /**
  * An event emitter for some events regarding data from the Shared Memory API.
  */
 export default class EventEmitter extends NamedEntity {
-    public static readonly NEW_LAP_EVENT = 'newLap';
-    public static readonly POSITION_JUMP_EVENT = 'positionJump';
-    public static readonly ENTERED_PITLANE_EVENT = 'enteredPitlane';
-    public static readonly GAME_PAUSED_EVENT = 'gamePaused';
-    public static readonly GAME_RESUMED_EVENT = 'gameResumed';
-    public static readonly SESSION_CHANGED_EVENT = 'sessionChanged';
-    public static readonly SESSION_PHASE_CHANGED_EVENT = 'sessionPhaseChanged';
-    public static readonly P2P_DEACTIVATION_EVENT = 'p2pDeactivation';
-    public static readonly P2P_ACTIVATION_EVENT = 'p2pActivation';
-    public static readonly P2P_READY_EVENT = 'p2pReady';
-    public static readonly CAR_CHANGED_EVENT = 'carChanged';
-    public static readonly TRACK_CHANGED_EVENT = 'trackChanged';
-    public static readonly MAIN_DRIVER_CHANGED_EVENT = 'mainDriverChanged'; // emitted by the driver manager
-    public static readonly ENTERED_REPLAY_EVENT = 'enteredReplay';
-    public static readonly LEFT_REPLAY_EVENT = 'leftReplay';
+    public static readonly NEW_LAP_EVENT = 'NewLap';
+    public static readonly POSITION_JUMP_EVENT = 'PositionJump';
+    public static readonly SESSION_CHANGED_EVENT = 'SessionChange';
+    public static readonly SESSION_PHASE_CHANGED_EVENT = 'SessionPhaseChange';
+    public static readonly CAR_CHANGED_EVENT = 'CarChange';
+    public static readonly TRACK_CHANGED_EVENT = 'TrackChange';
+    public static readonly MAIN_DRIVER_CHANGED_EVENT = 'MainDriverChange';
+    public static readonly GAME_PAUSED_EVENT = 'GamePause';
+    public static readonly GAME_RESUMED_EVENT = 'GameResume';
+    public static readonly ENTERED_REPLAY_EVENT = 'EnterReplay';
+    public static readonly LEFT_REPLAY_EVENT = 'ExitReplay';
+    public static readonly ENTERED_PITLANE_EVENT = 'EnterPitlane';
+    public static readonly LEFT_PITLANE_EVENT = 'ExitPitlane';
+    public static readonly P2P_ACTIVATION_EVENT = 'PushToPassActivate';
+    public static readonly P2P_DEACTIVATION_EVENT = 'PushToPassDeactivate';
+    public static readonly P2P_READY_EVENT = 'PushToPassReady';
 
     private static readonly valueListeners: {[value: string]: Array<[string, any?]>} = {
         'sessionType': [[EventEmitter.SESSION_CHANGED_EVENT, ESession]],
@@ -43,7 +39,7 @@ export default class EventEmitter extends NamedEntity {
         return acc;
     }, {});
 
-    override sharedMemoryKeys: SharedMemoryKey[] = ['sessionType', 'sessionPhase', 'vehicleInfo', 'layoutId', 'driverData', 'playerName', 'gameInReplay', 'gameInMenus', 'gamePaused', 'controlType', 'layoutLength', 'pushToPass'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['+events', 'sessionType', 'sessionPhase', 'vehicleInfo', 'layoutId', 'driverData', 'playerName', 'gameInReplay', 'gameInMenus', 'gamePaused', 'controlType', 'layoutLength', 'pushToPass'];
 
     override isEnabled(): boolean {
         return true;
@@ -52,10 +48,6 @@ export default class EventEmitter extends NamedEntity {
     static CLOSE_THRESHOLD = 50; // meters
     static events: {[key: string]: Array<(data: IExtendedShared) => void>} = {};
     static previousData: IExtendedShared = null;
-    static uidMapPrevious: {[key: string]: IDriverData} = null;
-    static newLapEvent: any;
-    static enteredPitlaneEvent: any;
-    static positionJumpEvent: any;
 
     private static getValueByPath(data: IExtendedShared, path: string): any {
         const parts = path.split('.');
@@ -128,103 +120,21 @@ export default class EventEmitter extends NamedEntity {
 
 
     /**
-     * Listen for any event and emit if necessary.
-     * @param data - Data from the Shared Memory API
+     * Forward events from the backend.
      */
     static cycle(extendedData: IExtendedShared) {
-        const data = extendedData.rawData;
-        const timestamp = Date.now();
-
-        const newDriverMap: {[key: string]: IDriverData} = {};
-        for (const driver of data.driverData) {
-            newDriverMap[getUid(driver.driverInfo)] = driver;
-        }
-
         if (this.previousData != null) {
-            const mainDriverInfo = structuredClone(data.vehicleInfo);
-            mainDriverInfo.name = data.playerName;
-            const mainDriverUid = getUid(mainDriverInfo);
-
-            let emittedPositionJump = false;
-
-
-            if (this.previousData.rawData.gameInReplay !== 1 && data.gameInReplay === 1) {
-              this.emit(EventEmitter.ENTERED_REPLAY_EVENT, null, extendedData);
-            }
-            if (this.previousData.rawData.gameInReplay === 1 && data.gameInReplay !== 1) {
-              this.emit(EventEmitter.LEFT_REPLAY_EVENT, null, extendedData);
-            }
-
-            for (const value of Object.keys(EventEmitter.valueListeners)) {
-                const previousValue = EventEmitter.getValueByPath(this.previousData, value);
-                const currentValue = EventEmitter.getValueByPath(extendedData, value);
-                if (previousValue !== currentValue) {
-                    for (const event of EventEmitter.valueListeners[value]) {
-                        this.emit(event[0], null, extendedData, previousValue);
-                    }
-                }
-            }
-
-            if (data.controlType != null && data.controlType > 0 && this.previousData.rawData.controlType != data.controlType) { // control type change (e.g. leaderboard challenge/private qualifying reset) 0 = player
-                this.emit(EventEmitter.POSITION_JUMP_EVENT, true, extendedData, newDriverMap[mainDriverUid]);
-                emittedPositionJump = true;
-            }
-
-            if (data.gamePaused == 1 && this.previousData.rawData.gamePaused != 1) {
-              this.emit(EventEmitter.GAME_PAUSED_EVENT, null, extendedData);
-            }
-            if (data.gamePaused == 0 && this.previousData.rawData.gamePaused == 1) {
-              this.emit(EventEmitter.GAME_RESUMED_EVENT, null, extendedData);
-            }
-
-            if(data.pushToPass.waitTimeLeft > 0 && this.previousData.rawData.pushToPass.waitTimeLeft == 0) {
-                this.emit(EventEmitter.P2P_DEACTIVATION_EVENT, null, extendedData)
-            }
-
-            if(data.pushToPass.engagedTimeLeft > 0 && this.previousData.rawData.pushToPass.engagedTimeLeft == 0) {
-                this.emit(EventEmitter.P2P_ACTIVATION_EVENT, null, extendedData)
-            }
-
-            if(data.pushToPass.waitTimeLeft == 0 && this.previousData.rawData.pushToPass.waitTimeLeft > 0 && data.gameInMenus != 1 || data.pushToPass.amountLeft > 0 && this.previousData.rawData.pushToPass.amountLeft == 0) {
-                this.emit(EventEmitter.P2P_READY_EVENT, null, extendedData)
-            }
-
-            for (const uid of Object.keys(newDriverMap)) {
-                const driver = newDriverMap[uid];
-                const driverPrevious = this.uidMapPrevious[uid];
-
-                if (driverPrevious == null) {
-                    continue;
-                }
-
-                const isMainDriver = uid === mainDriverUid;
-
-                let toEmit: string = null;
-
-                if ((driverPrevious.completedLaps !== driver.completedLaps && (driverPrevious.completedLaps == null || driver.completedLaps > driverPrevious.completedLaps))
-                    || (
-                    driver.completedLaps == 0 &&
-                    driverPrevious.lapDistance >= data.layoutLength - EventEmitter.CLOSE_THRESHOLD &&
-                    driver.lapDistance <= EventEmitter.CLOSE_THRESHOLD &&
-                    (data.sessionType === ESession.Race || data.sessionType === ESession.Qualify))) {
-                        toEmit = EventEmitter.NEW_LAP_EVENT;
-                }
-
-                if (driverPrevious.inPitlane !== 1 && driver.inPitlane === 1) {
-                    toEmit = EventEmitter.ENTERED_PITLANE_EVENT;
-                }
-
-                if (toEmit != null) {
-                    if (!(toEmit === EventEmitter.NEW_LAP_EVENT && isMainDriver) || !emittedPositionJump) {
-                      this.emit(toEmit, isMainDriver, extendedData, driver);
-                    }
+            for (const event of (extendedData.events ?? [])) {
+                if ("OldValue" in event) {
+                    this.emit(event.EventName, null, extendedData, event.OldValue);
+                } else if ("Driver" in event) {
+                    this.emit(event.EventName, event.IsMainDriver, extendedData, event.Driver);
+                } else {
+                    this.emit(event.EventName, null, extendedData);
                 }
             }
         }
-        
         this.previousData = extendedData;
-        (this.previousData as any).timestamp = timestamp;
-        this.uidMapPrevious = newDriverMap;
     }
 
 

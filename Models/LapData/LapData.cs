@@ -5,28 +5,49 @@ using Newtonsoft.Json;
 
 namespace ReHUD.Models.LapData
 {
-    public class EntityWithId
+    public interface IEntityWithId {
+        [Key]
+        public int Id { get; set; }
+    }
+
+    public class EntityWithGeneratedId : IEntityWithId
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Key]
-        public virtual int Id { get; set; }
+        public int Id { get; set; }
     }
 
-    public interface IEntityWithContext<C> where C : Context?
+    public interface IEntityWithContext
     {
-        public C Context { get; }
+        public Context Context { get; set; }
+    }
+
+    public interface IEntityWithContext<C> : IEntityWithContext where C : Context
+    {
+        public new C Context { get; set; }
+        [NotMapped]
+        Context IEntityWithContext.Context { get => Context; set => Context = (C)value; }
     }
 
 
-    public abstract class Context : EntityWithId
+    public interface IContextQuery
+    {
+        public bool Matches(Context context);
+    }
+
+    public abstract class Context : IEntityWithId, IContextQuery
     {
         [Key]
-        public override int Id => GetHashCode();
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        public int Id { get => GetId(); set {} }
 
         public abstract IEnumerable Entries { get; }
 
         public override abstract bool Equals(object? obj);
         public override abstract int GetHashCode();
+
+        protected abstract int GetId();
+        public bool Matches(Context context) => Equals(context);
 
         public static bool operator ==(Context? lhs, Context? rhs)
         {
@@ -47,21 +68,26 @@ namespace ReHUD.Models.LapData
         }
     }
 
-    public abstract class Context<T> : Context where T : class, IEntityWithContext<Context<T>>
+    public abstract class Context<T> : Context where T : class, IEntityWithContext
     {
         public override ICollection<T> Entries { get; } = new List<T>();
     }
 
     public class LapContext : Context<LapData> {
+        private static readonly int MAX_R3E_DATA_ID = 20000;
+        private static readonly int MAX_TIRE_COMPOUND = 5;
+
         public int TrackLayoutId { get; set; }
         public int CarId { get; set; }
-        public int ClassPerformanceIndex { get; set; }
+        public int? ClassPerformanceIndex { get; set; }
+
+        // Tire compounds affect everything (laptimes, tire wear, fuel usage), so they are stored in the lap context and not only in the tire wear context.
         public R3E.Constant.TireSubtype TireCompoundFront { get; set; }
         public R3E.Constant.TireSubtype TireCompoundRear { get; set; }
 
         public int? BestLapId { get; set; }
         [NotMapped]
-        public LapData? BestLap => Entries.FirstOrDefault(l => l.Id == BestLapId);
+        public LapData? BestLap { get => Entries.FirstOrDefault(l => l.Id == BestLapId); set => BestLapId = value?.Id; }
 
         [NotMapped]
         public IEnumerable<LapTime> LapTimes => Entries.Where(l => l.LapTime != null).Select(l => l.LapTime);
@@ -86,7 +112,7 @@ namespace ReHUD.Models.LapData
 
         [Obsolete("EF Core only")]
         public LapContext() { }
-        public LapContext(int trackLayoutId, int carId, int classPerformanceIndex, R3E.Constant.TireSubtype tireCompoundFront, R3E.Constant.TireSubtype tireCompoundRear)
+        public LapContext(int trackLayoutId, int carId, int? classPerformanceIndex, R3E.Constant.TireSubtype tireCompoundFront, R3E.Constant.TireSubtype tireCompoundRear)
         {
             TrackLayoutId = trackLayoutId;
             CarId = carId;
@@ -94,7 +120,7 @@ namespace ReHUD.Models.LapData
             TireCompoundFront = tireCompoundFront;
             TireCompoundRear = tireCompoundRear;
         }
-        public LapContext(int trackLayoutId, int carId, int classPerformanceIndex, int tireCompoundFront, int tireCompoundRear) : this(trackLayoutId, carId, classPerformanceIndex, (R3E.Constant.TireSubtype)tireCompoundFront, (R3E.Constant.TireSubtype)tireCompoundRear) { }
+        public LapContext(int trackLayoutId, int carId, int? classPerformanceIndex, int tireCompoundFront, int tireCompoundRear) : this(trackLayoutId, carId, classPerformanceIndex, (R3E.Constant.TireSubtype)tireCompoundFront, (R3E.Constant.TireSubtype)tireCompoundRear) { }
 
         public override bool Equals(object? obj)
         {
@@ -106,26 +132,52 @@ namespace ReHUD.Models.LapData
             LapContext other = (LapContext)obj;
             return TrackLayoutId == other.TrackLayoutId && CarId == other.CarId && ClassPerformanceIndex == other.ClassPerformanceIndex && TireCompoundFront == other.TireCompoundFront && TireCompoundRear == other.TireCompoundRear;
         }
-        
+
         public override int GetHashCode()
         {
             return HashCode.Combine(TrackLayoutId, CarId, ClassPerformanceIndex, TireCompoundFront, TireCompoundRear);
         }
+
+        protected override int GetId()
+        {
+            return TrackLayoutId * MAX_R3E_DATA_ID * MAX_R3E_DATA_ID * MAX_TIRE_COMPOUND * MAX_TIRE_COMPOUND + CarId * MAX_R3E_DATA_ID * MAX_TIRE_COMPOUND * MAX_TIRE_COMPOUND + (int)TireCompoundFront * MAX_TIRE_COMPOUND + (int)TireCompoundRear;
+        }
+
+        public override string ToString()
+        {
+            return $"TrackLayoutId: {TrackLayoutId}, CarId: {CarId}, ClassPerformanceIndex: {ClassPerformanceIndex}, TireCompoundFront: {TireCompoundFront}, TireCompoundRear: {TireCompoundRear}";
+        }
     }
 
-    public class LapData : EntityWithId, IEntityWithContext<Context<LapData>>
+    public class LapContextQuery : IContextQuery
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int? TrackLayoutId { get; set; }
+        public int? CarId { get; set; }
+        public int? ClassPerformanceIndex { get; set; }
+        public R3E.Constant.TireSubtype? TireCompoundFront { get; set; }
+        public R3E.Constant.TireSubtype? TireCompoundRear { get; set; }
+
+        public bool Matches(Context context)
+        {
+            if (context is not LapContext lapContext) return false;
+            if (TrackLayoutId != null && lapContext.TrackLayoutId != TrackLayoutId) return false;
+            if (CarId != null && lapContext.CarId != CarId) return false;
+            if (ClassPerformanceIndex != null && lapContext.ClassPerformanceIndex != ClassPerformanceIndex) return false;
+            if (TireCompoundFront != null && lapContext.TireCompoundFront != TireCompoundFront) return false;
+            if (TireCompoundRear != null && lapContext.TireCompoundRear != TireCompoundRear) return false;
+            return true;
+        }
+    }
+
+    public class LapData : EntityWithGeneratedId, IEntityWithContext<LapContext>
+    {
         public DateTime Timestamp { get; set; }
         public bool Valid { get; set; }
 
-        
-        public LapContext Context { get; set; }
-        [NotMapped]
-        Context<LapData> IEntityWithContext<Context<LapData>>.Context => Context;
+        public virtual LapContext Context { get; set; }
 
         private LapTime _lapTime;
-        public LapTime LapTime {
+        public virtual LapTime LapTime {
             get => _lapTime;
             set {
                 _lapTime = value;
@@ -134,7 +186,7 @@ namespace ReHUD.Models.LapData
         }
 
         private TireWear? _tireWear;
-        public TireWear? TireWear {
+        public virtual TireWear? TireWear {
             get => _tireWear;
             set {
                 _tireWear = value;
@@ -143,7 +195,7 @@ namespace ReHUD.Models.LapData
         }
 
         private FuelUsage? _fuelUsage;
-        public FuelUsage? FuelUsage {
+        public virtual FuelUsage? FuelUsage {
             get => _fuelUsage;
             set {
                 _fuelUsage = value;
@@ -152,7 +204,7 @@ namespace ReHUD.Models.LapData
         }
 
         private Telemetry? _telemetry;
-        public Telemetry? Telemetry {
+        public virtual Telemetry? Telemetry {
             get => _telemetry;
             set {
                 _telemetry = value;
@@ -184,6 +236,13 @@ namespace ReHUD.Models.LapData
             Valid = valid;
             LapTime = lapTime;
         }
+        public LapData(LapContext context, bool valid, double lapTime)
+        {
+            Timestamp = DateTime.Now;
+            Context = context;
+            Valid = valid;
+            LapTime = new LapTime(this, lapTime);
+        }
 
         public LapData(LapContext context, bool valid, LapTime lapTime, TireWear? tireWear, FuelUsage? fuelUsage, Telemetry? telemetry) : this(context, valid, lapTime)
         {
@@ -206,16 +265,13 @@ namespace ReHUD.Models.LapData
 
 
     [NotMapped]
-    public abstract class LapPointer : EntityWithId, IEntityWithContext<Context?>
+    public abstract class LapPointer : EntityWithGeneratedId
     {
-        public LapData Lap { get; set; }
+        public virtual LapData Lap { get; set; }
         public bool PendingRemoval { get; set; } = false;
 
         [NotMapped]
         public LapContext LapContext => Lap.Context;
-
-        [NotMapped]
-        public virtual Context? Context => null;
 
         [Obsolete("EF Core only")]
         protected LapPointer() { }
@@ -227,12 +283,9 @@ namespace ReHUD.Models.LapData
     }
 
     [NotMapped]
-    public abstract class LapPointer<T, V> : LapPointer, IEntityWithContext<Context<T>?> where T : LapPointer<T, V>
+    public abstract class LapPointer<V> : LapPointer
     {
-        public V Value { get; set; }
-
-        [NotMapped]
-        public override Context<T>? Context => null;
+        public virtual V Value { get; set; }
 
         [Obsolete("EF Core only")]
         protected LapPointer() { }
@@ -242,31 +295,25 @@ namespace ReHUD.Models.LapData
         }
     }
 
-    public interface ITypedContextPointer<C> where C : Context
-    {
-        public C TypedContext { get; set; }
-    }
-
     [NotMapped]
-    public abstract class LapPointer<C, T, V> : LapPointer<T, V>, IEntityWithContext<Context<T>>, ITypedContextPointer<C> where C : Context<T> where T : LapPointer<C, T, V>
+    public abstract class LapPointerWithContext<V, C> : LapPointer<V>, IEntityWithContext<C> where C : Context
     {
-        [NotMapped]
-        public override Context<T> Context => TypedContext;
-        public C TypedContext { get; set; }
+        public virtual C Context { get; set; }
 
         [Obsolete("EF Core only")]
-        protected LapPointer() { }
-        protected LapPointer(LapData lap, C context, V value) : base(lap, value)
+        protected LapPointerWithContext() { }
+        protected LapPointerWithContext(LapData lap, V value, C context) : base(lap, value)
         {
-            TypedContext = context;
+            Context = context;
         }
     }
 
-    public class LapTime : LapPointer<LapTime, double> {
+    public class LapTime : LapPointer<double> {
         [Obsolete("EF Core only")]
         public LapTime() { }
         public LapTime(LapData lap, double value) : base(lap, value) { }
     }
+    
 
     public class TireWearContext : Context<TireWear> {
         public int TireWearRate { get; }
@@ -293,12 +340,32 @@ namespace ReHUD.Models.LapData
         {
             return HashCode.Combine(TireWearRate);
         }
+
+        protected override int GetId()
+        {
+            return TireWearRate;
+        }
     }
-    public class TireWear : LapPointer<TireWearContext, TireWear, TireWearObj> {
+
+    public class TireWearContextQuery : IContextQuery
+    {
+        public int? TireWearRate { get; set; }
+
+        public bool Matches(Context context)
+        {
+            if (context is not TireWearContext tireWearContext) return false;
+            if (TireWearRate != null && tireWearContext.TireWearRate != TireWearRate) return false;
+            return true;
+        }
+    }
+
+    public class TireWear : LapPointerWithContext<TireWearObj, TireWearContext> {
+
         [Obsolete("EF Core only")]
         public TireWear() { }
-        public TireWear(LapData lap, TireWearContext context, TireWearObj value) : base(lap, context, value) { }
+        public TireWear(LapData lap, TireWearObj value, TireWearContext context) : base(lap, value, context) { }
     }
+
 
     public class FuelUsageContext : Context<FuelUsage> {
         public int FuelUsageRate { get; }
@@ -325,14 +392,32 @@ namespace ReHUD.Models.LapData
         {
             return HashCode.Combine(FuelUsageRate);
         }
-    }
-    public class FuelUsage : LapPointer<FuelUsageContext, FuelUsage, double> {
-        [Obsolete("EF Core only")]
-        public FuelUsage() { }
-        public FuelUsage(LapData lap, FuelUsageContext context, double value) : base(lap, context, value) { }
+
+        protected override int GetId()
+        {
+            return FuelUsageRate;
+        }
     }
 
-    public class Telemetry : LapPointer<Telemetry, TelemetryObj> {
+    public class FuelUsageContextQuery : IContextQuery
+    {
+        public int? FuelUsageRate { get; set; }
+
+        public bool Matches(Context context)
+        {
+            if (context is not FuelUsageContext fuelUsageContext) return false;
+            if (FuelUsageRate != null && fuelUsageContext.FuelUsageRate != FuelUsageRate) return false;
+            return true;
+        }
+    }
+
+    public class FuelUsage : LapPointerWithContext<double, FuelUsageContext> {
+        [Obsolete("EF Core only")]
+        public FuelUsage() { }
+        public FuelUsage(LapData lap, double value, FuelUsageContext context) : base(lap, value, context) { }
+    }
+
+    public class Telemetry : LapPointer<TelemetryObj> {
         [Obsolete("EF Core only")]
         public Telemetry() { }
         public Telemetry(LapData lap, TelemetryObj value) : base(lap, value) { }

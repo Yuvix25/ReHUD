@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using R3E.Data;
 using ReHUD.Models;
 using System.Diagnostics;
@@ -6,6 +7,23 @@ namespace ReHUD.Utils
 {
     public static class Utilities
     {
+        public static List<Tuple<DriverData, DriverData>> GetDriverMatches(DriverData[] oldData, DriverData[] newData) {
+            var oldUids = new Dictionary<string, DriverData>();
+            foreach (var driver in oldData) {
+                oldUids[Driver.GetDriverUid(driver.driverInfo)] = driver;
+            }
+
+            var res = new List<Tuple<DriverData, DriverData>>();
+            foreach (var driver in newData) {
+                string uid = Driver.GetDriverUid(driver.driverInfo);
+                DriverData? oldDriver = oldUids.GetValueOrDefault(uid);
+                if (oldDriver != null) {
+                    res.Add(new(oldDriver.Value, driver));
+                }
+            }
+            return res;
+        }
+
         public static float RpsToRpm(float rps) {
             return rps * (60 / (2 * (float)Math.PI));
         }

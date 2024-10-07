@@ -1,5 +1,6 @@
 using Newtonsoft.Json.Linq;
 using R3E.Data;
+using ReHUD.Interfaces;
 using ReHUD.Models.LapData;
 
 namespace ReHUD.Models;
@@ -21,6 +22,8 @@ public struct R3EExtraData
     public bool forceUpdateAll;
 
     public double timestamp;
+
+    public ICollection<EventLog> events;
 
 
     /// <summary>

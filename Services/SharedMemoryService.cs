@@ -3,6 +3,7 @@ using PrecisionTiming;
 using R3E;
 using R3E.Data;
 using ReHUD.Interfaces;
+using System.Diagnostics;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 

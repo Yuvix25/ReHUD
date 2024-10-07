@@ -20,7 +20,7 @@ public static class Program
         Debugger.Launch();
 #endif
         try {
-            GlobalContext.Properties["LogFilePath"] = Path.Combine(UserData.dataPath, "ReHUD.log");
+            GlobalContext.Properties["LogFilePath"] = Path.Combine(IUserData.dataPath, "ReHUD.log");
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
@@ -53,12 +53,11 @@ public static class Program
                 services.AddLogging();
                 services.AddSignalR();
                 services.AddRazorPages();
-                services.AddDbContext<LapDataContext>(options => options.UseLazyLoadingProxies().UseSqlite($"Data Source={ILapDataService.DATA_PATH};Mode=ReadWriteCreate"), ServiceLifetime.Singleton);
-                services.AddSingleton<ILapDataService, LapDataService>();
+                services.AddSingleton<IEventService, EventService>();
+                services.AddSingleton<IVersionService, VersionService>();
                 services.AddSingleton<IProcessObserverFactory, ProcessObserverFactory>();
                 services.AddSingleton<IRaceRoomObserver, RaceRoomObserver>();
                 services.AddSingleton<ISharedMemoryService, SharedMemoryService>();
                 services.AddSingleton<IR3EDataService, R3EDataService>();
-                services.AddSingleton<IUpdateService, UpdateService>();
             });
 }

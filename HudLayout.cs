@@ -2,6 +2,7 @@ using System.Reflection;
 using ElectronNET.API;
 using ElectronNET.API.Entities;
 using Newtonsoft.Json;
+using ReHUD.Interfaces;
 using ReHUD.Models;
 
 namespace ReHUD;
@@ -54,7 +55,7 @@ public class HudLayout : JsonUserData
     [JsonProperty]
     private readonly Dictionary<string, HudElement> elements = new();
     public static readonly string subPath = "LayoutPresets";
-    public static string FullPath => Path.Combine(dataPath, subPath);
+    public static string FullPath => Path.Combine(IUserData.dataPath, subPath);
     public override string SubPath => subPath;
     protected override string DataFilePath => Name + ".json";
 
@@ -224,13 +225,13 @@ public class HudLayout : JsonUserData
 
     public static void VerifyDirectory()
     {
-        Directory.CreateDirectory(Path.Join(dataPath, subPath));
+        Directory.CreateDirectory(Path.Join(IUserData.dataPath, subPath));
     }
 
     public static void LoadHudLayouts()
     {
         VerifyDirectory();
-        foreach (var file in Directory.GetFiles(Path.Join(dataPath, subPath), "*.json"))
+        foreach (var file in Directory.GetFiles(Path.Join(IUserData.dataPath, subPath), "*.json"))
         {
             AddHudLayout(new HudLayout(Path.GetFileNameWithoutExtension(file)));
         }
@@ -363,7 +364,7 @@ public class HudLayout : JsonUserData
 
     private static new string PathTo(string name)
     {
-        return Path.Combine(dataPath, subPath, $"{name}.json");
+        return Path.Combine(IUserData.dataPath, subPath, $"{name}.json");
     }
 
     private static bool NameTaken(string name)

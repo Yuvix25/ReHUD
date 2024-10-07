@@ -12,13 +12,23 @@ static class IpcCommunication {
     /// Invokes a channel on the render process and returns the result.
     /// </summary>
     public static async Task<JToken?> Invoke(BrowserWindow window, string channel, object? data = null) {
-        try {
-            var promise = new TaskCompletionSource<JToken?>();
+        if (window == null) {
+            Startup.logger.Error("Window is null");
+            return null;
+        }
 
-            var conversationid = Guid.NewGuid().ToString();
-            var newData = new object[data == null ? 1 : 2];
-            newData[0] = conversationid;
-            if (data != null) newData[1] = data;
+        var promise = new TaskCompletionSource<JToken?>();
+
+        var conversationid = Guid.NewGuid().ToString();
+        if (conversationid == null) {
+            Startup.logger.Error("Failed to generate conversation ID");
+            return null;
+        }
+        var newData = new List<object> { conversationid };
+        if (data != null) {
+            newData.Add(data);
+        }
+        try {
             Electron.IpcMain.Once(conversationid, (args) => {
                 try {
                     var timeNow = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -44,7 +54,7 @@ static class IpcCommunication {
 
             return await promise.Task;
         } catch (Exception e) {
-            Startup.logger.Error("Error invoking IPC", e);
+            Startup.logger.Error($"Error invoking IPC window={window} channel={channel} newData={newData}", e);
             return null;
         }
     }

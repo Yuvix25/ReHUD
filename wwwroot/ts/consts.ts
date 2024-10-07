@@ -6,6 +6,18 @@ import IShared, { EFinishStatus, ESessionPhase, IDriverData, ISectors } from './
 
 type TireWear = { FrontLeft: number; FrontRight: number; RearLeft: number; RearRight: number; };
 
+interface EventLog {
+  EventName: string;
+}
+interface ValueEventLog extends EventLog {
+  OldValue: any;
+  NewValue: any;
+}
+interface DriverEventLog extends EventLog {
+  Driver: IDriverData;
+  IsMainDriver: boolean;
+}
+
 export interface IExtendedShared {
   rawData: IShared;
   lapId: number;
@@ -19,6 +31,7 @@ export interface IExtendedShared {
   lapsUntilFinish: number;
   forceUpdateAll: boolean;
   timestamp: number;
+  events: (EventLog | ValueEventLog | DriverEventLog)[];
 }
 
 /* ========================================== Constants ========================================== */

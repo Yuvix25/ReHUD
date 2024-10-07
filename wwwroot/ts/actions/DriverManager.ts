@@ -43,15 +43,15 @@ export default class DriverManager extends Action {
         }
     }
 
-    protected override onPositionJump(_data: IExtendedShared, driver: IDriverData): void {
+    protected override onPositionJump(_data: IExtendedShared, driver: IDriverData, isMainDriver: boolean): void {
         const uid = getUid(driver?.driverInfo);
         if (uid in this.drivers) {
             this.drivers[uid].clearTempData();
         }
     }
 
-    protected override onPitlaneEntrance(data: IExtendedShared, driver: IDriverData): void {
-        this.onPositionJump(data, driver);
+    protected override onPitlaneEntrance(data: IExtendedShared, driver: IDriverData, isMainDriver: boolean): void {
+        this.onPositionJump(data, driver, isMainDriver);
     }
 
     protected override onNewLap(extendedData: IExtendedShared, driver: IDriverData, isMainDriver: boolean): void {

@@ -9,14 +9,16 @@ export default class Rake extends HudElement {
     private p2pActiveTimeTotal = -1;
     private p2pWaitTimeTotal = -1;
 
-    protected override onPushToPassActivation(data: IExtendedShared, pushToPass: IPushToPass): void {
+    protected override onPushToPassActivation(data: IExtendedShared): void {
         this.p2pActiveTimeTotal = data.rawData.pushToPass.engagedTimeLeft;
     }
-    protected override onPushToPassDeactivation(data: IExtendedShared, pushToPass: IPushToPass): void {
+    protected override onPushToPassDeactivation(data: IExtendedShared): void {
         this.p2pWaitTimeTotal = data.rawData.pushToPass.waitTimeLeft;
     }
     protected override onPushToPassReady(data: IExtendedShared): void {
-        this.hud.p2pAudioController.play(1, 0);
+        if (data.rawData.gameInMenus != 1) {
+            this.hud.p2pAudioController.play(1, 0);
+        }
     }
 
     protected override render(p2p: IPushToPass): string | Hide {

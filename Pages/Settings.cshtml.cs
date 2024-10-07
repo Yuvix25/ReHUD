@@ -18,13 +18,7 @@ public class SettingsModel : PageModel
         var displays = await Startup.GetDisplays();
         if (displays != null)
         {
-            Func<Display, string> name;
-            // TODO: remove once Electron.NET is updated
-            if (displays.Length > 0 && displays[0].GetType().GetProperty("Label") != null) {
-                name = d => d.GetType().GetProperty("Label")?.GetValue(d) as string ?? d.Id;
-            } else {
-                name = d => d.Id;
-            }
+            static string name(Display d) => d.Label;
             Screens = displays.Select(d => new Tuple<string, string>(d.Id, name(d))).ToArray();
             Screen = await Startup.GetMainWindowDisplay() ?? (Screens.Length > 0 ? Screens[0].Item1 : Screen);
         }

@@ -1,21 +1,25 @@
 using log4net;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using ReHUD.Interfaces;
 using ReHUD.Models.LapData;
 
 namespace ReHUD.Services {
+    /// <summary>
+    /// This is a special service which is not used with dependency injection.
+    /// It is not used with dependency injection because the DB context isn't thread safe.
+    /// </summary>
     public class LapDataService : ILapDataService, IDisposable {
-        public static readonly ILog logger = LogManager.GetLogger(typeof(LapDataService));
+        private static readonly ILog logger = LogManager.GetLogger(typeof(LapDataService));
     
-        private readonly object lockObject = new();
         private readonly LapDataContext context;
 
-        public LapDataService(LapDataContext context) {
+        public LapDataService() {
             try {
-                this.context = context;
-                this.context.Database.EnsureCreated();
+                Directory.CreateDirectory(Path.GetDirectoryName(ILapDataService.DATA_PATH)!);
+                context = new LapDataContext(new DbContextOptionsBuilder<LapDataContext>().EnableSensitiveDataLogging().UseLazyLoadingProxies().UseSqlite($"Data Source={ILapDataService.DATA_PATH};Mode=ReadWriteCreate").Options);
+                context.Database.Migrate();
+                context.Database.EnsureCreated();
                 DisableWAL();
             } catch (Exception e) {
                 logger.Error("Failed to create LapDataContext", e);
@@ -24,57 +28,88 @@ namespace ReHUD.Services {
         }
 
         public void DisableWAL() {
-            lock (lockObject) {
-                context.Database.ExecuteSqlRaw("PRAGMA journal_mode = DELETE");
+            context.Database.ExecuteSqlRaw("PRAGMA journal_mode = DELETE");
+        }
+
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) {
+            if (disposing) {
+                context.Dispose();
             }
         }
 
         public void SaveChanges() {
-            lock (lockObject) {
-                int updates = context.SaveChanges();
-                logger.DebugFormat("Saved {0} updates", updates);
-            }
+            context.SaveChanges();
         }
 
-
-        private static IEnumerable<T> ContextsOfType<T>(DbSet<Context> set) where T : Context {
-            return (IEnumerable<T>) set.Where(c => c is T);
-                // .Include(c => c.Entries).ThenInclude(l => l.TireWear)
-                // .Include(c => c.Entries).ThenInclude(l => l.FuelUsage)
-                // .Include(c => c.Entries).ThenInclude(l => l.Telemetry);
-            
-        }
-
-
-        private T? GetExistingContext<T>(T context) where T : Context {
-            lock (lockObject) {
-                return ContextsOfType<T>(this.context.Contexts).FirstOrDefault(c => c.Equals(context));
-            }
-        }
-
-        private LapContext? GetLapContext(int trackLayoutId, int carId) {
-            lock (lockObject) {
-                return ContextsOfType<LapContext>(context.Contexts).FirstOrDefault(c => c.TrackLayoutId == trackLayoutId && c.CarId == carId);
-            }
-        }
-
-        private LapContext? GetLapContext(int trackLayoutId, int carId, int classPerformanceIndex, bool forceCarId = false) {
-            lock (lockObject) {
-                if (forceCarId) {
-                    return ContextsOfType<LapContext>(context.Contexts).FirstOrDefault(c => c.TrackLayoutId == trackLayoutId && c.CarId == carId && c.ClassPerformanceIndex == classPerformanceIndex);
-                } else {
-                    var byClassPerformanceIndex = ContextsOfType<LapContext>(context.Contexts).Where(c => c.TrackLayoutId == trackLayoutId && c.ClassPerformanceIndex == classPerformanceIndex);
-                    if (!byClassPerformanceIndex.Any()) {
-                        return null;
-                    }
-                    var byCarId = byClassPerformanceIndex.FirstOrDefault(c => c.CarId == carId);
-                    if (byCarId != null) {
-                        return byCarId;
-                    }
-                    // Get best lap for class if no car specific context exists.
-                    return byClassPerformanceIndex.AsEnumerable().MinBy(c => c.BestLap != null ? c.BestLap.LapTime.Value : double.MaxValue);
+        private IEnumerable<T> MatchingContexts<T>(IContextQuery query) where T : Context {
+            foreach (var c in context.Set<T>().AsEnumerable()) {
+                if (c is T t && query.Matches(t)) {
+                    yield return t;
                 }
             }
+        }
+
+        private T? SingleMatchingContext<T>(IContextQuery query) where T : Context {
+            return MatchingContexts<T>(query).SingleOrDefault();
+        }
+
+        /// <summary>
+        /// Gets the lap context for a car and track layout.
+        /// </summary>
+        /// <param name="trackLayoutId"></param>
+        /// <param name="carId"></param>
+        /// <param name="classPerformanceIndex">Not used for querying, updates the ClassPerformanceIndex of the returned context. This is done to allow filling missing class performance indexes of data converted from the old JSON format.</param>
+        /// <returns></returns>
+        private LapContext? GetExactLapContext(int trackLayoutId, int carId, int classPerformanceIndex) {
+            var lapContext = SingleMatchingContext<LapContext>(new LapContextQuery {
+                TrackLayoutId = trackLayoutId,
+                CarId = carId,
+            });
+
+            if (lapContext != null && classPerformanceIndex != lapContext.ClassPerformanceIndex) {
+                lapContext.ClassPerformanceIndex = classPerformanceIndex;
+                SaveChanges();
+            }
+
+            return lapContext;
+        }
+
+        /// <summary>
+        /// Gets the lap context for a car and track layout, or the best lap context for the class if no context for the specific car exists.
+        /// </summary>
+        /// <param name="trackLayoutId"></param>
+        /// <param name="carId"></param>
+        /// <param name="classPerformanceIndex"></param>
+        /// <returns></returns>
+        private LapContext? GetClassLapContext(int trackLayoutId, int carId, int classPerformanceIndex) {
+            var byCarId = GetExactLapContext(trackLayoutId, carId, classPerformanceIndex);
+            if (byCarId != null) {
+                return byCarId;
+            }
+
+            var byClassPerformanceIndex = MatchingContexts<LapContext>(new LapContextQuery {
+                TrackLayoutId = trackLayoutId,
+                ClassPerformanceIndex = classPerformanceIndex,
+            });
+            if (!byClassPerformanceIndex.Any()) {
+                return null;
+            }
+
+            // Get best lap for class if no car specific context exists.
+            return byClassPerformanceIndex.MinBy(c => c.BestLap != null ? c.BestLap.LapTime.Value : double.MaxValue);
+        }
+
+
+        private static IEnumerable<T> MaybeFilterLapPointersByContext<T>(IEnumerable<T> pointers, T maybeWithContext) where T : LapPointer {
+            if (maybeWithContext is IEntityWithContext contextEntity) {
+                return pointers.Where(p => ((IEntityWithContext) p).Context == contextEntity.Context);
+            }
+            return pointers;
         }
 
         /// <summary>
@@ -82,53 +117,57 @@ namespace ReHUD.Services {
         /// </summary>
         /// <param name="entry"></param>
         /// <exception cref="ArgumentException"></exception>
-        public void Log(LapPointer entry) {
-            lock (lockObject) {
-                if (context.Find(entry.GetType(), entry.Id) != null) {
+        public void Log<T>(T entry) where T : LapPointer {
+            if (context.Find(entry.GetType(), entry.Id) != null) {
+                return;
+            }
+
+            if (entry is IEntityWithContext contextEntity) {
+                contextEntity.Context = AttachContext(contextEntity.Context);
+            }
+
+            var lapContext = entry.LapContext;
+
+            if (entry is Telemetry telemetry) {
+                var oldLap = lapContext.BestLap;
+                var newLap = telemetry.Lap;
+                if (oldLap == newLap) {
                     return;
                 }
 
-                // TODO: attach context
-
-                var lapContext = entry.LapContext;
-
-                if (entry is Telemetry telemetry) {
-                    var oldLap = lapContext.BestLap;
-                    var newLap = telemetry.Lap;
-                    if (oldLap == null || oldLap.LapTime.Value > newLap.LapTime.Value) {
-                        RemoveLapPointer(oldLap?.Telemetry); // Mark old telemetry for removal.
-                        newLap.Context.BestLapId = newLap.Id;
-                        context.Add(telemetry);
-                    } else {
-                        RemoveLapPointer(telemetry);
-                    }
-                    SaveChanges();
+                if (oldLap == null || oldLap.Telemetry == null || oldLap.LapTime.Value > newLap.LapTime.Value) {
+                    RemoveLapPointer(oldLap?.Telemetry); // Mark old telemetry for removal.
+                    newLap.Context.BestLap = newLap;
+                    context.Add(telemetry);
                 } else {
-                    IEnumerable<LapPointer> entries = entry switch
-                    {
-                        LapTime => lapContext.LapTimes,
-                        TireWear => lapContext.TireWears,
-                        FuelUsage => lapContext.FuelUsages,
-                        _ => throw new ArgumentException("Invalid type"),
-                    };
-
-                    var entriesFiltered = entries.Where(e => !e.PendingRemoval && e.Context == entry.Context);
-                    if (entriesFiltered.Count() >= ILapDataService.MAX_ENTRIES) {
-                        var entriesSorted = entriesFiltered.OrderBy(e => e.Lap.Timestamp).ToList();
-                        for (int i = 0; i < entriesSorted.Count - ILapDataService.MAX_ENTRIES + 1; i++) {
-                            RemoveLapPointer(entriesSorted[i]);
-                        }
-                    }
-                    context.Add(entry);
-                    SaveChanges();
+                    RemoveLapPointer(telemetry); // We don't keep telemetry for laps that are not the best lap.
                 }
+                SaveChanges();
+            } else {
+                IEnumerable<T> entries = entry switch
+                {
+                    LapTime => (IEnumerable<T>) lapContext.LapTimes,
+                    TireWear => (IEnumerable<T>) lapContext.TireWears,
+                    FuelUsage => (IEnumerable<T>) lapContext.FuelUsages,
+                    _ => throw new ArgumentException("Invalid type"),
+                };
+
+                var entriesFiltered = MaybeFilterLapPointersByContext(entries.Where(e => !e.PendingRemoval), entry);
+                if (entriesFiltered.Count() >= ILapDataService.MAX_ENTRIES) {
+                    var entriesSorted = entriesFiltered.OrderBy(e => e.Lap.Timestamp).ToList();
+                    for (int i = 0; i < entriesSorted.Count - ILapDataService.MAX_ENTRIES + 1; i++) {
+                        RemoveLapPointer(entriesSorted[i]);
+                    }
+                }
+                if (!entries.Contains(entry)) {
+                    context.Add(entry);
+                }
+                SaveChanges();
             }
         }
 
         public IDbContextTransaction BeginTransaction() {
-            lock (lockObject) {
-                return context.Database.BeginTransaction();
-            }
+            return context.Database.BeginTransaction();
         }
 
         private static double? Average<T>(IEnumerable<T> list, Func<T, double> selector) {
@@ -150,16 +189,15 @@ namespace ReHUD.Services {
             };
         }
 
-        public CombinationSummary GetCombinationSummary(int trackLayoutId, int carId) {
+        public CombinationSummary GetCombinationSummary(int trackLayoutId, int carId, int classPerformanceIndex) {
             try {
-                var lapContext = GetLapContext(trackLayoutId, carId);
+                LapContext? lapContext = GetExactLapContext(trackLayoutId, carId, classPerformanceIndex);
                 if (lapContext == null) {
                     return new CombinationSummary {
                         TrackLayoutId = trackLayoutId,
                         CarId = carId,
                     };
                 }
-                var laps = lapContext.Entries;
                 var lapTimes = lapContext.LapTimes;
                 var tireWears = lapContext.TireWears;
                 var fuelUsages = lapContext.FuelUsages;
@@ -182,21 +220,19 @@ namespace ReHUD.Services {
         }
 
         public LapData? GetLap(int lapId) {
-            lock (lockObject) {
-                return context.LapDatas.Find(lapId);
-            }
+            return context.LapDatas.Find(lapId);
         }
 
         public static LapData? GetBestLap(LapContext? context) {
             return context?.BestLap;
         }
 
-        public LapData? GetBestLap(int trackLayoutId, int carId) {
-            return GetBestLap(GetLapContext(trackLayoutId, carId));
+        public LapData? GetCarBestLap(int trackLayoutId, int carId, int classPerformanceIndex) {
+            return GetBestLap(GetExactLapContext(trackLayoutId, carId, classPerformanceIndex));
         }
 
-        public LapData? GetBestLap(int trackLayoutId, int carId, int classPerformanceIndex) {
-            return GetBestLap(GetLapContext(trackLayoutId, carId, classPerformanceIndex));
+        public LapData? GetClassBestLap(int trackLayoutId, int carId, int classPerformanceIndex) {
+            return GetBestLap(GetClassLapContext(trackLayoutId, carId, classPerformanceIndex));
         }
 
 
@@ -216,73 +252,59 @@ namespace ReHUD.Services {
         /// <param name="lapLog">The lap to add.</param>
         /// <returns>True if the added lap is the best lap for the car and track layout, false otherwise.</returns>
         public LapData LogLap(LapContext context, bool valid, double lapTime) {
-            lock (lockObject) {
-                this.context.Attach(context);
+            context = AttachContext(context);
+            logger.DebugFormat("Logging lap ({0}) for context {1}, Id={2}", lapTime, context, context.Id);
 
-                var lap = new LapData(context, valid, new LapTime(null!, lapTime));
-                this.context.Add(lap);
+            var lap = new LapData(context, valid, lapTime);
+            this.context.Add(lap);
 
-                foreach (var p in lap.Pointers) {
-                    Log(p);
-                }
-
-                // Update best lap if necessary.
-                UpdateBestLap(lap);
-                SaveChanges();
-                return lap;
+            foreach (var p in lap.Pointers) {
+                Log(p);
             }
+
+            // Update best lap if necessary.
+            UpdateBestLap(lap);
+            SaveChanges();
+            return lap;
         }
 
         private static bool ShouldRemoveLapContext(LapContext context) {
-            lock (context) {
-                return context.Entries.Count == 0;
-            }
+            return context.Entries.Count == 0;
         }
 
         private static bool ShouldRemoveLap(LapData data) {
-            lock (data) {
-                return data.Pointers.TrueForAll(p => p.PendingRemoval);
-            }
+            return data.Pointers.TrueForAll(p => p.PendingRemoval);
         }
 
         public T AttachContext<T>(T context) where T : Context {
-            var existingContext = GetExistingContext(context);
+            var existingContext = (T?) this.context.Find(context.GetType(), context.Id);
             if (existingContext != null) {
                 return existingContext;
             }
 
-            AddContext(context);
+            logger.DebugFormat("Creating new context {0}, Id={1}", context, context.Id);
+
+            this.context.Add(context);
             SaveChanges();
             return context;
         }
-
-        public void AddContext(Context context) {
-            lock (lockObject) {
-                this.context.Add(context);
-                SaveChanges();
-            }
-        }
         
         private void RemoveContext(LapContext context) {
-            lock (lockObject) {
-                this.context.Remove(context);
-                SaveChanges();
-            }
+            this.context.Remove(context);
+            SaveChanges();
         }
 
 
         private void RemoveLap(LapData data) {
-            lock (lockObject) {
-                foreach (var p in data.Pointers) {
-                    context.Remove(p);
-                }
-                context.Remove(data);
-
-                if (ShouldRemoveLapContext(data.Context)) {
-                    RemoveContext(data.Context);
-                }
-                SaveChanges();
+            foreach (var p in data.Pointers) {
+                context.Remove(p);
             }
+            context.Remove(data);
+
+            if (ShouldRemoveLapContext(data.Context)) {
+                RemoveContext(data.Context);
+            }
+            SaveChanges();
         }
 
         public bool RemoveLapPointer<T>(T? pointer) where T : LapPointer {
@@ -297,17 +319,6 @@ namespace ReHUD.Services {
             SaveChanges();
 
             return true;
-        }
-
-        public void Dispose() {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) {
-            if (disposing) {
-                context.Dispose();
-            }
         }
     }
 }

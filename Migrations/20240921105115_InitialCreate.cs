@@ -15,46 +15,41 @@ namespace ReHUD.Migrations
                 name: "FuelUsageContexts",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false),
                     FuelUsageRate = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_FuelUsageContexts", x => x.Id);
-                    table.UniqueConstraint("AK_FuelUsageContexts_FuelUsageRate", x => x.FuelUsageRate);
                 });
 
             migrationBuilder.CreateTable(
                 name: "LapContexts",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false),
                     TrackLayoutId = table.Column<int>(type: "INTEGER", nullable: false),
                     CarId = table.Column<int>(type: "INTEGER", nullable: false),
                     ClassPerformanceIndex = table.Column<int>(type: "INTEGER", nullable: false),
-                    TireCompound = table.Column<int>(type: "INTEGER", nullable: false),
+                    TireCompoundFront = table.Column<int>(type: "INTEGER", nullable: false),
+                    TireCompoundRear = table.Column<int>(type: "INTEGER", nullable: false),
                     BestLapId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_LapContexts", x => x.Id);
-                    table.UniqueConstraint("AK_LapContexts_TrackLayoutId_CarId_ClassPerformanceIndex_TireCompound", x => new { x.TrackLayoutId, x.CarId, x.ClassPerformanceIndex, x.TireCompound });
                 });
 
             migrationBuilder.CreateTable(
                 name: "TireWearContexts",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false),
                     TireWearRate = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TireWearContexts", x => x.Id);
-                    table.UniqueConstraint("AK_TireWearContexts_TireWearRate", x => x.TireWearRate);
                 });
 
             migrationBuilder.CreateTable(
@@ -200,9 +195,9 @@ namespace ReHUD.Migrations
                 column: "FuelUsageContextId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_LapContexts_TrackLayoutId_CarId_ClassPerformanceIndex_TireCompound",
+                name: "IX_LapContexts_TrackLayoutId_CarId_ClassPerformanceIndex_TireCompoundFront",
                 table: "LapContexts",
-                columns: new[] { "TrackLayoutId", "CarId", "ClassPerformanceIndex", "TireCompound" });
+                columns: new[] { "TrackLayoutId", "CarId", "ClassPerformanceIndex", "TireCompoundFront" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_LapDatas_LapContextId",

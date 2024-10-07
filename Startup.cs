@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using ReHUD.Extensions;
 using ReHUD.Interfaces;
 using ReHUD.Models;
+using ReHUD.Services;
 using ReHUD.Utils;
 using SignalRChat.Hubs;
 using System.Reflection;
@@ -17,7 +18,7 @@ public class Startup
 {
     public static readonly ILog logger = LogManager.GetLogger(typeof(Startup));
 
-    private IUpdateService updateService;
+    private IVersionService versionService;
     private IRaceRoomObserver raceroomObserver;
     private ISharedMemoryService sharedMemoryService;
     private IR3EDataService r3eDataService;
@@ -29,8 +30,8 @@ public class Startup
     public IConfiguration Configuration { get; }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IUpdateService updateService, IRaceRoomObserver raceroomObserver, ISharedMemoryService sharedMemoryService, IR3EDataService r3eDataService) {
-        this.updateService = updateService;
+    public async void Configure(IApplicationBuilder app, IWebHostEnvironment env, IVersionService versionService, IRaceRoomObserver raceroomObserver, ISharedMemoryService sharedMemoryService, IR3EDataService r3eDataService) {
+        this.versionService = versionService;
         this.raceroomObserver = raceroomObserver;
         this.sharedMemoryService = sharedMemoryService;
         this.r3eDataService = r3eDataService;
@@ -57,61 +58,74 @@ public class Startup
 
         Electron.App.CommandLine.AppendSwitch("enable-transparent-visuals");
 
+        try {
+            await Start(env);
+        }
+        catch (Exception e) {
+            logger.Error("Error starting app", e);
+            await QuitApp(e);
+        }
+    }
 
-        version.Load();
-        _ = updateService.GetAppVersion().ContinueWith(async (t) => {
-            try {
-                await version.Update(t.Result);
-                settings.Load();
-                await LoadSettings();
-            } catch (Exception e) {
-                logger.Error("Error loading settings", e);
-                await QuitApp(e);
-            }
+    private async Task Start(IWebHostEnvironment env) {
+        versionService.Load();
+        settings.Load();
 
-            try {
-                HudLayout.LoadHudLayouts();
-            } catch (Exception e) {
-                logger.Error("Error loading HUD layouts", e);
-            }
+        try {
+            await versionService.Update();
+        } catch (Exception e) {
+            logger.Error("Error running update scripts", e);
+        }
 
-            try {
-                string preset = await Electron.App.CommandLine.GetSwitchValueAsync("preset");
-                if (preset != null && preset.Length > 0) {
-                    HudLayout? layout = HudLayout.GetHudLayout(preset);
-                    if (layout != null) {
-                        HudLayout.SetActiveLayout(layout);
-                    }
-                    else {
-                        logger.WarnFormat("Could not find preset: {0}", preset);
-                    }
+        try {
+            await LoadSettings();
+        } catch (Exception e) {
+            logger.Error("Error loading settings", e);
+            await QuitApp(e);
+        }
+
+        try {
+            HudLayout.LoadHudLayouts();
+        } catch (Exception e) {
+            logger.Error("Error loading HUD layouts", e);
+        }
+
+        try {
+            string preset = await Electron.App.CommandLine.GetSwitchValueAsync("preset");
+            if (preset != null && preset.Length > 0) {
+                HudLayout? layout = HudLayout.GetHudLayout(preset);
+                if (layout != null) {
+                    HudLayout.SetActiveLayout(layout);
+                }
+                else {
+                    logger.WarnFormat("Could not find preset: {0}", preset);
                 }
             }
-            catch (Exception e) {
-                logger.Error("Error loading preset", e);
-            }
+        }
+        catch (Exception e) {
+            logger.Error("Error loading preset", e);
+        }
 
-            if (HybridSupport.IsElectronActive) {
-                Electron.App.Ready += async () => {
-                    try {
-                        await Electron.IpcMain.On("get-port", (args) => {
-                            var windows = new[] { MainWindow, SettingsWindow }.Where(x => x != null);
+        if (HybridSupport.IsElectronActive) {
+            Electron.App.Ready += async () => {
+                try {
+                    await Electron.IpcMain.On("get-port", (args) => {
+                        var windows = new[] { MainWindow, SettingsWindow }.Where(x => x != null);
 
-                            foreach (var window in windows) {
-                                Electron.IpcMain.Send(window, "port", BridgeSettings.WebPort);
-                            }
-                        });
-                        await CreateMainWindow();
-                        await CreateSettingsWindow(env);
+                        foreach (var window in windows) {
+                            Electron.IpcMain.Send(window, "port", BridgeSettings.WebPort);
+                        }
+                    });
+                    await CreateMainWindow();
+                    await CreateSettingsWindow(env);
 
-                        this.raceroomObserver.Start();
-                    }
-                    catch (Exception e) {
-                        logger.Error("Error creating windows", e);
-                    }
-                };
-            }
-        });
+                    this.raceroomObserver.Start();
+                }
+                catch (Exception e) {
+                    logger.Error("Error creating windows", e);
+                }
+            };
+        }
     }
 
 
@@ -119,12 +133,11 @@ public class Startup
     public static BrowserWindow? SettingsWindow { get; private set; }
 
     private const string anotherInstanceMessage = "Another instance of ReHUD is already running";
-    private readonly string logFilePathWarning = $"Log file path could not be determined. Try searching for a file named 'ReHUD.log' in '{UserData.dataPath}'";
+    private readonly string logFilePathWarning = $"Log file path could not be determined. Try searching for a file named 'ReHUD.log' in '{IUserData.dataPath}'";
 
     private const string BLACK_OPAQUE = "#FF000000";
     private const string BLACK_TRANSPARENT = "#00000000";
 
-    internal static readonly ReHUDVersion version = new();
     internal static readonly Settings settings = new();
 
     private static async Task<BrowserWindow> CreateWindowAsync(BrowserWindowOptions options, string loadUrl = "/") {
@@ -321,7 +334,7 @@ public class Startup
     private async Task InitSettingsWindow() {
         Electron.IpcMain.Send(MainWindow, "settings", settings.Serialize());
         Electron.IpcMain.Send(SettingsWindow, "settings", settings.Serialize());
-        Electron.IpcMain.Send(SettingsWindow, "version", await updateService.GetAppVersion());
+        Electron.IpcMain.Send(SettingsWindow, "version", await versionService.GetAppVersion());
     }
 
     public static bool IsInEditMode { get; private set; }
@@ -352,7 +365,7 @@ public class Startup
         });
 
         await Electron.IpcMain.On("check-for-updates", async (data) => {
-            await updateService.CheckForUpdates();
+            await versionService.CheckForUpdates();
         });
 
         await Electron.IpcMain.On("lock-overlay", async (data) => {

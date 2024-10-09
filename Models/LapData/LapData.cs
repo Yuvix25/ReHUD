@@ -145,7 +145,7 @@ namespace ReHUD.Models.LapData
 
         public override string ToString()
         {
-            return $"TrackLayoutId: {TrackLayoutId}, CarId: {CarId}, ClassPerformanceIndex: {ClassPerformanceIndex}, TireCompoundFront: {TireCompoundFront}, TireCompoundRear: {TireCompoundRear}";
+            return $"LapContext[Id={Id}, TrackLayoutId={TrackLayoutId}, CarId={CarId}, ClassPerformanceIndex={ClassPerformanceIndex}, TireCompoundFront={TireCompoundFront}, TireCompoundRear={TireCompoundRear}]";
         }
     }
 
@@ -260,6 +260,11 @@ namespace ReHUD.Models.LapData
                 lapPoints = Telemetry.Value.Points,
                 pointsPerMeter = Telemetry.Value.PointsPerMeter
             });
+        }
+
+        public override string ToString()
+        {
+            return $"LapData[Id={Id}, Timestamp={Timestamp}, Valid={Valid}, Context={Context.Id}, LapTime={LapTime.Value}, TireWear={TireWear}, FuelUsage={FuelUsage}, Telemetry={Telemetry}]";
         }
     }
 
@@ -426,9 +431,16 @@ namespace ReHUD.Models.LapData
 
     public class TireWearObj
     {
+        [JsonProperty("frontLeft")]
         public double FrontLeft { get; set; }
+
+        [JsonProperty("frontRight")]
         public double FrontRight { get; set; }
+
+        [JsonProperty("rearLeft")]
         public double RearLeft { get; set; }
+
+        [JsonProperty("rearRight")]
         public double RearRight { get; set; }
 
 

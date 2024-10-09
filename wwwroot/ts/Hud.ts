@@ -4,9 +4,7 @@ import EventListener from './EventListener.js';
 import SettingsValue from "./SettingsValue.js";
 import DriverManager from "./actions/DriverManager.js";
 import RankedData from "./actions/RankedData.js";
-import TireManager from './actions/TireManager.js';
 import {SPEED_UNITS, PRESSURE_UNITS, RADAR_RANGE, DEFAULT_RADAR_RADIUS, IExtendedShared, RADAR_BEEP_VOLUME, RELATIVE_SAFE_MODE, POSITION_BAR_CELL_COUNT, DELTA_MODE, SHOW_DELTA_ON_INVALID_LAPS, P2P_READY_VOLUME, RADAR_LOW_DETAIL, RADAR_OPACITY, RADAR_POINTER, RADAR_FADE_RANGE, FRAMERATE, HARDWARE_ACCELERATION, VR_MODE} from "./consts.js";
-import IShared from './r3eTypes.js';
 import {AudioController} from "./utils.js";
 import {HudLayoutElements} from './settingsPage.js';
 import SharedMemorySupplier, {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
@@ -40,11 +38,10 @@ export default class Hud extends EventListener {
     public actionServices: Action[] = [];
     public rankedDataService: RankedData = new RankedData();
     public driverManagerService: DriverManager = new DriverManager();
-    public tireManagerService: TireManager = new TireManager();
 
     private normalActions: Array<Action> = new Array<Action>();
     private alwaysExecuteActions: Array<Action> = new Array<Action>();
-    public readonly r3eData: any;
+    public r3eData: any;
     public readonly radarAudioController = new AudioController({volumeMultiplier: 1, soundFileName: 'beep.wav'});
     public readonly p2pAudioController = new AudioController({volumeMultiplier: 1, soundFileName: 'echo_beep.wav'});
 
@@ -86,7 +83,6 @@ export default class Hud extends EventListener {
         Hud._instance = this;
 
         this.registerService(this.driverManagerService);
-        this.registerService(this.tireManagerService);
 
         for (const action of positionalActions.concat(this.actionServices)) {
             action.setHud(this);
@@ -126,7 +122,7 @@ export default class Hud extends EventListener {
     }
 
     private async loadR3EData() {
-        (this as any).r3eData = await (await fetch('https://raw.githubusercontent.com/sector3studios/r3e-spectator-overlay/master/r3e-data.json')).json();
+        this.r3eData = await (await fetch('https://raw.githubusercontent.com/sector3studios/r3e-spectator-overlay/master/r3e-data.json')).json();
     }
 
     private static async executeAction(action: Action, data: IExtendedShared): Promise<void> {

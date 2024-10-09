@@ -280,9 +280,11 @@ export class Driver extends EventListener {
               shouldSaveBestLap = true;
             }
             if (shouldSaveBestLap || this.completedLaps >= 0) {
-              this.bestLap = this.points.slice();
-              this.bestLapTime = laptime;
-              this.bestLapTimeValid = this.currentLapValid;
+              if (!shouldSaveBestLap) { // If we're saving the best lap these fields will be updated in the save function.
+                this.bestLap = this.points.slice();
+                this.bestLapTime = laptime;
+                this.bestLapTimeValid = this.currentLapValid;
+              }
               
               console.log('New best lap for', this.userId, laptime, this.bestLapTimeValid);
               didUpdateBestLap = true;
@@ -310,12 +312,15 @@ export class Driver extends EventListener {
   /**
    * Save the best lap (locally)
    */
-  saveBestLap(lapId: number) {
+  saveBestLap(lapId: number, lapTime: number, points: number[]) {
     if (lapId == null) {
       console.error('Lap ID is null, cannot save best lap');
       return;
     }
-    Hud.hub.invoke('SaveBestLap', lapId, this.bestLap, Driver.pointsPerMeter);
+    this.bestLap = points.slice();
+    this.bestLapTime = lapTime;
+    this.bestLapTimeValid = true;
+    Hud.hub.invoke('SaveBestLap', lapId, points, Driver.pointsPerMeter);
   }
 
   /**

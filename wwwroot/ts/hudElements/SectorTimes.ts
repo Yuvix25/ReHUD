@@ -1,6 +1,6 @@
 import HudElement, {Hide} from "./HudElement.js";
 import {IExtendedShared, LAST_LAP_SECTORS_TIME_ON_SCREEN, laptimeFormat, mapSectorTimes, valueIsValidAssertUndefined} from "../consts.js";
-import IShared, {IDriverData, ISectorStarts, ISectors} from "../r3eTypes.js";
+import {IDriverData, ISectorStarts, ISectors} from "../r3eTypes.js";
 import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class SectorTimes extends HudElement {

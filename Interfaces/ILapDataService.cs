@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage;
+using R3E;
 using ReHUD.Models.LapData;
 
 namespace ReHUD.Interfaces
@@ -6,7 +7,7 @@ namespace ReHUD.Interfaces
     public interface ILapDataService
     {
         public static readonly string DATA_PATH = Path.Combine(IUserData.dataPath, "UserData.db");
-        public static readonly int MAX_ENTRIES = 10;
+        public static readonly int MAX_ENTRIES = 20;
 
         public void SaveChanges();
         public IDbContextTransaction BeginTransaction();
@@ -16,9 +17,11 @@ namespace ReHUD.Interfaces
         public void Log<T>(T entry) where T : LapPointer;
         public bool RemoveLapPointer<T>(T pointer) where T : LapPointer;
 
-        public CombinationSummary GetCombinationSummary(int trackLayoutId, int carId, int classPerformanceIndex);
+        public void UpdateLapTime(LapData lap, double lapTime);
+
+        public CombinationSummary GetCombinationSummary(int trackLayoutId, int carId, Constant.TireSubtype frontTireCompound, Constant.TireSubtype rearTireCompound);
         public LapData? GetLap(int lapId);
-        public LapData? GetCarBestLap(int trackLayoutId, int carId, int classPerformanceIndex);
-        public LapData? GetClassBestLap(int trackLayoutId, int carId, int classPerformanceIndex);
+        public LapData? GetCarBestLap(int trackLayoutId, int carId, Constant.TireSubtype frontTireCompound, Constant.TireSubtype rearTireCompound);
+        public LapData? GetClassBestLap(int trackLayoutId, int carId, int classPerformanceIndex, Constant.TireSubtype frontTireCompound, Constant.TireSubtype rearTireCompound);
     }
 }

@@ -15,6 +15,6 @@ namespace ReHUD.Interfaces
         public Task SendEmptyData();
 
         public void SaveBestLap(int lapId, double[] points, double pointsPerMeter);
-        public string LoadBestLap(int layoutId, int carId, int classPerformanceIndex);
+        public string LoadBestLap();
     }
 }

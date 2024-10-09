@@ -35,6 +35,7 @@ namespace ReHUD.Services
             get => (long)(1000.0 / timeInterval.TotalMilliseconds);
             set {
                 timeInterval = TimeSpan.FromMilliseconds(1000.0 / value);
+                logger.InfoFormat("Setting interval to {0}ms", timeInterval.Milliseconds);
                 dataTimer.Stop();
                 dataTimer.SetPeriod(timeInterval.Milliseconds);
                 dataTimer.Start();

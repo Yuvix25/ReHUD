@@ -2,7 +2,7 @@ import {IExtendedShared} from './consts.js';
 import EventEmitter from "./EventEmitter.js";
 import Hud from "./Hud";
 import NamedEntity from "./NamedEntity.js";
-import {ESession, ESessionPhase, IDriverData, IPushToPass} from "./r3eTypes.js";
+import {ESession, ESessionPhase, IDriverData} from "./r3eTypes.js";
 
 export default abstract class EventListener extends NamedEntity {
     protected hud: Hud;

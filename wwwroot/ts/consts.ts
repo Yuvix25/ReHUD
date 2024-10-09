@@ -1,10 +1,8 @@
 /* ========================================== Types ========================================== */
 
 import {GracePeriodBetweenPresets} from './SharedMemorySupplier.js';
-import IShared, { EFinishStatus, ESessionPhase, IDriverData, ISectors } from './r3eTypes.js';
+import IShared, { EFinishStatus, ESessionPhase, IDriverData, ISectors, ITireData } from './r3eTypes.js';
 
-
-type TireWear = { FrontLeft: number; FrontRight: number; RearLeft: number; RearRight: number; };
 
 interface EventLog {
   EventName: string;
@@ -21,10 +19,12 @@ interface DriverEventLog extends EventLog {
 export interface IExtendedShared {
   rawData: IShared;
   lapId: number;
+  lastLapTime: number;
+  allTimeBestLapTime: number;
   fuelPerLap: number;
   fuelLastLap: number;
-  tireWearPerLap: TireWear;
-  tireWearLastLap: TireWear;
+  tireWearPerLap: ITireData<number>;
+  tireWearLastLap: ITireData<number>;
   averageLapTime: number;
   bestLapTime: number;
   estimatedRaceLapCount: number;

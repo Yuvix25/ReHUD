@@ -16,7 +16,7 @@ public class EventService : IEventService {
     private readonly object lockObject = new();
 
     public event EventHandler<DriverEventArgs>? NewLap;
-    public event EventHandler<DriverEventArgs>? PositionJump; // Only works for main driver because controlType is not driver-specific.
+    public event EventHandler<DriverEventArgs>? PositionJump;
     public event EventHandler<ValueEventArgs<Constant.Session>>? SessionChange;
     public event EventHandler<ValueEventArgs<Constant.SessionPhase>>? SessionPhaseChange;
     public event EventHandler<ValueEventArgs<int>>? CarChange;
@@ -90,20 +90,8 @@ public class EventService : IEventService {
         logger.Info("Registering value listeners");
 
 
-        valueListeners.Add(new DriverEventRaiser(() => PositionJump, (oldData, newData, oldDriver, newDriver) => {
+        valueListeners.Add(new DriverEventRaiser(() => PositionJump, (oldData, newData, oldDriver, newDriver, isMainDriver) => {
             return newDriver.place == newData.position && oldData.controlType != newData.controlType && (Constant.Control)newData.controlType != Constant.Control.Player;
-        }));
-
-        // TODO: SUPER IMPORTANT - Need to prevent this from firing twice on end of 1st race lap.
-        // Solution: Manage drivers properly like in front-end, only do the position based thing for the first lap, maybe also add rate limiting.
-        valueListeners.Add(new DriverEventRaiser(() => NewLap, (oldData, newData, oldDriver, newDriver) => {
-            return (oldDriver.completedLaps < newDriver.completedLaps) ||
-                    (
-                        newDriver.completedLaps == 0 &&
-                        oldDriver.lapDistance >= oldData.layoutLength - CLOSE_THRESHOLD &&
-                        newDriver.lapDistance < CLOSE_THRESHOLD &&
-                        ((Constant.Session)newData.sessionType == Constant.Session.Race || (Constant.Session)newData.sessionType == Constant.Session.Qualify)
-                    );
         }));
 
         valueListeners.Add(new ValueChangeListener<Constant.Session>(() => SessionChange, data => (Constant.Session)data.sessionType));
@@ -118,6 +106,14 @@ public class EventService : IEventService {
 
         valueListeners.Add(new DriverModeSwitchListener(() => MainDriverChange, () => null, (data, driver) => driver.place == data.position));
         valueListeners.Add(new DriverModeSwitchListener(() => EnterPitlane, () => ExitPitlane, (data, driver) => driver.inPitlane == 1, true));
+
+        valueListeners.Add(new DriverEventRaiser(() => NewLap, (oldData, newData, oldDriver, newDriver, isMainDriver) => {
+            return oldDriver.inPitlane == newDriver.inPitlane // If pitlane status changed, driver probably reset back to pits.
+                && (!isMainDriver || oldData.controlType == (int)Constant.Control.Player) // Control type is only available for main driver.
+                && (!isMainDriver || newData.controlType == (int)Constant.Control.Player)
+                && oldDriver.lapDistance >= oldData.layoutLength - CLOSE_THRESHOLD
+                && newDriver.lapDistance < CLOSE_THRESHOLD;
+        }));
     }
 
 
@@ -225,9 +221,9 @@ public class ModeSwitchListener : IEventRaiser {
 
 public class DriverEventRaiser : IEventRaiser {
     private readonly Func<EventHandler<DriverEventArgs>?> eventHandlerGetter;
-    private readonly Func<R3EData, R3EData, DriverData, DriverData, bool> eventChecker;
+    private readonly Func<R3EData, R3EData, DriverData, DriverData, bool, bool> eventChecker;
 
-    public DriverEventRaiser(Func<EventHandler<DriverEventArgs>?> eventHandlerGetter, Func<R3EData, R3EData, DriverData, DriverData, bool> eventChecker) {
+    public DriverEventRaiser(Func<EventHandler<DriverEventArgs>?> eventHandlerGetter, Func<R3EData, R3EData, DriverData, DriverData, bool, bool> eventChecker) {
         this.eventHandlerGetter = eventHandlerGetter;
         this.eventChecker = eventChecker;
     }
@@ -242,7 +238,7 @@ public class DriverEventRaiser : IEventRaiser {
         var driverMatches = service.DriverMatches!;
         foreach (var (oldDriver, newDriver) in driverMatches) {
             var isMainDriver = newDriver.place == newData.position;
-            if (eventChecker(oldData, newData, oldDriver, newDriver)) {
+            if (eventChecker(oldData, newData, oldDriver, newDriver, isMainDriver)) {
                 eventHandlerGetter()?.Invoke(this, new DriverEventArgs(oldData, newData, newDriver, isMainDriver));
             }
         }

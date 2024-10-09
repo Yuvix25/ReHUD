@@ -7,6 +7,9 @@ namespace ReHUD.Interfaces;
 public interface IEventService
 {
     event EventHandler<DriverEventArgs>? NewLap;
+    /// <summary>
+    /// Only triggered for the main driver because the game does not provide the control type (human/AI) for other drivers.
+    /// </summary>
     event EventHandler<DriverEventArgs>? PositionJump;
     event EventHandler<ValueEventArgs<Constant.Session>>? SessionChange;
     event EventHandler<ValueEventArgs<Constant.SessionPhase>>? SessionPhaseChange;

@@ -5,17 +5,15 @@ import {IBrakeTemp, ITireData, ITireTemp} from "../r3eTypes.js";
 import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class Tires extends HudElement {
-    override sharedMemoryKeys: SharedMemoryKey[] = ['tireTemp', 'tireWear', 'brakeTemp', 'tireDirt', 'tirePressure'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['tireTemp', 'tireWear', '+tireWearPerLap', 'brakeTemp', 'tireDirt', 'tirePressure'];
 
-    protected override render(tireTemp: ITireData<ITireTemp>, tireWear: ITireData<number>, brakeTemp: ITireData<IBrakeTemp>, tireDirt: ITireData<number>, tirePressure: ITireData<number>): null {
+    protected override render(tireTemp: ITireData<ITireTemp>, tireWear: ITireData<number>, averageWear: ITireData<number>, brakeTemp: ITireData<IBrakeTemp>, tireDirt: ITireData<number>, tirePressure: ITireData<number>): null {
         const nameMap = {
             'frontLeft': 'front-left',
             'frontRight': 'front-right',
             'rearLeft': 'rear-left',
             'rearRight': 'rear-right',
         } as const;
-
-        const averageWear = this.hud?.tireManagerService?.getAverageWear();
 
         for (const tire of Object.keys(nameMap) as (keyof typeof nameMap)[]) {
             const name = nameMap[tire];

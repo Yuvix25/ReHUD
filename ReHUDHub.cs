@@ -58,9 +58,9 @@ namespace SignalRChat.Hubs
             }
         }
 
-        public string LoadBestLap(int layoutId, int carId, int classPerformanceIndex)
+        public string LoadBestLap()
         {
-            Startup.logger.InfoFormat("LoadBestLap: layoutId={0}, carId={1}, classPerformanceIndex={2}", layoutId, carId, classPerformanceIndex);
+            Startup.logger.InfoFormat("LoadBestLap Invoked");
             var r3eDataService = GetR3EDataService();
             if (r3eDataService == null) {
                 Startup.logger.Error("LoadBestLap: r3eDataService is null");
@@ -68,7 +68,7 @@ namespace SignalRChat.Hubs
             }
 
             try {
-                return r3eDataService.LoadBestLap(layoutId, carId, classPerformanceIndex);
+                return r3eDataService.LoadBestLap();
             } catch (Exception e) {
                 Startup.logger.Error("LoadBestLap: Failed to load best lap", e);
                 return "{}";

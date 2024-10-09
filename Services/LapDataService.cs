@@ -1,6 +1,7 @@
 using log4net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using R3E;
 using ReHUD.Interfaces;
 using ReHUD.Models.LapData;
 
@@ -48,8 +49,11 @@ namespace ReHUD.Services {
 
         private IEnumerable<T> MatchingContexts<T>(IContextQuery query) where T : Context {
             foreach (var c in context.Set<T>().AsEnumerable()) {
-                if (c is T t && query.Matches(t)) {
-                    yield return t;
+                if (c is T t) {
+                    context.Entry(t).Reload();
+                    if (query.Matches(t)) {
+                        yield return t;
+                    }
                 }
             }
         }
@@ -63,20 +67,14 @@ namespace ReHUD.Services {
         /// </summary>
         /// <param name="trackLayoutId"></param>
         /// <param name="carId"></param>
-        /// <param name="classPerformanceIndex">Not used for querying, updates the ClassPerformanceIndex of the returned context. This is done to allow filling missing class performance indexes of data converted from the old JSON format.</param>
         /// <returns></returns>
-        private LapContext? GetExactLapContext(int trackLayoutId, int carId, int classPerformanceIndex) {
-            var lapContext = SingleMatchingContext<LapContext>(new LapContextQuery {
+        private LapContext? GetExactLapContext(int trackLayoutId, int carId, Constant.TireSubtype frontTireCompound, Constant.TireSubtype rearTireCompound) {
+            return SingleMatchingContext<LapContext>(new LapContextQuery {
                 TrackLayoutId = trackLayoutId,
                 CarId = carId,
+                TireCompoundFront = frontTireCompound,
+                TireCompoundRear = rearTireCompound,
             });
-
-            if (lapContext != null && classPerformanceIndex != lapContext.ClassPerformanceIndex) {
-                lapContext.ClassPerformanceIndex = classPerformanceIndex;
-                SaveChanges();
-            }
-
-            return lapContext;
         }
 
         /// <summary>
@@ -86,8 +84,8 @@ namespace ReHUD.Services {
         /// <param name="carId"></param>
         /// <param name="classPerformanceIndex"></param>
         /// <returns></returns>
-        private LapContext? GetClassLapContext(int trackLayoutId, int carId, int classPerformanceIndex) {
-            var byCarId = GetExactLapContext(trackLayoutId, carId, classPerformanceIndex);
+        private LapContext? GetClassLapContext(int trackLayoutId, int carId, int classPerformanceIndex, Constant.TireSubtype frontTireCompound, Constant.TireSubtype rearTireCompound) {
+            var byCarId = GetExactLapContext(trackLayoutId, carId, frontTireCompound, rearTireCompound);
             if (byCarId != null) {
                 return byCarId;
             }
@@ -189,9 +187,9 @@ namespace ReHUD.Services {
             };
         }
 
-        public CombinationSummary GetCombinationSummary(int trackLayoutId, int carId, int classPerformanceIndex) {
+        public CombinationSummary GetCombinationSummary(int trackLayoutId, int carId, Constant.TireSubtype frontTireCompound, Constant.TireSubtype rearTireCompound) {
             try {
-                LapContext? lapContext = GetExactLapContext(trackLayoutId, carId, classPerformanceIndex);
+                LapContext? lapContext = GetExactLapContext(trackLayoutId, carId, frontTireCompound, rearTireCompound);
                 if (lapContext == null) {
                     return new CombinationSummary {
                         TrackLayoutId = trackLayoutId,
@@ -227,12 +225,12 @@ namespace ReHUD.Services {
             return context?.BestLap;
         }
 
-        public LapData? GetCarBestLap(int trackLayoutId, int carId, int classPerformanceIndex) {
-            return GetBestLap(GetExactLapContext(trackLayoutId, carId, classPerformanceIndex));
+        public LapData? GetCarBestLap(int trackLayoutId, int carId, Constant.TireSubtype frontTireCompound, Constant.TireSubtype rearTireCompound) {
+            return GetBestLap(GetExactLapContext(trackLayoutId, carId, frontTireCompound, rearTireCompound));
         }
 
-        public LapData? GetClassBestLap(int trackLayoutId, int carId, int classPerformanceIndex) {
-            return GetBestLap(GetClassLapContext(trackLayoutId, carId, classPerformanceIndex));
+        public LapData? GetClassBestLap(int trackLayoutId, int carId, int classPerformanceIndex, Constant.TireSubtype frontTireCompound, Constant.TireSubtype rearTireCompound) {
+            return GetBestLap(GetClassLapContext(trackLayoutId, carId, classPerformanceIndex, frontTireCompound, rearTireCompound));
         }
 
 
@@ -253,27 +251,42 @@ namespace ReHUD.Services {
         /// <returns>True if the added lap is the best lap for the car and track layout, false otherwise.</returns>
         public LapData LogLap(LapContext context, bool valid, double lapTime) {
             context = AttachContext(context);
-            logger.DebugFormat("Logging lap ({0}) for context {1}, Id={2}", lapTime, context, context.Id);
 
             var lap = new LapData(context, valid, lapTime);
             this.context.Add(lap);
 
             foreach (var p in lap.Pointers) {
-                Log(p);
+                try {
+                    Log(p);
+                } catch (Exception e) {
+                    logger.Error($"Failed to log lap pointer {p}", e);
+                    throw;
+                }
             }
 
             // Update best lap if necessary.
             UpdateBestLap(lap);
             SaveChanges();
+
+            logger.InfoFormat("Logged lap {0} for context {1}", lap, context);
+
             return lap;
         }
 
-        private static bool ShouldRemoveLapContext(LapContext context) {
-            return context.Entries.Count == 0;
+        public void UpdateLapTime(LapData lap, double lapTime) {
+            logger.InfoFormat("Updating lap time for lap {0} to {1}", lap, lapTime);
+            lap.LapTime.Value = lapTime;
+            context.Update(lap.LapTime);
+            UpdateBestLap(lap);
+            SaveChanges();
         }
 
-        private static bool ShouldRemoveLap(LapData data) {
-            return data.Pointers.TrueForAll(p => p.PendingRemoval);
+        private static bool ShouldRemoveLapContext(LapContext context, LapData removedLap) {
+            return context.Entries.Count == 0 || context.Entries.All(l => l == removedLap);
+        }
+
+        private static bool ShouldRemoveLap(LapData lap) {
+            return lap.Pointers.TrueForAll(p => p.PendingRemoval);
         }
 
         public T AttachContext<T>(T context) where T : Context {
@@ -282,27 +295,31 @@ namespace ReHUD.Services {
                 return existingContext;
             }
 
-            logger.DebugFormat("Creating new context {0}, Id={1}", context, context.Id);
+            logger.InfoFormat("Creating new context {0}, Id={1}", context, context.Id);
 
             this.context.Add(context);
             SaveChanges();
             return context;
         }
         
-        private void RemoveContext(LapContext context) {
-            this.context.Remove(context);
+        private void RemoveContext(LapContext lapContext) {
+            logger.InfoFormat("Removing context {0}", lapContext);
+            context.Remove(lapContext);
             SaveChanges();
         }
 
 
-        private void RemoveLap(LapData data) {
-            foreach (var p in data.Pointers) {
+        private void RemoveLap(LapData lap) {
+            logger.InfoFormat("Removing lap {0}", lap);
+
+            // Lap must be removed before pointers otherwise EF will throw an exception (foreign key constraint).
+            context.Remove(lap);
+            foreach (var p in lap.Pointers) {
                 context.Remove(p);
             }
-            context.Remove(data);
 
-            if (ShouldRemoveLapContext(data.Context)) {
-                RemoveContext(data.Context);
+            if (ShouldRemoveLapContext(lap.Context, lap)) {
+                RemoveContext(lap.Context);
             }
             SaveChanges();
         }

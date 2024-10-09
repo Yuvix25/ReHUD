@@ -8,7 +8,7 @@ import Hud from '../Hud.js';
 import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
 
 export default class DriverManager extends Action {
-    override sharedMemoryKeys: SharedMemoryKey[] = ['+lapId', 'driverData', 'lapTimePreviousSelf', 'completedLaps', 'sessionType', 'gameInMenus', 'gameInReplay', 'gamePaused', 'layoutId', 'sessionTimeRemaining', 'sessionPhase', 'position', 'layoutLength'];
+    override sharedMemoryKeys: SharedMemoryKey[] = ['+lastLapTime', '+lapId', 'driverData', 'completedLaps', 'sessionType', 'gameInMenus', 'gameInReplay', 'gamePaused', 'layoutId', 'sessionTimeRemaining', 'sessionPhase', 'position', 'layoutLength'];
     override isEnabled(): boolean {
         return true;
     }
@@ -27,7 +27,6 @@ export default class DriverManager extends Action {
     }
 
     public clearDriversTempData(data?: IShared): void {
-        console.log('Clearing drivers temp data');
         const cleared: Set<string> = new Set();
         for (const driver of data?.driverData ?? []) {
             const uid = getUid(driver.driverInfo);
@@ -58,18 +57,16 @@ export default class DriverManager extends Action {
         const data = extendedData.rawData;
         const uid = getUid(driver.driverInfo);
         if (uid in this.drivers) {
-            const prevSectors = driver.sectorTimePreviousSelf;
+            const driver = this.drivers[uid];
             let shouldSaveBestLap = false;
-            if (isMainDriver && valueIsValidAssertUndefined(data.lapTimePreviousSelf)) {
-                shouldSaveBestLap = this.drivers[uid].endLap(data.lapTimePreviousSelf, data.completedLaps, data.sessionType);
-            } else if (valueIsValidAssertUndefined(prevSectors.sector3)) {
-                shouldSaveBestLap = this.drivers[uid].endLap(prevSectors.sector3, driver.completedLaps, data.sessionType);
+            if (isMainDriver && valueIsValidAssertUndefined(extendedData.lastLapTime)) {
+                shouldSaveBestLap = driver.endLap(extendedData.lastLapTime, data.completedLaps, data.sessionType);
             } else {
-                shouldSaveBestLap = this.drivers[uid].endLap(null, driver.completedLaps, data.sessionType);
+                shouldSaveBestLap = driver.endLap(null, driver.completedLaps, data.sessionType);
             }
 
             if (shouldSaveBestLap && !data.gameInMenus && !data.gameInReplay && !data.gamePaused) {
-                this.drivers[uid].saveBestLap(extendedData.lapId);
+                driver.saveBestLap(extendedData.lapId, driver.lastLapTime, driver.points.slice());
             }
         }
 

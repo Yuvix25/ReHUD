@@ -51,7 +51,8 @@ _\* work in progress_
 2. Download and run the installer.
 3. Done!
 
-Note: If you're updating from a previous version, you can simply run the new installer and it will update the app, no need to uninstall the previous version.
+Note 1: If you're updating from a previous version, you can simply run the new installer and it will update the app, no need to uninstall the previous version.
+Note 2: Make sure to set the game to launch as "Play Raceroom" in the Steam-Launchsettings. Running it with "Play Raceroom (DXVK) is currently partially broken for Windowed Borderless mode.
 
 ## Usage
 Once you've installed the app, you will find a desktop shortcut to it, or you can manually find it by searching for "ReHUD" in the windows search menu. Run it with either of the above options, and you're good to go. The overlay is now running and will show up whenever you enter a session in RaceRoom.  

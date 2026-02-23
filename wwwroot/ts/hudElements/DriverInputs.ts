@@ -1,9 +1,12 @@
 import HudElement from "./HudElement.js";
 import {validNumberOrDefault, valueIsValidAssertUndefined} from "../consts.js";
 import {SharedMemoryKey} from '../SharedMemoryConsumer.js';
+import {InputGraph} from "./InputGraph.js";
 
 export default class DriverInputs extends HudElement {
     override sharedMemoryKeys: SharedMemoryKey[] = ['throttleRaw', 'throttle', 'brakeRaw', 'brake', 'clutchRaw', 'clutch', 'steerInputRaw', 'steerWheelRangeDegrees'];
+
+    private inputGraph: InputGraph | null = null;
 
     private static rawOrReal(n: number, r: number): number {
         return validNumberOrDefault(n, validNumberOrDefault(r, 0));
@@ -19,6 +22,13 @@ export default class DriverInputs extends HudElement {
 
         const steer = document.getElementById('steering-wheel');
 
+        if (!this.inputGraph) {
+            const canvas = document.getElementById('input-graph') as HTMLCanvasElement;
+            if (canvas) {
+                this.inputGraph = new InputGraph(canvas, 100);
+            }
+        }
+
         tRaw = DriverInputs.rawOrReal(tRaw, t);
         bRaw = DriverInputs.rawOrReal(bRaw, b);
         cRaw = DriverInputs.rawOrReal(cRaw, c);
@@ -32,6 +42,10 @@ export default class DriverInputs extends HudElement {
         throttleProgress.value = tRaw.toString();
         brakeProgress.value = bRaw.toString();
         clutchProgress.value = cRaw.toString();
+
+        if (this.inputGraph) {
+            this.inputGraph.update(tRaw, bRaw);
+        }
 
         const steerAngle = sRaw * sRange / 2;
         steer.style.transform = `rotate(${steerAngle}deg)`;

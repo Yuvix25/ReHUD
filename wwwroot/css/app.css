@@ -568,6 +568,12 @@ progress#revs::-webkit-progress-value {
   padding: 0px;
 }
 
+#input-graph {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: block;
+}
+
 #steering-wheel {
   width: 90px;
 }
